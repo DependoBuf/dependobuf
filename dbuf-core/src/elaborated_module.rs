@@ -1,17 +1,22 @@
-use crate::expression::{Context, Expression};
-use std::collections::BTreeMap;
+use crate::expression::{Context, TypeExpression};
+use std::collections::{BTreeMap, BTreeSet};
 
-/// An elaborated DependoBuf module defines a list of named types
-/// in their topologically sorted order.
-pub type ElaboratedModule<Name> = Vec<(Name, ElaboratedType<Name>)>;
+/// An elaborated DependoBuf module.
+#[derive(Debug)]
+pub struct ElaboratedModule<Name> {
+    /// List of elaborated types in topologically sorted order.
+    pub types: Vec<(Name, ElaboratedType<Name>)>,
+    /// Collection of elaborated constructors for types.
+    pub constructors: BTreeMap<Name, ElaboratedConstructor<Name>>,
+}
 
-/// Elaborated DependoBuf type with a list of constructors.
+/// Elaborated DependoBuf type.
 #[derive(Debug)]
 pub struct ElaboratedType<Name> {
     /// List of elaborated dependencies.
     pub dependencies: Context<Name>,
-    /// List of elaborated constructors.
-    pub constructors: BTreeMap<Name, ElaboratedConstructor<Name>>,
+    /// List of elaborated constructors' names.
+    pub constructor_names: BTreeSet<Name>,
 }
 
 /// Elaborated DependoBuf constructor.
@@ -21,6 +26,6 @@ pub struct ElaboratedConstructor<Name> {
     pub implicits: Context<Name>,
     /// List of elaborated explicit fields' types.
     pub fields: Context<Name>,
-    /// List of corresponding elaborated dependencies of a result type.
-    pub result_dependencies: Vec<Expression<Name>>,
+    /// Elaborated result type.
+    pub result_type: TypeExpression<Name>,
 }
