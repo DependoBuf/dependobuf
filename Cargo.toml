@@ -1,12 +1,6 @@
 [workspace]
 members = ["ast"]
+resolver = "2"
 
 [workspace.package]
 version = "0.1.0"
-
-[package]
-name = "dependobuf"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
