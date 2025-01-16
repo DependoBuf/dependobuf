@@ -3,6 +3,7 @@ use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
 #[allow(unused_imports)]
+#[allow(clippy::single_component_path_imports)]
 use dbuf_core;
 
 #[derive(Debug)]
