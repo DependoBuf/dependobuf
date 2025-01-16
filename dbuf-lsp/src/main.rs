@@ -9,7 +9,7 @@ use dbuf_core;
 #[allow(dead_code)]
 struct Backend {
     client: Client,
-    
+
     ast: Option<()>,
 }
 
@@ -97,9 +97,6 @@ async fn main() {
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
 
-    let (service, socket) = LspService::new(|client| Backend {
-        client,
-        ast: None,
-    });
+    let (service, socket) = LspService::new(|client| Backend { client, ast: None });
     Server::new(stdin, stdout, socket).serve(service).await;
 }
