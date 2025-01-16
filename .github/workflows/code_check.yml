@@ -1,0 +1,62 @@
+name: Run code checks
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Cache target
+      uses: actions/cache@v4
+      env:
+        cache-name: cache-rust-crates
+      with:
+        path: ./target
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Build packages
+      run: cargo build --verbose
+      
+    - name: Run clippy
+      run: cargo clippy --verbose
+      
+    - name: Run tests
+      run: cargo test --verbose
+
+  format:
+    if: github.event_name == 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions: write-all
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        repository: ${{ github.event.pull_request.head.repo.full_name }}
+        ref: ${{ github.event.pull_request.head.ref }}
+
+    - name: Run formatter
+      run: cargo fmt
+
+    - name: Commit changes
+      uses: EndBug/add-and-commit@v9
+      with:
+        add: '.'
+        message: "[auto] formatting changes"
+        new_branch: "${{ github.head_ref }}"
+        push: true
+        default_author: github_actions
