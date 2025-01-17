@@ -17,7 +17,16 @@ pub struct Type<Str> {
     /// List of elaborated dependencies.
     pub dependencies: Context<Str>,
     /// List of elaborated constructors' names.
-    pub constructor_names: BTreeSet<Str>,
+    pub constructor_names: ConstructorNames<Str>,
+}
+
+/// Constructor names of a type.
+#[derive(Debug)]
+pub enum ConstructorNames<Str> {
+    /// Message has a single constructor.
+    OfMessage(Str),
+    /// Enum has several constructors.
+    OfEnum(BTreeSet<Str>),
 }
 
 /// Elaborated DependoBuf constructor.
