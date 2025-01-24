@@ -14,6 +14,7 @@ struct Backend {
     ast: Option<()>,
 }
 
+
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
