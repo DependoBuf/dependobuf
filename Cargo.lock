@@ -99,11 +99,11 @@ dependencies = [
 
 [[package]]
 name = "dbuf-core"
-version = "0.1.1"
+version = "0.1.0"
 
 [[package]]
 name = "dbuf-lsp"
-version = "0.1.1"
+version = "0.1.0"
 dependencies = [
  "dbuf-core",
  "tokio",
