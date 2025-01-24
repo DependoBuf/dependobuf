@@ -18,7 +18,7 @@ pub enum Literal<S> {
     Double(f64),
     Int(i64),
     UInt(u64),
-    Str(S)
+    Str(S),
 }
 
 /// Unary operators used in DependoBuf expressions.

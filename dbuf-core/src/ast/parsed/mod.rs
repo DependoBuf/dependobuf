@@ -34,8 +34,7 @@ pub struct EnumBranch<Loc, Str> {
 }
 
 /// Constructor body is a list of typed variables.
-pub type ConstructorBody<Loc, Str> =
-    Definitions<Loc, Str, TypeExpression<Loc, Str>>;
+pub type ConstructorBody<Loc, Str> = Definitions<Loc, Str, TypeExpression<Loc, Str>>;
 
 /// Type expression is just an expression returning a type.
 pub type TypeExpression<Loc, Str> = Expression<Loc, Str>;
