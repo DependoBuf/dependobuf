@@ -1,16 +1,16 @@
-pub mod intro;
+pub mod definition;
 
 use super::operators::{Literal, OpCall};
-use intro::Intros;
+use definition::Definitions;
 
-/// A single DependoBuf module is a list of type declarations.
-pub type Module<Loc, Str> = Intros<Loc, Str, TypeDeclaration<Loc, Str>>;
+/// A single DependoBuf module is a list of type definitions.
+pub type Module<Loc, Str> = Definitions<Loc, Str, TypeDeclaration<Loc, Str>>;
 
 /// Declaration of a DependoBuf type.
 #[derive(Debug)]
 pub struct TypeDeclaration<Loc, Str> {
     /// List of dependencies & their types.
-    pub dependencies: Intros<Loc, Str, TypeExpression<Loc, Str>>,
+    pub dependencies: Definitions<Loc, Str, TypeExpression<Loc, Str>>,
     /// Definition.
     pub body: TypeDefinition<Loc, Str>,
 }
@@ -30,11 +30,12 @@ pub struct EnumBranch<Loc, Str> {
     /// List of patterns to match dependencies against.
     pub patterns: Vec<Pattern<Loc, Str>>,
     /// List of available constructors on successful pattern match.
-    pub constructors: Intros<Loc, Str, ConstructorBody<Loc, Str>>,
+    pub constructors: Definitions<Loc, Str, ConstructorBody<Loc, Str>>,
 }
 
 /// Constructor body is a list of typed variables.
-pub type ConstructorBody<Loc, Str> = Intros<Loc, Str, TypeExpression<Loc, Str>>;
+pub type ConstructorBody<Loc, Str> =
+    Definitions<Loc, Str, TypeExpression<Loc, Str>>;
 
 /// Type expression is just an expression returning a type.
 pub type TypeExpression<Loc, Str> = Expression<Loc, Str>;
