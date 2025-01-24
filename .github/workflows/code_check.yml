@@ -10,7 +10,17 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run format check
+      run: cargo fmt --check
+
   build:
+    needs: format
     runs-on: ubuntu-latest
 
     steps:
@@ -35,28 +45,4 @@ jobs:
       run: cargo clippy --verbose
       
     - name: Run tests
-      run: cargo test --verbose
-
-  format:
-    if: github.event_name == 'pull_request'
-    needs: build
-    runs-on: ubuntu-latest
-    permissions: write-all
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        repository: ${{ github.event.pull_request.head.repo.full_name }}
-        ref: ${{ github.event.pull_request.head.ref }}
-
-    - name: Run formatter
-      run: cargo fmt
-
-    - name: Commit changes
-      uses: EndBug/add-and-commit@v9
-      with:
-        add: '.'
-        message: "[auto] formatting changes"
-        new_branch: "${{ github.head_ref }}"
-        push: true
-        default_author: github_actions
+      run: cargo test --verbos
