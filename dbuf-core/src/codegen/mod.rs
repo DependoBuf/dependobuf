@@ -1,2 +1,3 @@
-pub mod ast;
 mod codegen;
+
+mod sample;
