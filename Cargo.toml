@@ -1,5 +1,5 @@
 [workspace]
-members = ["dbuf-core", "dbuf-lsp"]
+members = ["dbuf-core", "dbuf-db/lib", "dbuf-lsp"]
 resolver = "2"
 
 [workspace.package]
