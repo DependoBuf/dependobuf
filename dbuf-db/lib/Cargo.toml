@@ -1,6 +1,9 @@
 [package]
 name = "lib"
-edition = "2021"
+edition = "2024"
 version.workspace = true
 
 [dependencies]
+"marble" =  "16.0.2"
+bincode = { version = "2.0.1", features = ["derive"] }
+"thiserror" = "2.0.12"
