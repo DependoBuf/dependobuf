@@ -1,4 +1,4 @@
-use bincode::config;
+use bincode::{Encode, Decode, config};
 use marble::{self, Marble};
 use std::path::Path;
 
@@ -6,11 +6,18 @@ use super::error::StorageError;
 use super::page::{Page, PageHeader, PageId, PageType};
 
 const BINCODE_CONFIG: config::Configuration = config::standard();
+const DEFAULT_PAGE : PageId = 100;
+const STATE_INDEX : PageId = 0;
+
+#[derive(Encode, Decode)]
+struct StorageState {
+    pub page_size: usize,
+    next_page_id: PageId,
+}
 
 pub struct Storage {
     marble: Marble,
-    pub page_size: usize,
-    next_page_id: PageId,
+    pub state: StorageState,
 }
 
 impl Storage {
@@ -18,13 +25,14 @@ impl Storage {
     pub fn new<P: AsRef<Path>>(path: P, page_size: usize) -> Result<Self, StorageError> {
         let marble = marble::open(path)?;
 
-        //TODO: store next_page_id persistently
-        let next_page_id = 1;
+        let next_page_id = DEFAULT_PAGE;
 
         Ok(Self {
             marble,
-            page_size,
-            next_page_id,
+            state: StorageState {
+                page_size,
+                next_page_id,
+            },
         })
     }
 
@@ -40,8 +48,8 @@ impl Storage {
 
     /// Allocate a new page of the specified type
     pub fn allocate_page(&mut self, page_type: PageType) -> Result<Page, StorageError> {
-        let page_id = self.next_page_id;
-        self.next_page_id += 1;
+        let page_id = self.state.next_page_id;
+        self.state.next_page_id += 1;
 
         let header = PageHeader {
             id: page_id,
@@ -51,7 +59,7 @@ impl Storage {
 
         let page = Page {
             header,
-            data: Vec::with_capacity(self.page_size),
+            data: Vec::with_capacity(self.state.page_size),
         };
 
         self.write_page(&page)?;
