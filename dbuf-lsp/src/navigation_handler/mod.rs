@@ -4,14 +4,15 @@
 //! * `textDocument/declaration` (fn goto_declaration)
 //! * `textDocument/typeDefinition` (fn goto_type_definition)
 //! * `textDocument/references` (fn references)
-//! * `textDocument/documentHighlight`
 //! * `textDocument/hover`
 //!  
 //! Also it might be good idea to handle such requests:
+//! * `textDocument/documentHighlight`
 //! * `textDocument/prepareTypeHierarchy`
 //! * `typeHierarchy/supertypes`
 //! * `typeHierarchy/subtypes`
 //! * `textDocument/linkedEditingRange`
+//! * `textDocument/moniker`
 //!
 //! These methods are also about navigation, but there no need to implement them:
 //! * `textDocument/definition`
@@ -21,5 +22,4 @@
 //! * `callHierarchy/outgoingCalls`
 //! * `textDocument/documentLink`
 //! * `documentLink/resolve`
-//!
 //!

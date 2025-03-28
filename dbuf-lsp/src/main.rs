@@ -5,6 +5,8 @@ use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
 use dbuf_lsp::ast_access::AstAccess;
+use dbuf_lsp::common::ast_builder::AstBuilder;
+use dbuf_lsp::common::pretty_printer::PrettyWriter;
 
 #[derive(Debug)]
 struct Backend {
@@ -118,10 +120,36 @@ impl LanguageServer for Backend {
         eprintln!("WARN: hover is not fully implemented");
         let _ = params;
         let _ast = self.ast.read();
-        Ok(Some(Hover {
-            contents: HoverContents::Scalar(MarkedString::String("You're hovering!".to_string())),
+
+        let mut builder = AstBuilder::new();
+        builder
+            .with_message("Example")
+            .expect("")
+            .with_dependency("d1", "String")
+            .with_field("f1", "Int")
+            .with_field("f2", "Int")
+            .with_field("f3", "Int");
+
+        builder.with_message("Empty");
+
+        let mut ast = builder.construct();
+        let mut buffer = vec![];
+        let mut printer = PrettyWriter::new(&mut buffer);
+        printer.parse_module(&mut ast).expect("serialized");
+
+        let text = String::from_utf8(buffer).unwrap();
+
+        let ans = Hover {
+            contents: HoverContents::Array(vec![
+                MarkedString::LanguageString(LanguageString {
+                    language: "dbuf".to_string(),
+                    value: text,
+                }),
+                MarkedString::String("explanation".to_string()),
+            ]),
             range: None,
-        }))
+        };
+        return Ok(Some(ans));
     }
 }
 
