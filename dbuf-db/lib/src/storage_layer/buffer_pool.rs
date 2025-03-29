@@ -1,15 +1,21 @@
 use super::error::StorageError;
-use super::page::{Page, PageId};
+use super::page::{Page, PageId, PageType};
 use super::storage::Storage;
+
+use marble::Marble;
+
+use std::cell::{Ref, RefCell, RefMut};
+use std::collections::HashMap;
 
 pub struct BufferPool {
     storage: Storage,
-    pages: std::collections::HashMap<PageId, (Page, bool)>, // (page, dirty)
+    pages: RefCell<HashMap<PageId, (Page, bool)>>, // (page, dirty)
     capacity: usize,
 }
 
 //TODO write a better rotation policy
-//TODO page allocation
+//TODO use refcel to get rid of mut
+//or not???
 impl BufferPool {
     pub fn new(storage: Storage, capacity: usize) -> Self {
         if capacity == 0 {
@@ -17,47 +23,87 @@ impl BufferPool {
         }
         Self {
             storage,
-            pages: std::collections::HashMap::with_capacity(capacity),
+            pages: RefCell::new(HashMap::with_capacity(capacity)),
             capacity,
         }
     }
 
-    /// Get a page from the cache or load it from storage
-    pub fn get_page(&mut self, id: PageId) -> Result<&mut Page, StorageError> {
-        if !self.pages.contains_key(&id) {
-            let page = self.storage.read_page(id)?;
-            // Simple eviction policy: if at capacity, evict a random page
-            if self.pages.len() >= self.capacity {
-                let mut evict_id = None;
-                for (page_id, (_, dirty)) in &self.pages {
-                    if !dirty {
-                        evict_id = Some(*page_id);
-                        break;
-                    }
-                }
+    pub fn page_size(&self) -> usize {
+        self.storage.state.page_size
+    }
 
-                // If all are dirty, flush one
-                if evict_id.is_none() {
-                    if let Some((&page_id, _)) = self.pages.iter().next() {
-                        let (page, _) = self.pages.remove(&page_id).unwrap();
-                        self.storage.write_page(&page)?;
-                        evict_id = Some(page_id);
-                    }
-                }
+    pub fn marble(&self) -> &Marble {
+        &self.storage.marble
+    }
 
-                //id is always found at this point
-                self.pages.remove(&evict_id.unwrap());
+    pub fn pop_page(&self) -> Result<(), StorageError> {
+        let mut pages = self.pages.borrow_mut();
+
+        let mut evict_id = None;
+        for (page_id, (_, dirty)) in pages.iter() {
+            if !dirty {
+                evict_id = Some(*page_id);
+                break;
             }
-
-            self.pages.insert(id, (page, false));
         }
 
-        let (page, _) = self.pages.get_mut(&id).unwrap();
-        Ok(page)
+        // If all are dirty, flush one
+        if evict_id.is_none() {
+            if let Some((&page_id, _)) = pages.iter().next() {
+                let (page, _) = pages.remove(&page_id).unwrap();
+                self.storage.write_page(&page)?;
+                evict_id = Some(page_id);
+            }
+        } else {
+            pages.remove(&evict_id.unwrap());
+        }
+
+        Ok(())
+    }
+
+    pub fn allocate_page<'a>(
+        &'a mut self,
+        page_type: PageType,
+    ) -> Result<RefMut<'a, Page>, StorageError> {
+        let page = self.storage.allocate_page(page_type)?;
+
+        if self.pages.borrow().len() >= self.capacity {
+            self.pop_page()?;
+        }
+
+        let mut pages = self.pages.borrow_mut();
+
+        let id = page.header.id;
+        pages.insert(id, (page, false));
+
+        Ok(RefMut::map(pages, |p| {
+            let (page_mut, _) = p.get_mut(&id).unwrap();
+            page_mut
+        }))
+    }
+
+    /// Get a page from the cache or load it from storage
+    pub fn get_page<'a>(&'a mut self, id: PageId) -> Result<RefMut<'a, Page>, StorageError> {
+        if !self.pages.borrow().contains_key(&id) {
+            let page = self.storage.read_page(id)?;
+            // Simple eviction policy: if at capacity, evict a random page
+            if self.pages.borrow().len() >= self.capacity {
+                self.pop_page()?;
+            }
+
+            self.pages.borrow_mut().insert(id, (page, false));
+        }
+
+        let mut pages = self.pages.borrow_mut();
+
+        Ok(RefMut::map(pages, |p| {
+            let (page_mut, _) = p.get_mut(&id).unwrap();
+            page_mut
+        }))
     }
 
     pub fn mark_dirty(&mut self, id: PageId) -> Result<(), StorageError> {
-        if let Some((_, dirty)) = self.pages.get_mut(&id) {
+        if let Some((_, dirty)) = self.pages.borrow_mut().get_mut(&id) {
             *dirty = true;
             Ok(())
         } else {
@@ -66,7 +112,7 @@ impl BufferPool {
     }
 
     pub fn flush(&mut self) -> Result<(), StorageError> {
-        for (_, (page, dirty)) in self.pages.iter_mut() {
+        for (_, (page, dirty)) in self.pages.borrow_mut().iter_mut() {
             if *dirty {
                 self.storage.write_page(page)?;
                 *dirty = false;

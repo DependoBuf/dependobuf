@@ -1,49 +1,50 @@
-use bincode::{Encode, Decode, config};
-use marble::{self, Marble};
+use bincode::{Decode, Encode, config};
+use marble::Marble;
 use std::path::Path;
 
 use super::error::StorageError;
 use super::page::{Page, PageHeader, PageId, PageType};
 
-const BINCODE_CONFIG: config::Configuration = config::standard();
-const DEFAULT_PAGE : PageId = 100;
-const STATE_INDEX : PageId = 0;
+use super::utils::{BINCODE_CONFIG, load, save};
+
+const DEFAULT_PAGE: PageId = 100;
+const STATE_INDEX: PageId = 0;
 
 #[derive(Encode, Decode)]
-struct StorageState {
+pub struct StorageState {
     pub page_size: usize,
     next_page_id: PageId,
 }
 
 pub struct Storage {
-    marble: Marble,
+    pub marble: Marble,
     pub state: StorageState,
 }
 
+//TODO refactor encoding and decoding into generic fn
 impl Storage {
     /// Create a new storage manager
+    /// page_size is ignored if state was already written down
     pub fn new<P: AsRef<Path>>(path: P, page_size: usize) -> Result<Self, StorageError> {
         let marble = marble::open(path)?;
 
-        let next_page_id = DEFAULT_PAGE;
+        if let Some(state) = load(&marble, STATE_INDEX)? {
+            return Ok(Self { marble, state });
+        }
 
-        Ok(Self {
-            marble,
-            state: StorageState {
-                page_size,
-                next_page_id,
-            },
-        })
+        let state = StorageState {
+            page_size,
+            next_page_id: DEFAULT_PAGE,
+        };
+
+        save(&marble, &state, STATE_INDEX)?;
+
+        Ok(Self { marble, state })
     }
 
     /// Write a page to storage
     pub fn write_page(&self, page: &Page) -> Result<(), StorageError> {
-        let encoded: Vec<u8> = bincode::encode_to_vec(page, BINCODE_CONFIG)?;
-
-        self.marble
-            .write_batch([(page.header.id, Some(&encoded))])?;
-
-        Ok(())
+        save(&self.marble, page, page.header.id)
     }
 
     /// Allocate a new page of the specified type
@@ -69,12 +70,8 @@ impl Storage {
 
     /// Read a page from storage
     pub fn read_page(&self, id: PageId) -> Result<Page, StorageError> {
-        match self.marble.read(id)? {
-            Some(data) => {
-                let (page, _): (Page, usize) =
-                    bincode::decode_from_slice(&data[..], BINCODE_CONFIG)?;
-                Ok(page)
-            }
+        match load::<Page>(&self.marble, id)? {
+            Some(page) => Ok(page),
             None => Err(StorageError::PageNotFound(id)),
         }
     }
@@ -90,10 +87,5 @@ impl Storage {
     pub fn maintenance(&self) -> Result<usize, StorageError> {
         let objects_defragmented = self.marble.maintenance()?;
         Ok(objects_defragmented)
-    }
-
-    /// Get storage statistics
-    pub fn stats(&self) -> marble::Stats {
-        self.marble.stats()
     }
 }
