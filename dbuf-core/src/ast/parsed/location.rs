@@ -1,6 +1,6 @@
 //! Locations for parsed AST.
 
-/// Poosition in a document.
+/// Position in a document.
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Default)]
 pub struct Position {
     /// Zero-based line position in a document.
@@ -15,12 +15,12 @@ impl Position {
     }
 }
 
-/// Location in a document.
+/// Location in a document. Represents as semi-interval on the axis of Positions.
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Default)]
 pub struct Location {
-    /// Zero-based start of location.
+    /// Start of location.
     pub start: Position,
-    /// Zero-based end of location, which is not included in the location.
+    /// End of location, which is not included in the location.
     /// For example, the location `((0, 0), (0, 2))` includes only two characters at positions `(0, 0)` and `(0, 1)`
     ///
     /// If a location has more than one line, the end position must be on the same `line` as the last character in the location.
