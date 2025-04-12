@@ -1,28 +1,29 @@
-//! Provides utilities for pretty-printing AST (Abstract Syntax Tree) representations.
+//! Used in default_ast to setup locaions
 //!
 //! This module contains tools to:
 //! - Format AST nodes as human-readable text
+//! - Track and update source locations during printing
 //!
 
 use std::fmt::{Result, Write};
+
+use std::rc::Rc;
 
 use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 use dbuf_core::location::*;
 
-use super::ast_access::{Loc, Str};
+use crate::common::ast_access::{Loc, Str};
 
 // TODO:
-//   * use pretty lib (?)
-//   * make configuration
-//   * TODO resolutions in code
+//   * find a way to easily clone from crate::common::pretty_printer
 
-/// A configurable AST pretty-printer.
+/// A configurable AST pretty-printer that preserves source location information.
+///
 pub struct PrettyPrinter<'a, W: Write> {
     cursor: Position,
     writer: &'a mut W,
-    tab_size: u32,
 }
 
 impl<'a, W: Write> PrettyPrinter<'a, W> {
@@ -33,13 +34,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         PrettyPrinter {
             cursor: Position::new(0, 0),
             writer,
-            tab_size: 4,
         }
-    }
-
-    pub fn with_tab_size(mut self, tab_size: u32) -> Self {
-        self.tab_size = tab_size;
-        self
     }
 
     fn new_line(&mut self) -> Result {
@@ -62,36 +57,36 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
-    fn write_tabs(&mut self, tab_count: u32) -> Result {
-        let spaces = self.tab_size * tab_count;
-        self.cursor.character += spaces;
-        let to_write = std::iter::repeat(" ")
-            .take(spaces as usize)
-            .collect::<String>();
+    fn write_tab(&mut self, len: usize) -> Result {
+        self.cursor.character += len as u32;
+        let to_write = std::iter::repeat(" ").take(len).collect::<String>();
         write!(self.writer, "{}", to_write)?;
         Ok(())
     }
 
-    pub fn print_module(&mut self, module: &Module<Loc, Str>) -> Result {
+    pub fn parse_module(&mut self, module: &mut Module<Loc, Str>) -> Result {
         self.cursor = Position::new(0, 0);
         let mut first = true;
 
-        for definition in module.iter() {
+        for definition in module.iter_mut() {
             if !first {
                 self.new_line()?;
                 self.new_line()?;
             }
-            self.print_type_definition(definition)?;
+            self.parse_type_definition(definition)?;
             first = false;
         }
 
         Ok(())
     }
 
-    fn print_type_definition(
+    // TODO: somewhere here parse location for name
+    fn parse_type_definition(
         &mut self,
-        definition: &Definition<Loc, Str, TypeDeclaration<Loc, Str>>,
+        definition: &mut Definition<Loc, Str, TypeDeclaration<Loc, Str>>,
     ) -> Result {
+        definition.loc.start = self.cursor;
+
         match definition.data.body {
             TypeDefinition::Message(_) => {
                 self.write(Self::MESSAGE_TEXT)?;
@@ -105,28 +100,32 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             }
         }
 
-        self.print_type_declaration(&definition.data)?;
+        self.parse_type_declaration(&mut definition.data)?;
 
+        definition.loc.end = self.cursor;
         Ok(())
     }
 
-    fn print_type_declaration(&mut self, type_declaration: &TypeDeclaration<Loc, Str>) -> Result {
-        for dependency in type_declaration.dependencies.iter() {
-            self.print_dependency(dependency)?;
+    fn parse_type_declaration(
+        &mut self,
+        type_declaration: &mut TypeDeclaration<Loc, Str>,
+    ) -> Result {
+        for dependency in type_declaration.dependencies.iter_mut() {
+            self.parse_dependency(dependency)?;
             self.write(" ")?;
         }
 
         self.write("{")?;
 
-        match &type_declaration.body {
+        match &mut type_declaration.body {
             TypeDefinition::Message(constructor) => {
                 self.new_line_if(!constructor.is_empty())?;
-                self.print_constructor(constructor, 1)?;
+                self.parse_constructor(constructor, 4)?;
             }
             TypeDefinition::Enum(branches) => {
-                for branch in branches.iter() {
+                for branch in branches.iter_mut() {
                     self.new_line()?;
-                    self.print_enum_bracnh(branch)?;
+                    self.parse_enum_bracnh(branch)?;
                 }
             }
         }
@@ -136,46 +135,52 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
-    fn print_dependency(
+    // TODO: somewhere here parse location for name
+    fn parse_dependency(
         &mut self,
-        dependency: &Definition<Loc, Str, TypeExpression<Loc, Str>>,
+        dependency: &mut Definition<Loc, Str, TypeExpression<Loc, Str>>,
     ) -> Result {
+        dependency.loc.start = self.cursor;
+
         self.write("(")?;
         self.write(&dependency.name)?;
         self.write(" ")?;
-        self.print_type_expression(&dependency.data)?;
+        self.parse_type_expression(&mut dependency.data)?;
         self.write(")")?;
 
+        dependency.loc.end = self.cursor;
         Ok(())
     }
 
-    fn print_enum_bracnh(&mut self, branch: &EnumBranch<Loc, Str>) -> Result {
-        self.write_tabs(1)?;
+    fn parse_enum_bracnh(&mut self, branch: &mut EnumBranch<Loc, Str>) -> Result {
+        self.write_tab(4)?;
 
         let mut first = true;
-        for p in branch.patterns.iter() {
+        for p in branch.patterns.iter_mut() {
             if !first {
                 self.write(", ")?;
             }
-            self.print_pattern(p)?;
+            self.parse_pattern(p)?;
             first = false;
         }
 
         self.write(" => {")?;
 
-        for c in branch.constructors.iter() {
+        for c in branch.constructors.iter_mut() {
             self.new_line()?;
-            self.print_enum_constructor(c)?;
+            self.parse_enum_constructor(c)?;
         }
 
         self.new_line()?;
-        self.write_tabs(1)?;
+        self.write_tab(4)?;
         self.write("}")?;
         Ok(())
     }
 
-    fn print_pattern(&mut self, pattern: &Pattern<Loc, Str>) -> Result {
-        match &pattern.node {
+    fn parse_pattern(&mut self, pattern: &mut Pattern<Loc, Str>) -> Result {
+        pattern.loc.start = self.cursor;
+
+        match &mut pattern.node {
             PatternNode::Call { name, fields } => {
                 if fields.is_empty() {
                     // Assuming: variable
@@ -189,65 +194,78 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                 }
             }
             PatternNode::Literal(literal) => {
-                self.print_literal(literal)?;
+                self.parse_literal(literal)?;
             }
             PatternNode::Underscore => {
                 self.write("*")?;
             }
         }
 
+        pattern.loc.end = self.cursor;
         Ok(())
     }
 
-    fn print_enum_constructor(
+    fn parse_enum_constructor(
         &mut self,
-        constructor: &Definition<Loc, Str, ConstructorBody<Loc, Str>>,
+        constructor: &mut Definition<Loc, Str, ConstructorBody<Loc, Str>>,
     ) -> Result {
-        self.write_tabs(2)?;
+        self.write_tab(8)?;
+        constructor.loc.start = self.cursor;
 
         self.write(&constructor.name)?;
         self.write(" {")?;
         self.new_line_if(!constructor.data.is_empty())?;
-        self.print_constructor(&constructor.data, 3)?;
+        self.parse_constructor(&mut constructor.data, 12)?;
         self.new_line()?;
-        self.write_tabs(2)?;
+        self.write_tab(8)?;
         self.write("}")?;
 
+        constructor.loc.end = self.cursor;
         Ok(())
     }
 
-    fn print_constructor(
+    // TODO: somewhere here parse location for name
+    fn parse_constructor(
         &mut self,
-        constructor: &ConstructorBody<Loc, Str>,
+        constructor: &mut ConstructorBody<Loc, Str>,
         offset: u32,
     ) -> Result {
         let mut first = true;
-        for definition in constructor.iter() {
+        for definition in constructor.iter_mut() {
             if !first {
                 self.new_line()?;
             }
-            self.write_tabs(offset)?;
+            self.write_tab(offset as usize)?;
+            definition.loc.start = self.cursor;
 
             self.write(&definition.name)?;
             self.write(" ")?;
-            self.print_type_expression(&definition.data)?;
+            self.parse_type_expression(&mut definition.data)?;
             self.write(";")?;
 
+            definition.loc.end = self.cursor;
             first = false;
         }
         Ok(())
     }
 
-    fn print_type_expression(&mut self, type_expression: &TypeExpression<Loc, Str>) -> Result {
-        match &type_expression.node {
+    fn parse_type_expression(&mut self, type_expression: &mut TypeExpression<Loc, Str>) -> Result {
+        type_expression.loc.start = self.cursor;
+
+        match &mut type_expression.node {
             ExpressionNode::FunCall { fun, args } => {
                 self.cursor.character += fun.len() as u32;
                 self.write(&fun)?;
 
+                let mut modified = vec![];
                 for expr in args.iter() {
                     self.write(" ")?;
-                    self.print_expression(&expr)?;
+
+                    let mut copy = expr.clone();
+                    self.parse_expression(&mut copy)?;
+                    modified.push(copy);
                 }
+                *args = Rc::from(modified);
             }
             _ => {
                 panic!(
@@ -257,12 +275,15 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             }
         }
 
+        type_expression.loc.end = self.cursor;
         Ok(())
     }
 
     // TODO: change logic: distinguish variable from empty constructor
-    fn print_expression(&mut self, expression: &Expression<Loc, Str>) -> Result {
-        match &expression.node {
+    fn parse_expression(&mut self, expression: &mut Expression<Loc, Str>) -> Result {
+        expression.loc.start = self.cursor;
+
+        match &mut expression.node {
             ExpressionNode::FunCall { fun, args } => {
                 if args.is_empty() {
                     // Assuming: variable cal
@@ -276,7 +297,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                 }
             }
             ExpressionNode::OpCall(op) => {
-                self.print_opcall(op)?;
+                self.parse_opcall(op)?;
             }
             ExpressionNode::TypedHole => {
                 panic!(
@@ -284,28 +305,34 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                     self.cursor.line, self.cursor.character
                 )
             }
-        };
+        }
+
+        expression.loc.end = self.cursor;
         Ok(())
     }
 
-    fn print_opcall(&mut self, operation: &OpCall<Str, Rec<Expression<Loc, Str>>>) -> Result {
+    fn parse_opcall(&mut self, operation: &mut OpCall<Str, Rec<Expression<Loc, Str>>>) -> Result {
         match operation {
             OpCall::Literal(literal) => {
-                self.print_literal(literal)?;
+                self.parse_literal(literal)?;
             }
             OpCall::Unary(op, expr) => {
-                self.print_unary(op, expr)?;
+                self.parse_unary(op, expr)?;
             }
             OpCall::Binary(op, expr_left, expr_right) => {
                 self.write("(")?;
 
-                self.print_expression(&expr_left)?;
+                let mut left = (expr_left.as_ref()).clone();
+                self.parse_expression(&mut left)?;
+                *expr_left = Rc::new(left);
 
                 self.write(" ")?;
-                self.print_binary(op)?;
+                self.parse_binary(op)?;
                 self.write(" ")?;
 
-                self.print_expression(&expr_right)?;
+                let mut right = (expr_right.as_ref()).clone();
+                self.parse_expression(&mut right)?;
+                *expr_right = Rc::new(right);
 
                 self.write(")")?;
             }
@@ -313,7 +340,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
-    fn print_literal(&mut self, literal: &Literal) -> Result {
+    fn parse_literal(&mut self, literal: &mut Literal) -> Result {
         match literal {
             Literal::Bool(b) => {
                 if *b {
@@ -341,10 +368,16 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
-    fn print_unary(&mut self, op: &UnaryOp<Str>, expr: &Rec<Expression<Loc, Str>>) -> Result {
+    fn parse_unary(
+        &mut self,
+        op: &mut UnaryOp<Str>,
+        expr: &mut Rec<Expression<Loc, Str>>,
+    ) -> Result {
         match op {
             UnaryOp::Access(field) => {
-                self.print_expression(&expr)?;
+                let mut copy = (expr.as_ref()).clone();
+                self.parse_expression(&mut copy)?;
+                *expr = Rc::new(copy);
 
                 self.write(".")?;
                 self.write(&field)?;
@@ -352,14 +385,18 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             UnaryOp::Minus => {
                 self.write("-(")?;
 
-                self.print_expression(&expr)?;
+                let mut copy = (expr.as_ref()).clone();
+                self.parse_expression(&mut copy)?;
+                *expr = Rc::new(copy);
 
                 self.write(")")?;
             }
             UnaryOp::Bang => {
                 self.write("!(")?;
 
-                self.print_expression(&expr)?;
+                let mut copy = (expr.as_ref()).clone();
+                self.parse_expression(&mut copy)?;
+                *expr = Rc::new(copy);
 
                 self.write(")")?;
             }
@@ -367,7 +404,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
-    fn print_binary(&mut self, op: &BinaryOp) -> Result {
+    fn parse_binary(&mut self, op: &mut BinaryOp) -> Result {
         match op {
             BinaryOp::And => {
                 self.write("&&")?;

@@ -1,52 +1,52 @@
-use dbuf_core::ast::parsed::definition::Definition;
-use dbuf_core::ast::parsed::{TypeDeclaration, TypeDefinition};
+use std::sync::Arc;
+
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
-use dbuf_lsp::ast_access::AstAccess;
-use dbuf_lsp::common::ast_builder::AstBuilder;
-use dbuf_lsp::common::pretty_printer::PrettyWriter;
+use dbuf_lsp::common::ast_access::AstAccess;
+use dbuf_lsp::common::default_ast::default_ast;
+use dbuf_lsp::common::pretty_printer::PrettyPrinter;
+
+use dbuf_lsp::action_handler::ActionHandler;
+use dbuf_lsp::common::handler::Handler;
 
 #[derive(Debug)]
 struct Backend {
-    client: Client,
-
+    client: Arc<Client>,
     ast: AstAccess,
+    action_handler: ActionHandler,
 }
 
 impl Backend {
     fn new(client: Client) -> Backend {
+        let client_arc = Arc::new(client);
         Backend {
-            client,
+            client: client_arc.clone(),
             ast: AstAccess::new(),
+            action_handler: ActionHandler::new(client_arc),
         }
     }
 }
 
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
-    async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
-        let mut _ast = self.ast.write();
-        _ast.push(Definition {
-            loc: (),
-            name: "kek".to_string(),
-            data: TypeDeclaration {
-                dependencies: vec![],
-                body: TypeDefinition::Message(vec![]),
-            },
-        });
+    async fn initialize(&self, init: InitializeParams) -> Result<InitializeResult> {
+        let mut ast = self.ast.write();
+        *ast = default_ast();
+
+        let mut capabilities = ServerCapabilities::default();
+        capabilities.text_document_sync =
+            Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL));
+
+        self.action_handler.init(init, &mut capabilities);
+
+        capabilities.hover_provider = Some(HoverProviderCapability::Simple(true));
+        capabilities.completion_provider = Some(CompletionOptions::default());
 
         eprintln!("init");
         Ok(InitializeResult {
-            capabilities: ServerCapabilities {
-                hover_provider: Some(HoverProviderCapability::Simple(true)),
-                completion_provider: Some(CompletionOptions::default()),
-                text_document_sync: Some(TextDocumentSyncCapability::Kind(
-                    TextDocumentSyncKind::FULL,
-                )),
-                ..Default::default()
-            },
+            capabilities,
             ..Default::default()
         })
     }
@@ -66,15 +66,6 @@ impl LanguageServer for Backend {
         // eprintln!("did open: {:?}", params);
         // TODO: read params.text_document.text, containing full document text and build AST
         let _ = params;
-        let mut _ast = self.ast.write();
-        _ast.push(Definition {
-            loc: (),
-            name: "kek_open".to_string(),
-            data: TypeDeclaration {
-                dependencies: vec![],
-                body: TypeDefinition::Message(vec![]),
-            },
-        });
         eprintln!("WARN: did open is not fully implemented")
     }
 
@@ -119,25 +110,11 @@ impl LanguageServer for Backend {
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
         eprintln!("WARN: hover is not fully implemented");
         let _ = params;
-        let _ast = self.ast.read();
+        let ast = self.ast.read();
 
-        let mut builder = AstBuilder::new();
-        builder
-            .with_message("Example")
-            .expect("")
-            .with_dependency("d1", "String")
-            .with_field("f1", "Int")
-            .with_field("f2", "Int")
-            .with_field("f3", "Int");
-
-        builder.with_message("Empty");
-
-        let mut ast = builder.construct();
-        let mut buffer = vec![];
-        let mut printer = PrettyWriter::new(&mut buffer);
-        printer.parse_module(&mut ast).expect("serialized");
-
-        let text = String::from_utf8(buffer).unwrap();
+        let mut text = String::new();
+        let mut printer = PrettyPrinter::new(&mut text);
+        printer.print_module(&ast).expect("serialized");
 
         let ans = Hover {
             contents: HoverContents::Array(vec![
@@ -150,6 +127,12 @@ impl LanguageServer for Backend {
             range: None,
         };
         return Ok(Some(ans));
+    }
+
+    async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
+        self.action_handler
+            .formatting(&self.ast, params.options)
+            .await
     }
 }
 

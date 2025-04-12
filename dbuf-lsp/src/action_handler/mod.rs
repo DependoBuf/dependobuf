@@ -18,3 +18,85 @@
 //! * `codeLens/resolve`
 //!
 //!
+
+use std::sync::Arc;
+
+use tower_lsp::jsonrpc::Result;
+use tower_lsp::lsp_types::OneOf::*;
+use tower_lsp::lsp_types::*;
+use tower_lsp::Client;
+
+use crate::common::ast_access::AstAccess;
+use crate::common::errors::*;
+use crate::common::handler::Handler;
+use crate::common::pretty_printer::PrettyPrinter;
+
+#[derive(Debug)]
+pub struct ActionHandler {
+    _client: Arc<Client>,
+}
+
+impl ActionHandler {
+    pub fn new(client: Arc<Client>) -> ActionHandler {
+        ActionHandler { _client: client }
+    }
+
+    /// `textDocument/formatting` implementation.
+    ///
+    /// Currently implementation is simple: just rewrite whole file, using pretty printer.
+    /// Thats why function returns error on non default option.
+    ///
+    /// TODO:
+    /// * use access.read() instead of .write(), when pretty printer became immutable.
+    ///
+    pub async fn formatting(
+        &self,
+        access: &AstAccess,
+        options: FormattingOptions,
+    ) -> Result<Option<Vec<TextEdit>>> {
+        self._client
+            .log_message(MessageType::LOG, format!("{:?}", options))
+            .await;
+
+        if options.insert_spaces != true {
+            return Err(bad_param_error("property 'insert_spaces' not true"));
+        }
+        if !options.properties.is_empty() {
+            return Err(bad_param_error("property 'properties' not empty"));
+        }
+        if let Some(_) = options.trim_trailing_whitespace {
+            return Err(bad_param_error(
+                "property 'trim_trailing_whitespace' not none",
+            ));
+        }
+        if let Some(_) = options.insert_final_newline {
+            return Err(bad_param_error("property 'insert_final_newline' not none"));
+        }
+        if let Some(_) = options.trim_final_newlines {
+            return Err(bad_param_error("property 'trim_final_newlines' not none"));
+        }
+
+        let ast = access.read();
+        let mut edit = TextEdit {
+            range: Range::new(Position::new(0, 0), Position::new(2e9 as u32, 0)),
+            new_text: String::new(),
+        };
+
+        let mut writer = PrettyPrinter::new(&mut edit.new_text).with_tab_size(options.tab_size);
+        if let Err(_) = writer.print_module(&ast) {
+            return Err(internal_error("pretty printer coudn't parse ast"));
+        }
+
+        return Ok(Some(vec![edit]));
+    }
+}
+
+impl Handler for ActionHandler {
+    fn init(&self, _: InitializeParams, capabilites: &mut ServerCapabilities) {
+        capabilites.document_formatting_provider = Some(Right(DocumentFormattingOptions {
+            work_done_progress_options: WorkDoneProgressOptions {
+                work_done_progress: Some(false),
+            },
+        }))
+    }
+}

@@ -1,9 +1,9 @@
 //! Allows fix locations as if code was properly formatted
 //!
 
-use std::io;
+use core::fmt::Write;
 
-use crate::common::pretty_printer::PrettyWriter;
+use super::mutable_pretty_printer::PrettyPrinter;
 
 use dbuf_core::ast::parsed::Module;
 use dbuf_core::location::Location;
@@ -11,9 +11,17 @@ use dbuf_core::location::Location;
 type Str = String;
 type Loc = Location;
 
+struct Sink;
+
+impl Write for Sink {
+    fn write_str(&mut self, _: &str) -> std::fmt::Result {
+        Ok(())
+    }
+}
+
 pub fn fix_locations(module: &mut Module<Loc, Str>) {
-    let mut sink = io::Sink::default();
-    let mut writer = PrettyWriter::new(&mut sink);
+    let mut sink = Sink {};
+    let mut writer = PrettyPrinter::new(&mut sink);
     writer
         .parse_module(module)
         .expect("module properly formatted");

@@ -1,8 +1,11 @@
 use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use dbuf_core::ast::parsed::Module;
+use dbuf_core::location::*;
 
-pub type Ast = Module<(), String>;
+pub type Str = String;
+pub type Loc = Location;
+pub type Ast = Module<Loc, Str>;
 
 #[derive(Debug)]
 pub struct AstAccess {

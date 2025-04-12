@@ -9,10 +9,9 @@ use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 use dbuf_core::location::*;
 
-use crate::common::ast_fix_locations::fix_locations;
+use crate::common::ast_access::{Loc, Str};
 
-type Str = String;
-type Loc = Location;
+use super::ast_fix_locations::fix_locations;
 
 /// Builder for dependencies
 pub struct DependencyBuilder {
@@ -89,6 +88,7 @@ pub struct MessageBuilder {
     fields: ConstructorBuilder,
 }
 
+#[allow(dead_code)] // Samples are too easy. There will be harder soon.
 impl MessageBuilder {
     pub fn new(name: &str) -> MessageBuilder {
         MessageBuilder {
@@ -167,10 +167,13 @@ impl EnumBranchBuilder {
         self
     }
 
-    pub fn with_constructor(&mut self, name: &str) -> Option<&mut ConstructorBuilder> {
+    pub fn with_constructor(&mut self, name: &str) -> &mut ConstructorBuilder {
         self.constructors.push(ConstructorBuilder::new());
         self.names.push(name.to_string());
-        self.constructors.last_mut()
+        if let Some(last) = self.constructors.last_mut() {
+            return last;
+        }
+        panic!("just pushed element vanished");
     }
 
     pub fn construct(self) -> EnumBranch<Loc, Str> {
@@ -199,6 +202,8 @@ pub struct EnumBuilder {
     dependencies: DependencyBuilder,
     branches: Vec<EnumBranchBuilder>,
 }
+
+#[allow(dead_code)] // Samples are too easy. There will be harder soon.
 impl EnumBuilder {
     pub fn new(name: &str) -> EnumBuilder {
         EnumBuilder {
@@ -225,9 +230,12 @@ impl EnumBuilder {
         self
     }
 
-    pub fn with_branch(&mut self) -> Option<&mut EnumBranchBuilder> {
+    pub fn with_branch(&mut self) -> &mut EnumBranchBuilder {
         self.branches.push(EnumBranchBuilder::new());
-        self.branches.last_mut()
+        if let Some(last) = self.branches.last_mut() {
+            return last;
+        }
+        panic!("just pushed element vanished!")
     }
 
     pub fn construct(self) -> Definition<Loc, Str, TypeDeclaration<Loc, Str>> {
@@ -261,14 +269,20 @@ impl AstBuilder {
         }
     }
 
-    pub fn with_message(&mut self, name: &str) -> Option<&mut MessageBuilder> {
+    pub fn with_message(&mut self, name: &str) -> &mut MessageBuilder {
         self.messages.push(MessageBuilder::new(name));
-        self.messages.last_mut()
+        if let Some(last) = self.messages.last_mut() {
+            return last;
+        }
+        panic!("just pushed element vanished");
     }
 
-    pub fn with_enum(&mut self, name: &str) -> Option<&mut EnumBuilder> {
+    pub fn with_enum(&mut self, name: &str) -> &mut EnumBuilder {
         self.enums.push(EnumBuilder::new(name));
-        self.enums.last_mut()
+        if let Some(last) = self.enums.last_mut() {
+            return last;
+        }
+        panic!("just pushed element vanished");
     }
 
     pub fn construct(self) -> Module<Loc, Str> {
