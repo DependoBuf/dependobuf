@@ -57,6 +57,14 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
+    fn write_str(&mut self, s: &mut Str) -> Result {
+        s.set_location_start(self.cursor);
+        self.cursor.character += s.len() as u32;
+        write!(self.writer, "{}", s)?;
+        s.set_location_end(self.cursor);
+        Ok(())
+    }
+
     fn write_tab(&mut self, len: usize) -> Result {
         self.cursor.character += len as u32;
         let to_write = std::iter::repeat(" ").take(len).collect::<String>();
@@ -80,7 +88,6 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
-    // TODO: somewhere here parse location for name
     fn parse_type_definition(
         &mut self,
         definition: &mut Definition<Loc, Str, TypeDeclaration<Loc, Str>>,
@@ -90,12 +97,12 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         match definition.data.body {
             TypeDefinition::Message(_) => {
                 self.write(Self::MESSAGE_TEXT)?;
-                self.write(&definition.name)?;
+                self.write_str(&mut definition.name)?;
                 self.write(" ")?;
             }
             TypeDefinition::Enum(_) => {
                 self.write(Self::ENUM_TEXT)?;
-                self.write(&definition.name)?;
+                self.write_str(&mut definition.name)?;
                 self.write(" ")?;
             }
         }
@@ -135,7 +142,6 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
-    // TODO: somewhere here parse location for name
     fn parse_dependency(
         &mut self,
         dependency: &mut Definition<Loc, Str, TypeExpression<Loc, Str>>,
@@ -143,7 +149,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         dependency.loc.start = self.cursor;
 
         self.write("(")?;
-        self.write(&dependency.name)?;
+        self.write_str(&mut dependency.name)?;
         self.write(" ")?;
         self.parse_type_expression(&mut dependency.data)?;
         self.write(")")?;
@@ -184,10 +190,10 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             PatternNode::Call { name, fields } => {
                 if fields.is_empty() {
                     // Assuming: variable
-                    self.write(&name)?;
+                    self.write_str(name)?;
                 } else {
                     // Assuming: constructor
-                    self.write(&name)?;
+                    self.write_str(name)?;
                     self.write("{")?;
                     // TODO: parse constructor
                     self.write("}")?;
@@ -212,7 +218,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         self.write_tab(8)?;
         constructor.loc.start = self.cursor;
 
-        self.write(&constructor.name)?;
+        self.write_str(&mut constructor.name)?;
         self.write(" {")?;
         self.new_line_if(!constructor.data.is_empty())?;
         self.parse_constructor(&mut constructor.data, 12)?;
@@ -224,7 +230,6 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
-    // TODO: somewhere here parse location for name
     fn parse_constructor(
         &mut self,
         constructor: &mut ConstructorBody<Loc, Str>,
@@ -237,8 +242,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             }
             self.write_tab(offset as usize)?;
             definition.loc.start = self.cursor;
-
-            self.write(&definition.name)?;
+            self.write_str(&mut definition.name)?;
             self.write(" ")?;
             self.parse_type_expression(&mut definition.data)?;
             self.write(";")?;
@@ -255,7 +259,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         match &mut type_expression.node {
             ExpressionNode::FunCall { fun, args } => {
                 self.cursor.character += fun.len() as u32;
-                self.write(&fun)?;
+                self.write_str(fun)?;
 
                 let mut modified = vec![];
                 for expr in args.iter() {
@@ -287,10 +291,10 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             ExpressionNode::FunCall { fun, args } => {
                 if args.is_empty() {
                     // Assuming: variable cal
-                    self.write(&fun)?;
+                    self.write_str(fun)?;
                 } else {
                     // Assuming: constructor
-                    self.write(&fun)?;
+                    self.write_str(fun)?;
                     self.write("{")?;
                     // TODO: parse constructor
                     self.write("}")?;
@@ -380,7 +384,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                 *expr = Rc::new(copy);
 
                 self.write(".")?;
-                self.write(&field)?;
+                self.write_str(field)?;
             }
             UnaryOp::Minus => {
                 self.write("-(")?;

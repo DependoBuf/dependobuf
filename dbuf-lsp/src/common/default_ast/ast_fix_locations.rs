@@ -6,10 +6,8 @@ use core::fmt::Write;
 use super::mutable_pretty_printer::PrettyPrinter;
 
 use dbuf_core::ast::parsed::Module;
-use dbuf_core::location::Location;
 
-type Str = String;
-type Loc = Location;
+use crate::common::ast_access::{Loc, Str};
 
 struct Sink;
 

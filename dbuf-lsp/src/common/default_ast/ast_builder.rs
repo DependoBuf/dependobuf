@@ -9,7 +9,7 @@ use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 use dbuf_core::location::*;
 
-use crate::common::ast_access::{Loc, Str};
+use crate::common::ast_access::{ConvertibleToString, Loc, Str};
 
 use super::ast_fix_locations::fix_locations;
 
@@ -32,11 +32,11 @@ impl DependencyBuilder {
     ) -> &mut Self {
         self.dependencies.push(Definition {
             loc: Location::default(),
-            name: name.to_string(),
+            name: name.to_loc_string(),
             data: Expression {
                 loc: Location::default(),
                 node: ExpressionNode::FunCall {
-                    fun: dep_type.to_string(),
+                    fun: dep_type.to_loc_string(),
                     args,
                 },
             },
@@ -65,11 +65,11 @@ impl ConstructorBuilder {
     ) -> &mut Self {
         self.fields.push(Definition {
             loc: Location::default(),
-            name: name.to_string(),
+            name: name.to_loc_string(),
             data: Expression {
                 loc: Location::default(),
                 node: ExpressionNode::FunCall {
-                    fun: field_type.to_string(),
+                    fun: field_type.to_loc_string(),
                     args,
                 },
             },
@@ -92,7 +92,7 @@ pub struct MessageBuilder {
 impl MessageBuilder {
     pub fn new(name: &str) -> MessageBuilder {
         MessageBuilder {
-            name: name.to_string(),
+            name: name.to_loc_string(),
             dependencies: DependencyBuilder::new(),
             fields: ConstructorBuilder::new(),
         }
@@ -169,7 +169,7 @@ impl EnumBranchBuilder {
 
     pub fn with_constructor(&mut self, name: &str) -> &mut ConstructorBuilder {
         self.constructors.push(ConstructorBuilder::new());
-        self.names.push(name.to_string());
+        self.names.push(name.to_loc_string());
         if let Some(last) = self.constructors.last_mut() {
             return last;
         }
@@ -207,7 +207,7 @@ pub struct EnumBuilder {
 impl EnumBuilder {
     pub fn new(name: &str) -> EnumBuilder {
         EnumBuilder {
-            name: name.to_string(),
+            name: name.to_loc_string(),
             dependencies: DependencyBuilder::new(),
             branches: vec![],
         }

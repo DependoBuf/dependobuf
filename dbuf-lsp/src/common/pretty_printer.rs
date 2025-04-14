@@ -9,9 +9,8 @@ use std::fmt::{Result, Write};
 use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
-use dbuf_core::location::*;
 
-use super::ast_access::{Loc, Str};
+use super::ast_access::{Loc, Position, Str};
 
 // TODO:
 //   * use pretty lib (?)
@@ -56,9 +55,10 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
-    fn write(&mut self, s: &str) -> Result {
-        self.cursor.character += s.len() as u32;
-        write!(self.writer, "{}", s)?;
+    fn write(&mut self, s: impl AsRef<str>) -> Result {
+        let r = s.as_ref();
+        self.cursor.character += r.len() as u32;
+        write!(self.writer, "{}", r)?;
         Ok(())
     }
 

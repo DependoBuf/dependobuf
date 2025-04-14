@@ -1,7 +1,7 @@
 //! Module aims to help formatting code.
 //!
 //! Module should help with such requests:
-//! * `textDocument/formatting`
+//! * `textDocument/formatting` (✓)
 //! * `textDocument/rename`
 //! * `textDocument/prepareRename`
 //!
@@ -46,8 +46,6 @@ impl ActionHandler {
     /// Currently implementation is simple: just rewrite whole file, using pretty printer.
     /// Thats why function returns error on non default option.
     ///
-    /// TODO:
-    /// * use access.read() instead of .write(), when pretty printer became immutable.
     ///
     pub async fn formatting(
         &self,
@@ -84,7 +82,7 @@ impl ActionHandler {
 
         let mut writer = PrettyPrinter::new(&mut edit.new_text).with_tab_size(options.tab_size);
         if let Err(_) = writer.print_module(&ast) {
-            return Err(internal_error("pretty printer coudn't parse ast"));
+            return Err(internal_error("pretty printer couldn't parse ast"));
         }
 
         return Ok(Some(vec![edit]));

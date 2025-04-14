@@ -1,9 +1,14 @@
+mod location;
+mod string;
+
 use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use dbuf_core::ast::parsed::Module;
-use dbuf_core::location::*;
 
-pub type Str = String;
+pub use location::*;
+pub use string::*;
+
+pub type Str = LocString;
 pub type Loc = Location;
 pub type Ast = Module<Loc, Str>;
 
