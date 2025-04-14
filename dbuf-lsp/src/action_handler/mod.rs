@@ -7,6 +7,7 @@
 //!
 //! Also it might be good idea to handle such requests:
 //! * `inlayHint/resolve`
+//! * `textDocument/selectionRange`
 //! * `textDocument/foldingRange`
 //! * `textDocument/codeAction`
 //! * `codeAction/resolve`
@@ -26,7 +27,7 @@ use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
 use tower_lsp::Client;
 
-use crate::common::ast_access::AstAccess;
+use crate::common::ast_access::WorkspaceAccess;
 use crate::common::errors::*;
 use crate::common::handler::Handler;
 use crate::common::pretty_printer::PrettyPrinter;
@@ -49,8 +50,9 @@ impl ActionHandler {
     ///
     pub async fn formatting(
         &self,
-        access: &AstAccess,
+        access: &WorkspaceAccess,
         options: FormattingOptions,
+        document: &Url,
     ) -> Result<Option<Vec<TextEdit>>> {
         self._client
             .log_message(MessageType::LOG, format!("{:?}", options))
@@ -73,15 +75,15 @@ impl ActionHandler {
         if let Some(_) = options.trim_final_newlines {
             return Err(bad_param_error("property 'trim_final_newlines' not none"));
         }
-
-        let ast = access.read();
+        let file = access.read(&document);
+        let ast = file.get_parsed();
         let mut edit = TextEdit {
             range: Range::new(Position::new(0, 0), Position::new(2e9 as u32, 0)),
             new_text: String::new(),
         };
 
         let mut writer = PrettyPrinter::new(&mut edit.new_text).with_tab_size(options.tab_size);
-        if let Err(_) = writer.print_module(&ast) {
+        if let Err(_) = writer.print_ast(&ast) {
             return Err(internal_error("pretty printer couldn't parse ast"));
         }
 

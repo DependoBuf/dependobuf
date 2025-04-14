@@ -2,12 +2,12 @@
 //!
 
 use super::ast_builder::AstBuilder;
-use crate::common::ast_access::Ast;
+use crate::common::ast_access::ParsedAst;
 
 use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::*;
 
-pub fn default_ast() -> Ast {
+pub fn default_ast() -> ParsedAst {
     let mut builder = AstBuilder::new();
 
     builder

@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
-use tower_lsp::jsonrpc::Result;
+use tower_lsp::jsonrpc::{Error, Result};
+use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
-use dbuf_lsp::common::ast_access::AstAccess;
-use dbuf_lsp::common::default_ast::default_ast;
-use dbuf_lsp::common::pretty_printer::PrettyPrinter;
+use dbuf_lsp::common::ast_access::WorkspaceAccess;
 
 use dbuf_lsp::action_handler::ActionHandler;
 use dbuf_lsp::common::handler::Handler;
@@ -14,7 +13,7 @@ use dbuf_lsp::common::handler::Handler;
 #[derive(Debug)]
 struct Backend {
     client: Arc<Client>,
-    ast: AstAccess,
+    workspace: WorkspaceAccess,
     action_handler: ActionHandler,
 }
 
@@ -23,7 +22,7 @@ impl Backend {
         let client_arc = Arc::new(client);
         Backend {
             client: client_arc.clone(),
-            ast: AstAccess::new(),
+            workspace: WorkspaceAccess::new(),
             action_handler: ActionHandler::new(client_arc),
         }
     }
@@ -32,17 +31,23 @@ impl Backend {
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, init: InitializeParams) -> Result<InitializeResult> {
-        let mut ast = self.ast.write();
-        *ast = default_ast();
-
         let mut capabilities = ServerCapabilities::default();
-        capabilities.text_document_sync =
-            Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL));
+        capabilities.text_document_sync = Some(TextDocumentSyncCapability::Options(
+            TextDocumentSyncOptions {
+                open_close: Some(true),
+                change: Some(TextDocumentSyncKind::FULL),
+                will_save: Some(false),
+                will_save_wait_until: Some(false),
+                save: Some(TextDocumentSyncSaveOptions::Supported(false)),
+            },
+        ));
 
         self.action_handler.init(init, &mut capabilities);
 
-        capabilities.hover_provider = Some(HoverProviderCapability::Simple(true));
-        capabilities.completion_provider = Some(CompletionOptions::default());
+        capabilities.rename_provider = Some(Left(true));
+
+        // capabilities.hover_provider = Some(HoverProviderCapability::Simple(true));
+        // capabilities.completion_provider = Some(CompletionOptions::default());
 
         eprintln!("init");
         Ok(InitializeResult {
@@ -52,7 +57,6 @@ impl LanguageServer for Backend {
     }
 
     async fn initialized(&self, _: InitializedParams) {
-        eprintln!("inited");
         self.client
             .log_message(MessageType::INFO, "server initialized!")
             .await;
@@ -63,75 +67,73 @@ impl LanguageServer for Backend {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        // eprintln!("did open: {:?}", params);
-        // TODO: read params.text_document.text, containing full document text and build AST
-        let _ = params;
-        eprintln!("WARN: did open is not fully implemented")
+        let doc = params.text_document;
+        self.workspace.open(doc.uri, doc.version, &doc.text);
+
+        self.client
+            .log_message(MessageType::INFO, "file opened")
+            .await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
-        // eprintln!("did change: {:?}", params);
-        // TODO: read params.content_changes[0].text, containing full document text and build AST
-        let _ = params;
-        let mut _ast = self.ast.write();
-        eprintln!("WARN: did change is not fully implemented")
+        if params.content_changes.len() != 1 {
+            self.client
+                .log_message(MessageType::ERROR, "file change is full")
+                .await;
+            panic!("bad param for did change");
+        }
+
+        let doc = params.text_document;
+        let new_text = &params.content_changes[0].text;
+
+        self.workspace.change(&doc.uri, doc.version, new_text);
+
+        self.client
+            .log_message(MessageType::INFO, "file changed")
+            .await;
     }
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
-        // eprintln!("did close: {:?}", params);
-        // TODO: remove existing AST
-        let _ = params;
-        let mut _ast = self.ast.write();
-        eprintln!("WARN: did close is not fully implemented");
+        let doc = params.text_document;
+        self.workspace.close(&doc.uri);
+
+        self.client
+            .log_message(MessageType::INFO, "file closed")
+            .await;
     }
 
-    async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
+    async fn completion(&self, _: CompletionParams) -> Result<Option<CompletionResponse>> {
         eprintln!("WARN: completition is not fully implemented");
-        let _ = params;
-        let _ast = self.ast.read();
-        eprintln!("ast: {:?}", _ast);
-        Ok(Some(CompletionResponse::Array(vec![
-            CompletionItem {
-                label: "message".to_string(),
-                kind: Some(CompletionItemKind::KEYWORD),
-                detail: Some("keyword for message construction".to_string()),
-                ..CompletionItem::default()
-            },
-            CompletionItem {
-                label: "enum".to_string(),
-                kind: Some(CompletionItemKind::KEYWORD),
-                detail: Some("keyword for enum construction".to_string()),
-                ..CompletionItem::default()
-            },
-            CompletionItem::new_simple("Hello".to_string(), "Some detail".to_string()),
-            CompletionItem::new_simple("Bye".to_string(), "More detail".to_string()),
-        ])))
+        Err(Error::method_not_found())
     }
 
-    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+    async fn hover(&self, _: HoverParams) -> Result<Option<Hover>> {
         eprintln!("WARN: hover is not fully implemented");
-        let _ = params;
-        let ast = self.ast.read();
+        Err(Error::method_not_found())
+    }
 
-        let mut text = String::new();
-        let mut printer = PrettyPrinter::new(&mut text);
-        printer.print_module(&ast).expect("serialized");
-
-        let ans = Hover {
-            contents: HoverContents::Array(vec![
-                MarkedString::LanguageString(LanguageString {
-                    language: "dbuf".to_string(),
-                    value: text,
-                }),
-                MarkedString::String("explanation".to_string()),
-            ]),
-            range: None,
+    async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>> {
+        eprintln!("rename with params: {:?}", params);
+        let my_edit = TextEdit {
+            range: Range::new(Position::new(0, 0), Position::new(0, 1)),
+            new_text: "kek".to_string(),
         };
-        return Ok(Some(ans));
+        let edit = TextDocumentEdit {
+            text_document: OptionalVersionedTextDocumentIdentifier {
+                uri: params.text_document_position.text_document.uri,
+                version: None,
+            },
+            edits: vec![Left(my_edit)],
+        };
+        Ok(Some(WorkspaceEdit {
+            document_changes: Some(DocumentChanges::Edits(vec![edit])),
+            ..Default::default()
+        }))
     }
 
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
+        let uri = params.text_document.uri;
         self.action_handler
-            .formatting(&self.ast, params.options)
+            .formatting(&self.workspace, params.options, &uri)
             .await
     }
 }

@@ -10,7 +10,7 @@ use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 
-use super::ast_access::{Loc, Position, Str};
+use super::ast_access::{Loc, ParsedAst, Position, Str};
 
 // TODO:
 //   * use pretty lib (?)
@@ -72,11 +72,11 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
-    pub fn print_module(&mut self, module: &Module<Loc, Str>) -> Result {
+    pub fn print_ast(&mut self, ast: &ParsedAst) -> Result {
         self.cursor = Position::new(0, 0);
         let mut first = true;
 
-        for definition in module.iter() {
+        for definition in ast.iter() {
             if !first {
                 self.new_line()?;
                 self.new_line()?;
