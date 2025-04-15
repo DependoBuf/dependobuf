@@ -9,12 +9,14 @@ use dbuf_lsp::common::ast_access::WorkspaceAccess;
 
 use dbuf_lsp::action_handler::ActionHandler;
 use dbuf_lsp::common::handler::Handler;
+use dbuf_lsp::navigation_handler::NavigationHandler;
 
 #[derive(Debug)]
 struct Backend {
     client: Arc<Client>,
     workspace: WorkspaceAccess,
     action_handler: ActionHandler,
+    navigation_handler: NavigationHandler,
 }
 
 impl Backend {
@@ -23,7 +25,8 @@ impl Backend {
         Backend {
             client: client_arc.clone(),
             workspace: WorkspaceAccess::new(),
-            action_handler: ActionHandler::new(client_arc),
+            action_handler: ActionHandler::new(client_arc.clone()),
+            navigation_handler: NavigationHandler::new(client_arc),
         }
     }
 }
@@ -42,11 +45,10 @@ impl LanguageServer for Backend {
             },
         ));
 
-        self.action_handler.init(init, &mut capabilities);
+        self.action_handler.init(&init, &mut capabilities);
+        self.navigation_handler.init(&init, &mut capabilities);
 
-        capabilities.rename_provider = Some(Left(true));
-
-        // capabilities.hover_provider = Some(HoverProviderCapability::Simple(true));
+        // capabilities.rename_provider = Some(Left(true));
         // capabilities.completion_provider = Some(CompletionOptions::default());
 
         eprintln!("init");
@@ -106,10 +108,28 @@ impl LanguageServer for Backend {
         Err(Error::method_not_found())
     }
 
-    async fn hover(&self, _: HoverParams) -> Result<Option<Hover>> {
-        eprintln!("WARN: hover is not fully implemented");
-        Err(Error::method_not_found())
+    async fn document_highlight(
+        &self,
+        params: DocumentHighlightParams,
+    ) -> Result<Option<Vec<DocumentHighlight>>> {
+        let doc_pos = params.text_document_position_params;
+        let pos = doc_pos.position;
+        let uri = doc_pos.text_document.uri;
+
+        self.navigation_handler
+            .document_highlight(&self.workspace, pos, uri)
+            .await
     }
+
+    /*
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+        let doc_pos = params.text_document_position_params;
+        let pos= doc_pos.position;
+        let uri = doc_pos.text_document.uri;
+
+        self.navigation_handler.hover(&self.workspace, pos, uri).await
+    }
+    */
 
     async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>> {
         eprintln!("rename with params: {:?}", params);

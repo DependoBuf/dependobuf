@@ -1,17 +1,13 @@
-use std::collections::BTreeMap;
-
 use super::ElaboratedAst;
 use super::ParsedAst;
 
-use crate::common::default_ast::default_ast;
+use crate::common::default_ast::default_elaborated_ast;
+use crate::common::default_ast::default_parsed_ast;
 
-pub fn get_parsed(_: &String) -> ParsedAst {
-    default_ast()
+pub fn get_parsed(_text: &String) -> ParsedAst {
+    default_parsed_ast()
 }
 
-pub fn get_elaborated(_: &String) -> ElaboratedAst {
-    ElaboratedAst {
-        types: vec![],
-        constructors: BTreeMap::new(),
-    }
+pub fn get_elaborated(_text: &String) -> ElaboratedAst {
+    default_elaborated_ast()
 }

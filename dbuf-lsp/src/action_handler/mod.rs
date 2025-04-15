@@ -6,8 +6,9 @@
 //! * `textDocument/prepareRename`
 //!
 //! Also it might be good idea to handle such requests:
-//! * `inlayHint/resolve`
 //! * `textDocument/selectionRange`
+//! * `textDocument/inlayHint`
+//! * `inlayHint/resolve`
 //! * `textDocument/foldingRange`
 //! * `textDocument/codeAction`
 //! * `codeAction/resolve`
@@ -38,10 +39,6 @@ pub struct ActionHandler {
 }
 
 impl ActionHandler {
-    pub fn new(client: Arc<Client>) -> ActionHandler {
-        ActionHandler { _client: client }
-    }
-
     /// `textDocument/formatting` implementation.
     ///
     /// Currently implementation is simple: just rewrite whole file, using pretty printer.
@@ -55,7 +52,7 @@ impl ActionHandler {
         document: &Url,
     ) -> Result<Option<Vec<TextEdit>>> {
         self._client
-            .log_message(MessageType::LOG, format!("{:?}", options))
+            .log_message(MessageType::LOG, format!("{:#?}", options))
             .await;
 
         if options.insert_spaces != true {
@@ -75,12 +72,14 @@ impl ActionHandler {
         if let Some(_) = options.trim_final_newlines {
             return Err(bad_param_error("property 'trim_final_newlines' not none"));
         }
-        let file = access.read(&document);
-        let ast = file.get_parsed();
+
         let mut edit = TextEdit {
             range: Range::new(Position::new(0, 0), Position::new(2e9 as u32, 0)),
             new_text: String::new(),
         };
+
+        let file = access.read(&document);
+        let ast = file.get_parsed();
 
         let mut writer = PrettyPrinter::new(&mut edit.new_text).with_tab_size(options.tab_size);
         if let Err(_) = writer.print_ast(&ast) {
@@ -92,11 +91,11 @@ impl ActionHandler {
 }
 
 impl Handler for ActionHandler {
-    fn init(&self, _: InitializeParams, capabilites: &mut ServerCapabilities) {
-        capabilites.document_formatting_provider = Some(Right(DocumentFormattingOptions {
-            work_done_progress_options: WorkDoneProgressOptions {
-                work_done_progress: Some(false),
-            },
-        }))
+    fn new(client: Arc<Client>) -> ActionHandler {
+        ActionHandler { _client: client }
+    }
+
+    fn init(&self, _init: &InitializeParams, capabilites: &mut ServerCapabilities) {
+        capabilites.document_formatting_provider = Some(Left(true));
     }
 }

@@ -3,7 +3,20 @@
 
 mod ast_builder;
 mod ast_fix_locations;
-mod default_ast;
-mod mutable_pretty_printer;
+pub mod mutable_pretty_printer;
 
-pub use default_ast::default_ast;
+mod elaborated_ast_example;
+mod parsed_ast_example;
+
+use elaborated_ast_example::*;
+use parsed_ast_example::*;
+
+use super::ast_access::{ElaboratedAst, ParsedAst};
+
+pub fn default_parsed_ast() -> ParsedAst {
+    rename_parsed_ast()
+}
+
+pub fn default_elaborated_ast() -> ElaboratedAst {
+    rename_elaborated_ast()
+}

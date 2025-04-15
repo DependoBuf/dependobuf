@@ -1,3 +1,4 @@
+mod elaborated_ast;
 mod file;
 mod location;
 mod parsers;
@@ -6,11 +7,11 @@ mod string;
 use dashmap::DashMap;
 use tower_lsp::lsp_types::Url;
 
-use dbuf_core::ast::elaborated;
 use dbuf_core::ast::parsed;
 
 use parsers::*;
 
+pub use elaborated_ast::ElaboratedHelper;
 pub use file::*;
 pub use location::*;
 pub use string::*;
@@ -18,7 +19,7 @@ pub use string::*;
 pub type Str = LocString;
 pub type Loc = Location;
 pub type ParsedAst = parsed::Module<Loc, Str>;
-pub type ElaboratedAst = elaborated::Module<String>;
+pub use elaborated_ast::ElaboratedAst;
 
 #[derive(Debug)]
 pub struct WorkspaceAccess {

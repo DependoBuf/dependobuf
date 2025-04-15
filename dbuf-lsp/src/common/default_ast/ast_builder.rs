@@ -3,6 +3,8 @@
 //! Currently allows only one module
 //!
 
+#![allow(dead_code)]
+
 use std::rc::Rc;
 
 use dbuf_core::ast::parsed::definition::*;

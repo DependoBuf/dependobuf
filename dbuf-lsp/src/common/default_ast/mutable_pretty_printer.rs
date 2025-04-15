@@ -258,7 +258,6 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
         match &mut type_expression.node {
             ExpressionNode::FunCall { fun, args } => {
-                self.cursor.character += fun.len() as u32;
                 self.write_str(fun)?;
 
                 let mut modified = vec![];

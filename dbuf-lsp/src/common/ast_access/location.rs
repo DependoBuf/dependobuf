@@ -11,6 +11,7 @@ pub trait PositionHelpers {
 pub trait LocationHelpers {
     fn new_empty() -> Self;
     fn to_lsp(&self) -> Range;
+    fn contains(&self, p: &lsp_types::Position) -> bool;
 }
 
 impl PositionHelpers for Position {
@@ -32,5 +33,21 @@ impl LocationHelpers for Location {
             start: self.start.to_lsp(),
             end: self.end.to_lsp(),
         }
+    }
+
+    fn contains(&self, p: &lsp_types::Position) -> bool {
+        if self.start.line > p.line {
+            return false;
+        }
+        if self.start.line == p.line && self.start.character > p.character {
+            return false;
+        }
+        if self.end.line < p.line {
+            return false;
+        }
+        if self.end.line > p.line {
+            return true;
+        }
+        return p.character <= self.end.character;
     }
 }

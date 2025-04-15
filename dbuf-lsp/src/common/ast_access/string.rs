@@ -22,6 +22,9 @@ impl LocString {
     pub fn len(&self) -> usize {
         self.string.len()
     }
+    pub fn get_location(&self) -> Location {
+        self.location
+    }
     pub fn set_location_start(&mut self, start: Position) {
         self.location.start = start;
     }
