@@ -20,11 +20,11 @@ struct FindImpl<'a> {
     target: &'a Symbol,
     t: String,
     constructor: String,
-    ans: Vec<Range>
+    ans: Vec<Range>,
 }
 
 pub fn find_symbols_impl(navigator: &Navigator, symbol: &Symbol) -> Vec<Range> {
-    let mut implementation = FindImpl{
+    let mut implementation = FindImpl {
         navigator,
         target: &symbol,
         t: String::new(),
@@ -42,7 +42,7 @@ impl FindImpl<'_> {
         if &self.constructor == "" {
             self.constructor = self.t.clone();
             return;
-            /* 
+            /*
             eprintln!("type is {:?}", self.t);
             let t = &self.t;
             let ctr_name = self
@@ -60,11 +60,7 @@ impl FindImpl<'_> {
         self.setup_constructor_if_need();
 
         let ctr_name = &self.constructor;
-        let ctr = self
-            .navigator
-            .elaborated
-            .constructors
-            .get(ctr_name);
+        let ctr = self.navigator.elaborated.constructors.get(ctr_name);
 
         if let Some(ctr) = ctr {
             for (i, te) in ctr.implicits.iter() {
@@ -107,7 +103,6 @@ impl FindImpl<'_> {
         }
         panic!("constructor {:?} not found in elaborated ast", ctr_name);
     }
-    
 
     fn check_add(&mut self, str: &Str) {
         match self.target {
@@ -196,24 +191,20 @@ impl FindImpl<'_> {
 
     fn find_in_expr(&mut self, e: &Expression<Loc, Str>) {
         match &e.node {
-            ExpressionNode::OpCall(op) => {
-                match op {
-                    OpCall::Binary(_, lhs, rhs) => {
-                        self.find_in_expr(lhs);
+            ExpressionNode::OpCall(op) => match op {
+                OpCall::Binary(_, lhs, rhs) => {
+                    self.find_in_expr(lhs);
+                    self.find_in_expr(rhs);
+                }
+                OpCall::Unary(op, rhs) => {
+                    if let UnaryOp::Access(_) = op {
+                        self.find_in_access_chain(e);
+                    } else {
                         self.find_in_expr(rhs);
                     }
-                    OpCall::Unary(op, rhs) => {
-                        if let UnaryOp::Access(_) = op {
-                            self.find_in_access_chain(e);
-                        }
-                        else {
-                            self.find_in_expr(rhs);
-                        }
-                    }
-                    OpCall::Literal(_) => {
-                    }
                 }
-            }
+                OpCall::Literal(_) => {}
+            },
             ExpressionNode::FunCall { fun, args } => {
                 if !args.is_empty() {
                     panic!("construcors are not supported");
@@ -231,7 +222,7 @@ impl FindImpl<'_> {
         let old_constuctor = self.constructor.clone();
 
         self.find_in_access_chain_rec(e);
-        
+
         self.t = old_t;
         self.constructor = old_constuctor;
     }

@@ -42,7 +42,7 @@ pub struct NavigationHandler {
 
 impl NavigationHandler {
     /// `textDocument/documentHighlight` implementation
-    /// 
+    ///
     pub async fn document_highlight(
         &self,
         access: &WorkspaceAccess,
@@ -70,7 +70,6 @@ impl NavigationHandler {
             )
             .await;
 
-
         let mut ans = Vec::new();
         ans.reserve(ranges.len());
         for r in ranges.iter() {
@@ -81,11 +80,8 @@ impl NavigationHandler {
         }
 
         self._client
-        .log_message(
-            MessageType::INFO,
-            format!("ans: {:#?}", &ans),
-        )
-        .await;
+            .log_message(MessageType::INFO, format!("ans: {:#?}", &ans))
+            .await;
 
         Ok(Some(ans))
     }

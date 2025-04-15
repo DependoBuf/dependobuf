@@ -48,11 +48,7 @@ impl GetImpl<'_> {
     }
     fn is_field(&self, field: &Str) -> bool {
         let ctr_name = &self.constructor;
-        let ctr = self
-            .navigator
-            .elaborated
-            .constructors
-            .get(ctr_name);
+        let ctr = self.navigator.elaborated.constructors.get(ctr_name);
         if let Some(ctr) = ctr {
             for (f, _) in ctr.fields.iter() {
                 if f != field.as_ref() {
@@ -64,7 +60,6 @@ impl GetImpl<'_> {
         }
         panic!("constructor {:?} not found in elaborated ast", field);
     }
-
 
     fn setup_constructor_if_need(&mut self) {
         if &self.constructor == "" {
@@ -83,11 +78,7 @@ impl GetImpl<'_> {
         self.setup_constructor_if_need();
 
         let ctr_name = &self.constructor;
-        let ctr = self
-            .navigator
-            .elaborated
-            .constructors
-            .get(ctr_name);
+        let ctr = self.navigator.elaborated.constructors.get(ctr_name);
 
         if let Some(ctr) = ctr {
             for (i, te) in ctr.implicits.iter() {

@@ -8,8 +8,8 @@ use tower_lsp::lsp_types::{Position, Range};
 
 use crate::common::ast_access::{ElaboratedAst, ParsedAst};
 
-use indentify::get_symbol_impl;
 use find::find_symbols_impl;
+use indentify::get_symbol_impl;
 
 type Str = String;
 
