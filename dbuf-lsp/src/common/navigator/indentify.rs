@@ -68,7 +68,6 @@ impl GetImpl<'_> {
                 .navigator
                 .elaborated
                 .get_any_constructor(t.as_ref())
-                .take()
                 .expect("type is constructable");
             self.constructor = ctr_name.to_owned();
         }

@@ -19,7 +19,6 @@ use tower_lsp::Client;
 
 use crate::common::handler::Handler;
 
-#[derive(Debug)]
 pub struct CompletitionHandler {
     _client: Arc<Client>,
 }

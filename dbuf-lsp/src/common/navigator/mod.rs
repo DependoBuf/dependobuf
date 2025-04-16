@@ -13,7 +13,7 @@ use indentify::get_symbol_impl;
 
 type Str = String;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Symbol {
     Type(Str),
     Dependency { t: Str, dependency: Str },

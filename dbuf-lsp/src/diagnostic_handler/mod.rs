@@ -25,7 +25,6 @@ use tower_lsp::Client;
 
 use crate::common::handler::Handler;
 
-#[derive(Debug)]
 pub struct DiagnosticHandler {
     _client: Arc<Client>,
 }

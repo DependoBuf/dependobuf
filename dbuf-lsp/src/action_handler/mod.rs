@@ -21,7 +21,9 @@
 //!
 //!
 
+use std::cell::RefCell;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::OneOf::*;
@@ -38,9 +40,18 @@ use crate::common::navigator::Navigator;
 use crate::common::navigator::Symbol;
 use crate::common::pretty_printer::PrettyPrinter;
 
-#[derive(Debug)]
+#[derive(Default)]
+struct SymbolInfo {
+    document: Option<Url>,
+    version: i32,
+    pos: Position,
+    symbol: Option<Symbol>,
+}
+
 pub struct ActionHandler {
     _client: Arc<Client>,
+
+    rename_cache: Mutex<RefCell<SymbolInfo>>,
 }
 
 impl ActionHandler {
@@ -95,10 +106,10 @@ impl ActionHandler {
 
     /// `textDocument/prepareRename` implementation.
     ///
-    /// Currently just checks if symbol can be renamed.
+    /// Currently checks if symbol can be renamed and,
+    /// if so, caches it.
     ///
     /// TODO:
-    /// * save symbol to avoid re-search in rename.
     /// * Enum + constructors support.
     ///
     pub async fn prepare_rename(
@@ -108,14 +119,25 @@ impl ActionHandler {
         document: &Url,
     ) -> Result<Option<PrepareRenameResponse>> {
         let symbol;
+        let doc_version;
         {
             let file = access.read(document);
+            doc_version = file.get_version();
+
             let navigator = Navigator::new(file.get_parsed(), file.get_elaborated());
 
             symbol = navigator.get_symbol(pos);
         }
 
         if ActionHandler::renameable_symbol(&symbol) {
+            if let Ok(cell) = self.rename_cache.lock() {
+                let mut cache = cell.borrow_mut();
+                cache.document = Some(document.to_owned());
+                cache.version = doc_version;
+                cache.pos = pos;
+                cache.symbol = Some(symbol);
+            }
+
             Ok(Some(PrepareRenameResponse::DefaultBehavior {
                 default_behavior: true,
             }))
@@ -139,7 +161,7 @@ impl ActionHandler {
         pos: Position,
         document: &Url,
     ) -> Result<Option<WorkspaceEdit>> {
-        let symbol;
+        let mut symbol = Symbol::None;
         let ranges;
         let text_document;
         {
@@ -151,7 +173,22 @@ impl ActionHandler {
             };
 
             let navigator = Navigator::new(file.get_parsed(), file.get_elaborated());
-            symbol = navigator.get_symbol(pos);
+
+            let mut cached_symbol = false;
+            if let Ok(cell) = self.rename_cache.lock() {
+                let mut last = cell.borrow_mut();
+                if let Some(url) = &last.document {
+                    if last.pos == pos && url == document && last.version == file.get_version() {
+                        cached_symbol = true;
+                        symbol = last.symbol.take().expect("added when add url");
+                        last.document.take();
+                    }
+                }
+            }
+
+            if !cached_symbol {
+                symbol = navigator.get_symbol(pos);
+            }
 
             ActionHandler::renameable_to_symbol(&symbol, &new_name, file.get_elaborated())?;
 
@@ -276,7 +313,10 @@ impl ActionHandler {
 
 impl Handler for ActionHandler {
     fn new(client: Arc<Client>) -> ActionHandler {
-        ActionHandler { _client: client }
+        ActionHandler {
+            _client: client,
+            rename_cache: Mutex::new(RefCell::new(SymbolInfo::default())),
+        }
     }
 
     fn init(&self, _init: &InitializeParams, capabilites: &mut ServerCapabilities) {

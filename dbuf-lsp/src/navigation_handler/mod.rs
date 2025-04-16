@@ -35,7 +35,6 @@ use crate::common::handler::Handler;
 
 use crate::common::navigator::Navigator;
 
-#[derive(Debug)]
 pub struct NavigationHandler {
     _client: Arc<Client>,
 }

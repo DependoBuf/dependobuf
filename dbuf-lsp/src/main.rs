@@ -12,7 +12,6 @@ use dbuf_lsp::action_handler::ActionHandler;
 use dbuf_lsp::common::handler::Handler;
 use dbuf_lsp::navigation_handler::NavigationHandler;
 
-#[derive(Debug)]
 struct Backend {
     client: Arc<Client>,
     workspace: WorkspaceAccess,
