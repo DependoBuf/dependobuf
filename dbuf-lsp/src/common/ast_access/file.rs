@@ -28,6 +28,9 @@ impl File {
     pub fn get_elaborated(&self) -> &ElaboratedAst {
         &self.elaborated_ast
     }
+    pub fn get_version(&self) -> i32 {
+        self.version
+    }
 
     pub fn set_ast(
         &mut self,

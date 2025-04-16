@@ -161,7 +161,7 @@ pub fn rename_elaborated_ast() -> ElaboratedAst {
                     ],
                 ),
             ],
-            result_type: type_expr("M2", &[var_expr("d1")]),
+            result_type: type_expr("M3", &[var_expr("d1")]),
         },
     );
 

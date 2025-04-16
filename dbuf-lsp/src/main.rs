@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
-use tower_lsp::jsonrpc::{Error, Result};
-use tower_lsp::lsp_types::OneOf::*;
+use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
@@ -48,7 +47,6 @@ impl LanguageServer for Backend {
         self.action_handler.init(&init, &mut capabilities);
         self.navigation_handler.init(&init, &mut capabilities);
 
-        // capabilities.rename_provider = Some(Left(true));
         // capabilities.completion_provider = Some(CompletionOptions::default());
 
         eprintln!("init");
@@ -80,7 +78,7 @@ impl LanguageServer for Backend {
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         if params.content_changes.len() != 1 {
             self.client
-                .log_message(MessageType::ERROR, "file change is full")
+                .log_message(MessageType::ERROR, "file change is not full")
                 .await;
             panic!("bad param for did change");
         }
@@ -101,11 +99,6 @@ impl LanguageServer for Backend {
         self.client
             .log_message(MessageType::INFO, "file closed")
             .await;
-    }
-
-    async fn completion(&self, _: CompletionParams) -> Result<Option<CompletionResponse>> {
-        eprintln!("WARN: completition is not fully implemented");
-        Err(Error::method_not_found())
     }
 
     async fn document_highlight(
@@ -131,23 +124,26 @@ impl LanguageServer for Backend {
     }
     */
 
+    async fn prepare_rename(
+        &self,
+        params: TextDocumentPositionParams,
+    ) -> Result<Option<PrepareRenameResponse>> {
+        let pos = params.position;
+        let uri = params.text_document.uri;
+
+        self.action_handler
+            .prepare_rename(&self.workspace, pos, &uri)
+            .await
+    }
+
     async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>> {
-        eprintln!("rename with params: {:?}", params);
-        let my_edit = TextEdit {
-            range: Range::new(Position::new(0, 0), Position::new(0, 1)),
-            new_text: "kek".to_string(),
-        };
-        let edit = TextDocumentEdit {
-            text_document: OptionalVersionedTextDocumentIdentifier {
-                uri: params.text_document_position.text_document.uri,
-                version: None,
-            },
-            edits: vec![Left(my_edit)],
-        };
-        Ok(Some(WorkspaceEdit {
-            document_changes: Some(DocumentChanges::Edits(vec![edit])),
-            ..Default::default()
-        }))
+        let doc_pos = params.text_document_position;
+        let pos = doc_pos.position;
+        let uri = doc_pos.text_document.uri;
+
+        self.action_handler
+            .rename(&self.workspace, params.new_name, pos, &uri)
+            .await
     }
 
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
