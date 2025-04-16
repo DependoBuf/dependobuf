@@ -3,8 +3,10 @@
 
 mod find_definitions;
 mod find_symbols;
+mod find_type;
 mod indentify;
 
+use find_type::find_type_impl;
 use tower_lsp::lsp_types::{Position, Range};
 
 use crate::common::ast_access::{ElaboratedAst, File, ParsedAst};
@@ -50,5 +52,9 @@ impl Navigator<'_> {
 
     pub fn find_definition(&self, symbol: &Symbol) -> Option<Range> {
         find_definition_impl(self, symbol)
+    }
+
+    pub fn find_type(&self, symbol: &Symbol) -> Symbol {
+        find_type_impl(self, symbol)
     }
 }

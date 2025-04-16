@@ -33,10 +33,9 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
             }
         }
         Symbol::Field { constructor, field } => {
-            let t = navigator.elaborated.get_constructor_type(&constructor);
-            let type_name;
-            match t {
-                Some(t) => type_name = t,
+            let t = navigator.elaborated.get_constructor_type(constructor);
+            let type_name = match t {
+                Some(t) => t,
                 None => return None,
             };
 

@@ -35,9 +35,7 @@ use tower_lsp::Client;
 use crate::common::ast_access::WorkspaceAccess;
 use crate::common::handler::Handler;
 
-use crate::common::navigator;
 use crate::common::navigator::Navigator;
-use crate::common::navigator::Symbol;
 
 pub struct NavigationHandler {
     _client: Arc<Client>,
@@ -90,21 +88,9 @@ impl NavigationHandler {
             let navigator = Navigator::for_file(&file);
 
             let symbol = navigator.get_symbol(pos);
-            let matched = match symbol {
-                Symbol::None => Symbol::None,
-                Symbol::Type(t) => Symbol::Type(t),
-                Symbol::Dependency {
-                    t,
-                    dependency: _assert_object_safe,
-                } => Symbol::Type(t),
-                Symbol::Field {
-                    constructor,
-                    field: _,
-                } => Symbol::Constructor(constructor),
-                Symbol::Constructor(ctr) => Symbol::Constructor(ctr),
-            };
+            let t = navigator.find_type(&symbol);
 
-            range = navigator.find_definition(&matched);
+            range = navigator.find_definition(&t);
         }
 
         match range {
@@ -131,7 +117,7 @@ impl NavigationHandler {
         let ranges;
         {
             let file = access.read(&document);
-            let navigator = Navigator::new(file.get_parsed(), file.get_elaborated());
+            let navigator = Navigator::for_file(&file);
 
             let symbol = navigator.get_symbol(pos);
             ranges = navigator.find_symbols(&symbol);
@@ -159,7 +145,7 @@ impl NavigationHandler {
         let ranges;
         {
             let file = access.read(&document);
-            let navigator = Navigator::new(file.get_parsed(), file.get_elaborated());
+            let navigator = Navigator::for_file(&file);
 
             let symbol = navigator.get_symbol(pos);
             ranges = navigator.find_symbols(&symbol);

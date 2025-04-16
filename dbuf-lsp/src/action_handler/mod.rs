@@ -124,7 +124,7 @@ impl ActionHandler {
             let file = access.read(document);
             doc_version = file.get_version();
 
-            let navigator = Navigator::new(file.get_parsed(), file.get_elaborated());
+            let navigator = Navigator::for_file(&file);
 
             symbol = navigator.get_symbol(pos);
         }
@@ -172,7 +172,7 @@ impl ActionHandler {
                 version: Some(file.get_version()),
             };
 
-            let navigator = Navigator::new(file.get_parsed(), file.get_elaborated());
+            let navigator = Navigator::for_file(&file);
 
             let mut cached_symbol = false;
             if let Ok(cell) = self.rename_cache.lock() {
