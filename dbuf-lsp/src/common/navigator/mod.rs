@@ -1,14 +1,16 @@
 //! Helps find all instances of smth
 //!
 
-mod find;
+mod find_definitions;
+mod find_symbols;
 mod indentify;
 
 use tower_lsp::lsp_types::{Position, Range};
 
-use crate::common::ast_access::{ElaboratedAst, ParsedAst};
+use crate::common::ast_access::{ElaboratedAst, File, ParsedAst};
 
-use find::find_symbols_impl;
+use find_definitions::find_definition_impl;
+use find_symbols::find_symbols_impl;
 use indentify::get_symbol_impl;
 
 type Str = String;
@@ -31,6 +33,12 @@ impl Navigator<'_> {
     pub fn new<'a>(parsed: &'a ParsedAst, elaborated: &'a ElaboratedAst) -> Navigator<'a> {
         Navigator { parsed, elaborated }
     }
+    pub fn for_file(file: &File) -> Navigator {
+        Navigator {
+            parsed: file.get_parsed(),
+            elaborated: file.get_elaborated(),
+        }
+    }
 
     pub fn get_symbol(&self, pos: Position) -> Symbol {
         get_symbol_impl(self, pos)
@@ -38,5 +46,9 @@ impl Navigator<'_> {
 
     pub fn find_symbols(&self, symbol: &Symbol) -> Vec<Range> {
         find_symbols_impl(self, symbol)
+    }
+
+    pub fn find_definition(&self, symbol: &Symbol) -> Option<Range> {
+        find_definition_impl(self, symbol)
     }
 }

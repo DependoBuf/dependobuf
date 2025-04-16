@@ -3,6 +3,7 @@ use std::sync::Arc;
 use dbuf_lsp::completion_handler::CompletitionHandler;
 use dbuf_lsp::diagnostic_handler::DiagnosticHandler;
 use tower_lsp::jsonrpc::Result;
+use tower_lsp::lsp_types::request::*;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
@@ -107,6 +108,42 @@ impl LanguageServer for Backend {
             .await;
     }
 
+    async fn goto_definition(
+        &self,
+        params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        let doc_pos = params.text_document_position_params;
+        let pos = doc_pos.position;
+        let uri = doc_pos.text_document.uri;
+
+        self.navigation_handler
+            .goto_definition(&self.workspace, pos, uri)
+            .await
+    }
+
+    async fn goto_type_definition(
+        &self,
+        params: GotoTypeDefinitionParams,
+    ) -> Result<Option<GotoTypeDefinitionResponse>> {
+        let doc_pos = params.text_document_position_params;
+        let pos = doc_pos.position;
+        let uri = doc_pos.text_document.uri;
+
+        self.navigation_handler
+            .goto_type_definition(&self.workspace, pos, uri)
+            .await
+    }
+
+    async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
+        let doc_pos = params.text_document_position;
+        let pos = doc_pos.position;
+        let uri = doc_pos.text_document.uri;
+
+        self.navigation_handler
+            .references(&self.workspace, pos, uri)
+            .await
+    }
+
     async fn document_highlight(
         &self,
         params: DocumentHighlightParams,
@@ -130,6 +167,13 @@ impl LanguageServer for Backend {
     }
     */
 
+    async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
+        let uri = params.text_document.uri;
+        self.action_handler
+            .formatting(&self.workspace, params.options, &uri)
+            .await
+    }
+
     async fn prepare_rename(
         &self,
         params: TextDocumentPositionParams,
@@ -149,13 +193,6 @@ impl LanguageServer for Backend {
 
         self.action_handler
             .rename(&self.workspace, params.new_name, pos, &uri)
-            .await
-    }
-
-    async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
-        let uri = params.text_document.uri;
-        self.action_handler
-            .formatting(&self.workspace, params.options, &uri)
             .await
     }
 }
