@@ -202,6 +202,7 @@ impl NavigationHandler {
                 };
 
                 strings.push(MarkedString::LanguageString(ls2));
+                strings.push(MarkedString::String(format!("dependency of {}", t)));
             }
             crate::common::navigator::Symbol::Field { constructor, field } => {
                 let type_name = file.get_elaborated().get_constructor_type(&constructor);
@@ -240,6 +241,7 @@ impl NavigationHandler {
                     };
 
                     strings.push(MarkedString::LanguageString(ls3));
+                    strings.push(MarkedString::String(format!("field of {}", constructor)));
                 }
             }
             crate::common::navigator::Symbol::Constructor(_) => {} // Not implemented
