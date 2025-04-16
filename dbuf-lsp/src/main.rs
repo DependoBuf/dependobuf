@@ -144,6 +144,16 @@ impl LanguageServer for Backend {
             .await
     }
 
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+        let doc_pos = params.text_document_position_params;
+        let pos = doc_pos.position;
+        let uri = doc_pos.text_document.uri;
+
+        self.navigation_handler
+            .hover(&self.workspace, pos, uri)
+            .await
+    }
+
     async fn document_highlight(
         &self,
         params: DocumentHighlightParams,
@@ -156,16 +166,6 @@ impl LanguageServer for Backend {
             .document_highlight(&self.workspace, pos, uri)
             .await
     }
-
-    /*
-    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
-        let doc_pos = params.text_document_position_params;
-        let pos= doc_pos.position;
-        let uri = doc_pos.text_document.uri;
-
-        self.navigation_handler.hover(&self.workspace, pos, uri).await
-    }
-    */
 
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
         let uri = params.text_document.uri;

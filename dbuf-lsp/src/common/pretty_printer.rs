@@ -22,6 +22,8 @@ pub struct PrettyPrinter<'a, W: Write> {
     cursor: Position,
     writer: &'a mut W,
     tab_size: u32,
+    header_only: bool,
+    with_dependencies: bool,
 }
 
 impl<'a, W: Write> PrettyPrinter<'a, W> {
@@ -33,11 +35,23 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             cursor: Position::new(0, 0),
             writer,
             tab_size: 4,
+            header_only: false,
+            with_dependencies: true,
         }
     }
 
     pub fn with_tab_size(mut self, tab_size: u32) -> Self {
         self.tab_size = tab_size;
+        self
+    }
+
+    pub fn with_header_only(mut self) -> Self {
+        self.header_only = true;
+        self
+    }
+
+    pub fn without_dependencies(mut self) -> Self {
+        self.with_dependencies = false;
         self
     }
 
@@ -62,6 +76,13 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
+    fn write_if(&mut self, predicate: bool, s: impl AsRef<str>) -> Result {
+        if predicate {
+            self.write(s)?;
+        }
+        Ok(())
+    }
+
     fn write_tabs(&mut self, tab_count: u32) -> Result {
         let spaces = self.tab_size * tab_count;
         self.cursor.character += spaces;
@@ -71,7 +92,6 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     }
 
     pub fn print_ast(&mut self, ast: &ParsedAst) -> Result {
-        self.cursor = Position::new(0, 0);
         let mut first = true;
 
         for definition in ast.iter() {
@@ -86,6 +106,77 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
+    pub fn print_type(&mut self, ast: &ParsedAst, type_name: &str) -> Result {
+        let t = ast.iter().find(|d| d.name.as_ref() == type_name);
+        if let Some(td) = t {
+            self.print_type_definition(td)?;
+        }
+        Ok(())
+    }
+
+    pub fn print_selected_dependency(
+        &mut self,
+        ast: &ParsedAst,
+        type_name: &str,
+        dependency: &str,
+    ) -> Result {
+        let d = ast
+            .iter()
+            .find(|d| d.name.as_ref() == type_name)
+            .map(|d| &d.data.dependencies);
+        if let Some(dependencies) = d {
+            let d = dependencies.iter().find(|d| d.name.as_ref() == dependency);
+            if let Some(dep) = d {
+                self.write(&dep.name)?;
+                self.write(" ")?;
+                self.print_type_expression(&dep.data)?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn print_selected_field(
+        &mut self,
+        ast: &ParsedAst,
+        type_name: &str,
+        constructor: &str,
+        field: &str,
+    ) -> Result {
+        let d = ast
+            .iter()
+            .find(|d| d.name.as_ref() == type_name)
+            .map(|d| &d.data.body);
+
+        match d {
+            Some(TypeDefinition::Message(m)) => {
+                let f = m.iter().find(|f| f.name.as_ref() == field);
+                if let Some(field) = f {
+                    self.write(&field.name)?;
+                    self.write(" ")?;
+                    self.print_type_expression(&field.data)?;
+                }
+            }
+            Some(TypeDefinition::Enum(e)) => {
+                for b in e.iter() {
+                    for ct in b.constructors.iter() {
+                        if ct.name.as_ref() == constructor {
+                            let f = ct.iter().find(|f| f.name.as_ref() == field);
+                            if let Some(field) = f {
+                                self.write(&field.name)?;
+                                self.write(" ")?;
+                                self.print_type_expression(&field.data)?;
+                            }
+                            return Ok(());
+                        }
+                    }
+                }
+            }
+            None => {}
+        }
+
+        Ok(())
+    }
+
     fn print_type_definition(
         &mut self,
         definition: &Definition<Loc, Str, TypeDeclaration<Loc, Str>>,
@@ -94,43 +185,46 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             TypeDefinition::Message(_) => {
                 self.write(Self::MESSAGE_TEXT)?;
                 self.write(&definition.name)?;
-                self.write(" ")?;
             }
             TypeDefinition::Enum(_) => {
                 self.write(Self::ENUM_TEXT)?;
                 self.write(&definition.name)?;
-                self.write(" ")?;
             }
         }
 
+        self.write_if(!self.header_only || self.with_dependencies, " ")?;
         self.print_type_declaration(&definition.data)?;
 
         Ok(())
     }
 
     fn print_type_declaration(&mut self, type_declaration: &TypeDeclaration<Loc, Str>) -> Result {
-        for dependency in type_declaration.dependencies.iter() {
-            self.print_dependency(dependency)?;
-            self.write(" ")?;
+        if self.with_dependencies {
+            for dependency in type_declaration.dependencies.iter() {
+                self.print_dependency(dependency)?;
+                self.write(" ")?;
+            }
         }
 
-        self.write("{")?;
+        if !self.header_only {
+            self.write("{")?;
 
-        match &type_declaration.body {
-            TypeDefinition::Message(constructor) => {
-                self.new_line_if(!constructor.is_empty())?;
-                self.print_constructor(constructor, 1)?;
-            }
-            TypeDefinition::Enum(branches) => {
-                for branch in branches.iter() {
-                    self.new_line()?;
-                    self.print_enum_bracnh(branch)?;
+            match &type_declaration.body {
+                TypeDefinition::Message(constructor) => {
+                    self.new_line_if(!constructor.is_empty())?;
+                    self.print_constructor(constructor, 1)?;
+                }
+                TypeDefinition::Enum(branches) => {
+                    for branch in branches.iter() {
+                        self.new_line()?;
+                        self.print_enum_bracnh(branch)?;
+                    }
                 }
             }
-        }
 
-        self.new_line()?;
-        self.write("}")?;
+            self.new_line()?;
+            self.write("}")?;
+        }
         Ok(())
     }
 
@@ -239,7 +333,6 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     fn print_type_expression(&mut self, type_expression: &TypeExpression<Loc, Str>) -> Result {
         match &type_expression.node {
             ExpressionNode::FunCall { fun, args } => {
-                self.cursor.character += fun.len() as u32;
                 self.write(fun)?;
 
                 for expr in args.iter() {

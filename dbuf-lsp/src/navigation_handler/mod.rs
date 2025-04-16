@@ -4,7 +4,7 @@
 //! * (✓) `textDocument/definition`
 //! * (✓) `textDocument/typeDefinition`
 //! * (✓) `textDocument/references`
-//! * (✗) `textDocument/hover`
+//! * (✓) `textDocument/hover`
 //! * (✓) `textDocument/documentHighlight`
 //!  
 //! Also it might be good idea to handle such requests:
@@ -32,10 +32,12 @@ use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
 use tower_lsp::Client;
 
+use crate::common::ast_access::ElaboratedHelper;
 use crate::common::ast_access::WorkspaceAccess;
+use crate::common::dbuf_language::get_bultin_types;
 use crate::common::handler::Handler;
-
 use crate::common::navigator::Navigator;
+use crate::common::pretty_printer::PrettyPrinter;
 
 pub struct NavigationHandler {
     _client: Arc<Client>,
@@ -134,6 +136,126 @@ impl NavigationHandler {
         Ok(Some(ans))
     }
 
+    /// `textDocument/hover` implementation.
+    ///
+    /// Provides such information:
+    /// For types: returns full type definition (TODO: if type is too huge -- reduce)
+    /// For dependencies: Type name ('message Type') and dependency declaration
+    /// For fields: Type name ('message Type'), Constructor if not message('    Ctr'), field declaration
+    /// For Constructors: Type name ('enum Enum'), Constructor declaration without pattern
+    ///
+    /// TODO:
+    /// * Enum + constructor support
+    ///
+    pub async fn hover(
+        &self,
+        access: &WorkspaceAccess,
+        pos: Position,
+        document: Url,
+    ) -> Result<Option<Hover>> {
+        let file = access.read(&document);
+        let navigator = Navigator::for_file(&file);
+
+        let symbol = navigator.get_symbol(pos);
+
+        let mut strings = Vec::new();
+        match symbol {
+            crate::common::navigator::Symbol::Type(t) => {
+                let mut code = String::new();
+                if get_bultin_types().contains(&t) {
+                    code = t;
+                } else {
+                    let mut printer = PrettyPrinter::new(&mut code);
+                    printer.print_type(file.get_parsed(), t.as_ref()).unwrap();
+                }
+                let ls = LanguageString {
+                    language: "dbuf".to_owned(),
+                    value: code,
+                };
+                strings.push(MarkedString::LanguageString(ls));
+            }
+            crate::common::navigator::Symbol::Dependency { t, dependency } => {
+                let mut type_header = String::new();
+
+                let mut p_header = PrettyPrinter::new(&mut type_header)
+                    .with_header_only()
+                    .without_dependencies();
+                p_header.print_type(file.get_parsed(), t.as_ref()).unwrap();
+
+                let ls1 = LanguageString {
+                    language: "dbuf".to_owned(),
+                    value: type_header,
+                };
+
+                strings.push(MarkedString::LanguageString(ls1));
+
+                let mut dependency_declaration = String::new();
+
+                let mut p_dependency_decl = PrettyPrinter::new(&mut dependency_declaration);
+                p_dependency_decl
+                    .print_selected_dependency(file.get_parsed(), &t, &dependency)
+                    .unwrap();
+
+                let ls2 = LanguageString {
+                    language: "dbuf".to_owned(),
+                    value: dependency_declaration,
+                };
+
+                strings.push(MarkedString::LanguageString(ls2));
+            }
+            crate::common::navigator::Symbol::Field { constructor, field } => {
+                let type_name = file.get_elaborated().get_constructor_type(&constructor);
+                if let Some(type_name) = type_name {
+                    let mut type_header = String::new();
+
+                    let mut p_header = PrettyPrinter::new(&mut type_header)
+                        .with_header_only()
+                        .without_dependencies();
+                    p_header
+                        .print_type(file.get_parsed(), type_name.as_ref())
+                        .unwrap();
+
+                    let ls1 = LanguageString {
+                        language: "dbuf".to_owned(),
+                        value: type_header,
+                    };
+
+                    strings.push(MarkedString::LanguageString(ls1));
+
+                    // TODO: improve Enum check
+                    if type_name != constructor {
+                        todo!(); // Enums are not implemented
+                    }
+
+                    let mut s_field = String::new();
+
+                    let mut p_field = PrettyPrinter::new(&mut s_field);
+                    p_field
+                        .print_selected_field(file.get_parsed(), type_name, &constructor, &field)
+                        .unwrap();
+
+                    let ls3 = LanguageString {
+                        language: "dbuf".to_owned(),
+                        value: s_field,
+                    };
+
+                    strings.push(MarkedString::LanguageString(ls3));
+                }
+            }
+            crate::common::navigator::Symbol::Constructor(_) => {} // Not implemented
+            crate::common::navigator::Symbol::None => {}
+        };
+
+        if strings.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(Hover {
+                contents: HoverContents::Array(strings),
+                range: None,
+            }))
+        }
+    }
+
     /// `textDocument/documentHighlight` implementation.
     ///
     pub async fn document_highlight(
@@ -172,6 +294,7 @@ impl Handler for NavigationHandler {
         capabilites.definition_provider = Some(Left(true));
         capabilites.type_definition_provider = Some(TypeDefinitionProviderCapability::Simple(true));
         capabilites.references_provider = Some(Left(true));
+        capabilites.hover_provider = Some(HoverProviderCapability::Simple(true));
         capabilites.document_highlight_provider = Some(Left(true));
     }
 }
