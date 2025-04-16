@@ -48,6 +48,6 @@ impl LocationHelpers for Location {
         if self.end.line > p.line {
             return true;
         }
-        return p.character <= self.end.character;
+        p.character <= self.end.character
     }
 }

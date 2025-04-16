@@ -26,7 +26,7 @@ struct FindImpl<'a> {
 pub fn find_symbols_impl(navigator: &Navigator, symbol: &Symbol) -> Vec<Range> {
     let mut implementation = FindImpl {
         navigator,
-        target: &symbol,
+        target: symbol,
         t: String::new(),
         constructor: String::new(),
         ans: Vec::new(),
@@ -39,9 +39,8 @@ pub fn find_symbols_impl(navigator: &Navigator, symbol: &Symbol) -> Vec<Range> {
 
 impl FindImpl<'_> {
     fn setup_constructor_if_need(&mut self) {
-        if &self.constructor == "" {
+        if self.constructor.is_empty() {
             self.constructor = self.t.clone();
-            return;
             /*
             eprintln!("type is {:?}", self.t);
             let t = &self.t;
@@ -99,7 +98,6 @@ impl FindImpl<'_> {
 
                 panic!("bad type expression");
             }
-            return ();
         }
         panic!("constructor {:?} not found in elaborated ast", ctr_name);
     }
@@ -131,7 +129,6 @@ impl FindImpl<'_> {
                 self.ans.push(str.get_location().to_lsp());
             }
             _ => {
-                return;
             }
         }
     }

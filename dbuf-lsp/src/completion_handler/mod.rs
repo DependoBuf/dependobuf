@@ -11,3 +11,25 @@
 //! These methods are also about completition, but there no need to implement them:
 //!
 //!
+
+use std::sync::Arc;
+
+use tower_lsp::lsp_types::*;
+use tower_lsp::Client;
+
+use crate::common::handler::Handler;
+
+#[derive(Debug)]
+pub struct CompletitionHandler {
+    _client: Arc<Client>,
+}
+
+impl CompletitionHandler {}
+
+impl Handler for CompletitionHandler {
+    fn new(client: Arc<Client>) -> Self {
+        CompletitionHandler { _client: client }
+    }
+
+    fn init(&self, _init: &InitializeParams, _capabilites: &mut ServerCapabilities) {}
+}

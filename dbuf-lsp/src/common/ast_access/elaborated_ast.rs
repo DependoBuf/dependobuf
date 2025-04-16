@@ -74,7 +74,7 @@ impl ElaboratedHelper for ElaboratedAst {
         if self.constructors.keys().any(|ctr| name == ctr) {
             return true;
         }
-        return false;
+        false
     }
 
     fn type_dependency_valid_rename(&self, type_name: &str, dependency: &str) -> bool {
@@ -84,12 +84,12 @@ impl ElaboratedHelper for ElaboratedAst {
             }
             match &t.constructor_names {
                 ConstructorNames::OfMessage(ctr) => {
-                    return !constructor_has_field(&self, &ctr, dependency)
+                    return !constructor_has_field(self, ctr, dependency)
                 }
                 ConstructorNames::OfEnum(ctrs) => {
                     return !ctrs
                         .iter()
-                        .any(|ctr| constructor_has_field(&self, ctr, dependency))
+                        .any(|ctr| constructor_has_field(self, ctr, dependency))
                 }
             }
         }
@@ -97,7 +97,7 @@ impl ElaboratedHelper for ElaboratedAst {
     }
 
     fn constructor_field_valid_rename(&self, constructor_name: &str, field: &str) -> bool {
-        if let Some(type_name) = get_constructor_type(&self, constructor_name) {
+        if let Some(type_name) = get_constructor_type(self, constructor_name) {
             return self.type_dependency_valid_rename(type_name, field);
         }
         false

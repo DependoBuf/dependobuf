@@ -17,3 +17,25 @@
 //! * `textDocument/colorPresentation`
 //!
 //!
+
+use std::sync::Arc;
+
+use tower_lsp::lsp_types::*;
+use tower_lsp::Client;
+
+use crate::common::handler::Handler;
+
+#[derive(Debug)]
+pub struct DiagnosticHandler {
+    _client: Arc<Client>,
+}
+
+impl DiagnosticHandler {}
+
+impl Handler for DiagnosticHandler {
+    fn new(client: Arc<Client>) -> Self {
+        DiagnosticHandler { _client: client }
+    }
+
+    fn init(&self, _init: &InitializeParams, _capabilites: &mut ServerCapabilities) {}
+}

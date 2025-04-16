@@ -53,7 +53,7 @@ fn type_context(
 
 fn message_type(name: &str, dependencies: Vec<(Str, Expression<Str>)>) -> Type<Str> {
     Type {
-        dependencies: dependencies,
+        dependencies,
         constructor_names: ConstructorNames::OfMessage(name.to_owned()),
     }
 }

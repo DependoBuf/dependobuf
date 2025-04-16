@@ -47,7 +47,7 @@ impl WorkspaceAccess {
         let parsed: ParsedAst = get_parsed(text);
         let elaborated: ElaboratedAst = get_elaborated(text);
 
-        let mut file = self.files.get_mut(&url).expect("file should be opened");
+        let mut file = self.files.get_mut(url).expect("file should be opened");
 
         file.set_ast(version, parsed, elaborated);
     }

@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use dbuf_lsp::completion_handler::CompletitionHandler;
+use dbuf_lsp::diagnostic_handler::DiagnosticHandler;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
@@ -15,6 +17,8 @@ struct Backend {
     client: Arc<Client>,
     workspace: WorkspaceAccess,
     action_handler: ActionHandler,
+    completition_handler: CompletitionHandler,
+    diagnosti_handker: DiagnosticHandler,
     navigation_handler: NavigationHandler,
 }
 
@@ -25,6 +29,8 @@ impl Backend {
             client: client_arc.clone(),
             workspace: WorkspaceAccess::new(),
             action_handler: ActionHandler::new(client_arc.clone()),
+            completition_handler: CompletitionHandler::new(client_arc.clone()),
+            diagnosti_handker: DiagnosticHandler::new(client_arc.clone()),
             navigation_handler: NavigationHandler::new(client_arc),
         }
     }
@@ -45,11 +51,10 @@ impl LanguageServer for Backend {
         ));
 
         self.action_handler.init(&init, &mut capabilities);
+        self.completition_handler.init(&init, &mut capabilities);
+        self.diagnosti_handker.init(&init, &mut capabilities);
         self.navigation_handler.init(&init, &mut capabilities);
 
-        // capabilities.completion_provider = Some(CompletionOptions::default());
-
-        eprintln!("init");
         Ok(InitializeResult {
             capabilities,
             ..Default::default()

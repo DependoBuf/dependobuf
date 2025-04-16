@@ -19,6 +19,9 @@ impl LocString {
             location: Location::new_empty(),
         }
     }
+    pub fn is_empty(&self) -> bool {
+        self.string.is_empty()
+    }
     pub fn len(&self) -> usize {
         self.string.len()
     }
@@ -35,7 +38,7 @@ impl LocString {
 
 impl AsRef<str> for LocString {
     fn as_ref(&self) -> &str {
-        return &self.string;
+        &self.string
     }
 }
 
@@ -47,6 +50,6 @@ impl fmt::Display for LocString {
 
 impl ConvertibleToString for &str {
     fn to_loc_string(&self) -> LocString {
-        LocString::new(&self)
+        LocString::new(self)
     }
 }

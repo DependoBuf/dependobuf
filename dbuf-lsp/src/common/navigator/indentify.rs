@@ -117,7 +117,6 @@ impl GetImpl<'_> {
 
                 panic!("bad type expression");
             }
-            return ();
         }
         panic!("constructor {:?} not found in elaborated ast", ctr_name);
     }
