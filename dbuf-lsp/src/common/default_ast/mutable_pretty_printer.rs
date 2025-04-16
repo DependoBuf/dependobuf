@@ -40,7 +40,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     fn new_line(&mut self) -> Result {
         self.cursor.line += 1;
         self.cursor.character = 0;
-        writeln!(self.writer, "")?;
+        writeln!(self.writer)?;
         Ok(())
     }
 
@@ -67,7 +67,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
     fn write_tab(&mut self, len: usize) -> Result {
         self.cursor.character += len as u32;
-        let to_write = std::iter::repeat(" ").take(len).collect::<String>();
+        let to_write = " ".repeat(len);
         write!(self.writer, "{}", to_write)?;
         Ok(())
     }
@@ -360,7 +360,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             }
             Literal::Str(s) => {
                 self.write("\"")?;
-                self.write(&s)?;
+                self.write(s)?;
                 self.write("\"")?;
             }
             Literal::UInt(ui) => {

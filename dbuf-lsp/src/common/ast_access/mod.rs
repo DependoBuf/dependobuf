@@ -26,6 +26,12 @@ pub struct WorkspaceAccess {
     files: DashMap<Url, File>,
 }
 
+impl Default for WorkspaceAccess {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WorkspaceAccess {
     pub fn new() -> WorkspaceAccess {
         WorkspaceAccess {
@@ -33,7 +39,7 @@ impl WorkspaceAccess {
         }
     }
 
-    pub fn open(&self, url: Url, version: i32, text: &String) {
+    pub fn open(&self, url: Url, version: i32, text: &str) {
         let parsed: ParsedAst = get_parsed(text);
         let elaborated: ElaboratedAst = get_elaborated(text);
 
@@ -43,7 +49,7 @@ impl WorkspaceAccess {
         self.files.insert(url, file);
     }
 
-    pub fn change(&self, url: &Url, version: i32, text: &String) {
+    pub fn change(&self, url: &Url, version: i32, text: &str) {
         let parsed: ParsedAst = get_parsed(text);
         let elaborated: ElaboratedAst = get_elaborated(text);
 

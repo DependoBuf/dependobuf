@@ -39,16 +39,18 @@ impl Backend {
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, init: InitializeParams) -> Result<InitializeResult> {
-        let mut capabilities = ServerCapabilities::default();
-        capabilities.text_document_sync = Some(TextDocumentSyncCapability::Options(
-            TextDocumentSyncOptions {
-                open_close: Some(true),
-                change: Some(TextDocumentSyncKind::FULL),
-                will_save: Some(false),
-                will_save_wait_until: Some(false),
-                save: Some(TextDocumentSyncSaveOptions::Supported(false)),
-            },
-        ));
+        let mut capabilities = ServerCapabilities {
+            text_document_sync: Some(TextDocumentSyncCapability::Options(
+                TextDocumentSyncOptions {
+                    open_close: Some(true),
+                    change: Some(TextDocumentSyncKind::FULL),
+                    will_save: Some(false),
+                    will_save_wait_until: Some(false),
+                    save: Some(TextDocumentSyncSaveOptions::Supported(false)),
+                },
+            )),
+            ..Default::default()
+        };
 
         self.action_handler.init(&init, &mut capabilities);
         self.completition_handler.init(&init, &mut capabilities);

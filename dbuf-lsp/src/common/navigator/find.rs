@@ -128,8 +128,7 @@ impl FindImpl<'_> {
                 }
                 self.ans.push(str.get_location().to_lsp());
             }
-            _ => {
-            }
+            _ => {}
         }
     }
 
@@ -152,7 +151,7 @@ impl FindImpl<'_> {
     fn find_in_type(&mut self, t: &TypeDeclaration<Loc, Str>) {
         for dependency in t.dependencies.iter() {
             self.check_add(&dependency.name);
-            self.find_in_type_expr(&dependency);
+            self.find_in_type_expr(dependency);
         }
         match &t.body {
             TypeDefinition::Message(m) => {
@@ -168,7 +167,7 @@ impl FindImpl<'_> {
     fn find_in_constructor(&mut self, ctr: &ConstructorBody<Loc, Str>) {
         for field in ctr.iter() {
             self.check_add(&field.name);
-            self.find_in_type_expr(&field);
+            self.find_in_type_expr(field);
         }
     }
 
@@ -227,13 +226,11 @@ impl FindImpl<'_> {
     fn find_in_access_chain_rec(&mut self, e: &Expression<Loc, Str>) {
         match &e.node {
             ExpressionNode::OpCall(op) => {
-                if let OpCall::Unary(op, rhs) = &op {
-                    if let UnaryOp::Access(s) = op {
-                        self.find_in_access_chain_rec(rhs);
-                        self.check_add(s);
-                        self.apply_variable(s);
-                        return;
-                    }
+                if let OpCall::Unary(UnaryOp::Access(s), rhs) = &op {
+                    self.find_in_access_chain_rec(rhs);
+                    self.check_add(s);
+                    self.apply_variable(s);
+                    return;
                 }
                 panic!("bad access chain")
             }

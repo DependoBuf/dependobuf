@@ -59,21 +59,21 @@ impl ActionHandler {
             .log_message(MessageType::LOG, format!("{:#?}", options))
             .await;
 
-        if options.insert_spaces != true {
+        if !options.insert_spaces {
             return Err(bad_param_error("property 'insert_spaces' not true"));
         }
         if !options.properties.is_empty() {
             return Err(bad_param_error("property 'properties' not empty"));
         }
-        if let Some(_) = options.trim_trailing_whitespace {
+        if options.trim_trailing_whitespace.is_some() {
             return Err(bad_param_error(
                 "property 'trim_trailing_whitespace' not none",
             ));
         }
-        if let Some(_) = options.insert_final_newline {
+        if options.insert_final_newline.is_some() {
             return Err(bad_param_error("property 'insert_final_newline' not none"));
         }
-        if let Some(_) = options.trim_final_newlines {
+        if options.trim_final_newlines.is_some() {
             return Err(bad_param_error("property 'trim_final_newlines' not none"));
         }
 
@@ -82,15 +82,15 @@ impl ActionHandler {
             new_text: String::new(),
         };
 
-        let file = access.read(&document);
+        let file = access.read(document);
         let ast = file.get_parsed();
 
         let mut writer = PrettyPrinter::new(&mut edit.new_text).with_tab_size(options.tab_size);
-        if let Err(_) = writer.print_ast(&ast) {
+        if writer.print_ast(ast).is_err() {
             return Err(internal_error("pretty printer couldn't parse ast"));
         }
 
-        return Ok(Some(vec![edit]));
+        Ok(Some(vec![edit]))
     }
 
     /// `textDocument/prepareRename` implementation.
@@ -153,11 +153,7 @@ impl ActionHandler {
             let navigator = Navigator::new(file.get_parsed(), file.get_elaborated());
             symbol = navigator.get_symbol(pos);
 
-            if let Err(err) =
-                ActionHandler::renameable_to_symbol(&symbol, &new_name, file.get_elaborated())
-            {
-                return Err(err);
-            }
+            ActionHandler::renameable_to_symbol(&symbol, &new_name, file.get_elaborated())?;
 
             ranges = navigator.find_symbols(&symbol);
         }
@@ -218,7 +214,7 @@ impl ActionHandler {
                 if dbuf_language::get_bultin_types().contains(t) {
                     return Err(bad_rename_error("buildin type can't be renamed"));
                 }
-                if !dbuf_language::is_correct_type_name(&new_name) {
+                if !dbuf_language::is_correct_type_name(new_name) {
                     return Err(bad_rename_error(
                         format!("'{}' is not correct type name", new_name).as_ref(),
                     ));
@@ -226,7 +222,7 @@ impl ActionHandler {
                 if t == new_name {
                     return Err(bad_rename_error("useless rename"));
                 }
-                if ast.has_type_or_constructor(&new_name) {
+                if ast.has_type_or_constructor(new_name) {
                     return Err(bad_rename_error(
                         format!("constructor or type '{}' exist", new_name).as_ref(),
                     ));
@@ -239,12 +235,12 @@ impl ActionHandler {
                 if d == new_name {
                     return Err(bad_rename_error("useless rename"));
                 }
-                if !dbuf_language::is_correct_dependency_name(&new_name) {
+                if !dbuf_language::is_correct_dependency_name(new_name) {
                     return Err(bad_rename_error(
                         format!("'{}' is not correct dependency name", new_name).as_ref(),
                     ));
                 }
-                if !ast.type_dependency_valid_rename(type_name, &new_name) {
+                if !ast.type_dependency_valid_rename(type_name, new_name) {
                     return Err(bad_rename_error(
                         format!("type '{}' already contains '{}'", type_name, new_name).as_ref(),
                     ));
@@ -257,12 +253,12 @@ impl ActionHandler {
                 if f == new_name {
                     return Err(bad_rename_error("useless rename"));
                 }
-                if !dbuf_language::is_correct_field_name(&new_name) {
+                if !dbuf_language::is_correct_field_name(new_name) {
                     return Err(bad_rename_error(
                         format!("'{}' is not correct field name", new_name).as_ref(),
                     ));
                 }
-                if !ast.constructor_field_valid_rename(ctr, &new_name) {
+                if !ast.constructor_field_valid_rename(ctr, new_name) {
                     return Err(bad_rename_error(
                         format!("constructor '{}' already contains '{}'", ctr, new_name).as_ref(),
                     ));

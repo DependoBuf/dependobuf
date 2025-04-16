@@ -26,9 +26,9 @@ fn access_expr(acc: &[&str]) -> Expression<Str> {
 
     let mut basic_expr = var_expr(acc[0]);
 
-    for i in 1..acc.len() {
+    for access in acc.iter().skip(1) {
         basic_expr = Expression::OpCall(OpCall::Unary(
-            UnaryOp::Access(acc[i].to_string()),
+            UnaryOp::Access(access.to_string()),
             Rc::new(basic_expr),
         ));
     }

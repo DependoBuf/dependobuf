@@ -10,6 +10,12 @@ pub struct File {
     elaborated_ast: ElaboratedAst,
 }
 
+impl Default for File {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl File {
     pub fn new() -> File {
         File {

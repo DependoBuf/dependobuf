@@ -28,11 +28,11 @@ fn access_expr(acc: &[&str]) -> Expression<Loc, Str> {
 
     let mut basic_expr = var_expr(acc[0]);
 
-    for i in 1..acc.len() {
+    for access in acc.iter().skip(1) {
         basic_expr = Expression {
             loc: Loc::default(),
             node: ExpressionNode::OpCall(OpCall::Unary(
-                UnaryOp::Access(Str::new(acc[i])),
+                UnaryOp::Access(Str::new(access)),
                 Rc::new(basic_expr),
             )),
         };

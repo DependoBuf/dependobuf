@@ -44,7 +44,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     fn new_line(&mut self) -> Result {
         self.cursor.line += 1;
         self.cursor.character = 0;
-        writeln!(self.writer, "")?;
+        writeln!(self.writer)?;
         Ok(())
     }
 
@@ -65,9 +65,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     fn write_tabs(&mut self, tab_count: u32) -> Result {
         let spaces = self.tab_size * tab_count;
         self.cursor.character += spaces;
-        let to_write = std::iter::repeat(" ")
-            .take(spaces as usize)
-            .collect::<String>();
+        let to_write = " ".repeat(spaces as usize);
         write!(self.writer, "{}", to_write)?;
         Ok(())
     }
@@ -179,10 +177,10 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             PatternNode::Call { name, fields } => {
                 if fields.is_empty() {
                     // Assuming: variable
-                    self.write(&name)?;
+                    self.write(name)?;
                 } else {
                     // Assuming: constructor
-                    self.write(&name)?;
+                    self.write(name)?;
                     self.write("{")?;
                     // TODO: parse constructor
                     self.write("}")?;
@@ -242,11 +240,11 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         match &type_expression.node {
             ExpressionNode::FunCall { fun, args } => {
                 self.cursor.character += fun.len() as u32;
-                self.write(&fun)?;
+                self.write(fun)?;
 
                 for expr in args.iter() {
                     self.write(" ")?;
-                    self.print_expression(&expr)?;
+                    self.print_expression(expr)?;
                 }
             }
             _ => {
@@ -266,10 +264,10 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             ExpressionNode::FunCall { fun, args } => {
                 if args.is_empty() {
                     // Assuming: variable cal
-                    self.write(&fun)?;
+                    self.write(fun)?;
                 } else {
                     // Assuming: constructor
-                    self.write(&fun)?;
+                    self.write(fun)?;
                     self.write("{")?;
                     // TODO: parse constructor
                     self.write("}")?;
@@ -299,13 +297,13 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             OpCall::Binary(op, expr_left, expr_right) => {
                 self.write("(")?;
 
-                self.print_expression(&expr_left)?;
+                self.print_expression(expr_left)?;
 
                 self.write(" ")?;
                 self.print_binary(op)?;
                 self.write(" ")?;
 
-                self.print_expression(&expr_right)?;
+                self.print_expression(expr_right)?;
 
                 self.write(")")?;
             }
@@ -323,18 +321,18 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                 }
             }
             Literal::Double(d) => {
-                self.write(&d.to_string())?;
+                self.write(d.to_string())?;
             }
             Literal::Int(i) => {
-                self.write(&i.to_string())?;
+                self.write(i.to_string())?;
             }
             Literal::Str(s) => {
                 self.write("\"")?;
-                self.write(&s)?;
+                self.write(s)?;
                 self.write("\"")?;
             }
             Literal::UInt(ui) => {
-                self.write(&ui.to_string())?;
+                self.write(ui.to_string())?;
                 self.write("u")?;
             }
         }
@@ -344,22 +342,22 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     fn print_unary(&mut self, op: &UnaryOp<Str>, expr: &Rec<Expression<Loc, Str>>) -> Result {
         match op {
             UnaryOp::Access(field) => {
-                self.print_expression(&expr)?;
+                self.print_expression(expr)?;
 
                 self.write(".")?;
-                self.write(&field)?;
+                self.write(field)?;
             }
             UnaryOp::Minus => {
                 self.write("-(")?;
 
-                self.print_expression(&expr)?;
+                self.print_expression(expr)?;
 
                 self.write(")")?;
             }
             UnaryOp::Bang => {
                 self.write("!(")?;
 
-                self.print_expression(&expr)?;
+                self.print_expression(expr)?;
 
                 self.write(")")?;
             }

@@ -33,10 +33,10 @@ impl Navigator<'_> {
     }
 
     pub fn get_symbol(&self, pos: Position) -> Symbol {
-        get_symbol_impl(&self, pos)
+        get_symbol_impl(self, pos)
     }
 
     pub fn find_symbols(&self, symbol: &Symbol) -> Vec<Range> {
-        find_symbols_impl(&self, symbol)
+        find_symbols_impl(self, symbol)
     }
 }

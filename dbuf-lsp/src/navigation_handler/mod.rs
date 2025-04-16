@@ -59,8 +59,7 @@ impl NavigationHandler {
             ranges = navigator.find_symbols(&symbol);
         }
 
-        let mut ans = Vec::new();
-        ans.reserve(ranges.len());
+        let mut ans = Vec::with_capacity(ranges.len());
         for r in ranges.iter() {
             ans.push(DocumentHighlight {
                 range: *r,

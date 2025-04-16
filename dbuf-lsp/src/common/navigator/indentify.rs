@@ -62,7 +62,7 @@ impl GetImpl<'_> {
     }
 
     fn setup_constructor_if_need(&mut self) {
-        if &self.constructor == "" {
+        if self.constructor.is_empty() {
             let t = &self.t;
             let ctr_name = self
                 .navigator
@@ -128,15 +128,12 @@ impl GetImpl<'_> {
                     panic!("bad access chain");
                 }
                 self.apply_variable(fun);
-                return;
             }
             ExpressionNode::OpCall(op) => {
-                if let OpCall::Unary(u_op, rhs) = op {
-                    if let UnaryOp::Access(s) = u_op {
-                        self.apply_access_chain(rhs);
-                        self.apply_variable(s);
-                        return;
-                    }
+                if let OpCall::Unary(UnaryOp::Access(s), rhs) = op {
+                    self.apply_access_chain(rhs);
+                    self.apply_variable(s);
+                    return;
                 }
                 panic!("bad access chain");
             }
@@ -155,7 +152,7 @@ impl GetImpl<'_> {
                 return Symbol::Type(definition.name.to_string());
             }
             self.t = definition.name.to_string();
-            return self.get_in_type(&definition);
+            return self.get_in_type(definition);
         }
         Symbol::None
     }
@@ -171,7 +168,7 @@ impl GetImpl<'_> {
                     dependency: dependency.name.to_string(),
                 };
             }
-            return self.get_in_type_expr(&dependency);
+            return self.get_in_type_expr(dependency);
         }
         if let TypeDefinition::Message(body) = &t.body {
             self.constructor = self.t.clone();
@@ -196,7 +193,7 @@ impl GetImpl<'_> {
                     field: field.name.to_string(),
                 };
             }
-            return self.get_in_type_expr(&field);
+            return self.get_in_type_expr(field);
         }
 
         Symbol::None
@@ -235,12 +232,10 @@ impl GetImpl<'_> {
                     // TODO: parse constructor
                     panic!("constructors API will be changed");
                 }
-                return self.get_variable(fun);
+                self.get_variable(fun)
             }
             ExpressionNode::OpCall(op) => match op {
-                OpCall::Literal(_) => {
-                    return Symbol::None;
-                }
+                OpCall::Literal(_) => Symbol::None,
                 OpCall::Binary(_, lhs, rhs) => {
                     if lhs.loc.contains(&self.target) {
                         return self.get_in_expr(lhs);
@@ -248,7 +243,7 @@ impl GetImpl<'_> {
                     if rhs.loc.contains(&self.target) {
                         return self.get_in_expr(rhs);
                     }
-                    return Symbol::None;
+                    Symbol::None
                 }
                 OpCall::Unary(op, rhs) => {
                     if let UnaryOp::Access(s) = op {
@@ -257,7 +252,7 @@ impl GetImpl<'_> {
                             return self.get_variable(s);
                         }
                     }
-                    return self.get_in_expr(rhs);
+                    self.get_in_expr(rhs)
                 }
             },
             _ => {
