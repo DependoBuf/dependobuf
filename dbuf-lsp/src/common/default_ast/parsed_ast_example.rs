@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use super::ast_builder::AstBuilder;
+use crate::common::ast_access::LocStringHelper;
 use crate::common::ast_access::{Loc, ParsedAst, Str};
 
 use dbuf_core::ast::operators::*;

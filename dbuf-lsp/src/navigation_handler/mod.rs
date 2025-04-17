@@ -58,7 +58,7 @@ impl NavigationHandler {
         let range;
         {
             let file = access.read(&document);
-            let navigator = Navigator::for_file(&file);
+            let navigator = Navigator::new(&file);
 
             let symbol = navigator.get_symbol(pos);
             range = navigator.find_definition(&symbol);
@@ -87,7 +87,7 @@ impl NavigationHandler {
         let range;
         {
             let file = access.read(&document);
-            let navigator = Navigator::for_file(&file);
+            let navigator = Navigator::new(&file);
 
             let symbol = navigator.get_symbol(pos);
             let t = navigator.find_type(&symbol);
@@ -108,7 +108,6 @@ impl NavigationHandler {
     ///
     /// TODO:
     /// * Enum + constructor support
-    /// * message field support
     ///
     pub async fn references(
         &self,
@@ -119,7 +118,7 @@ impl NavigationHandler {
         let ranges;
         {
             let file = access.read(&document);
-            let navigator = Navigator::for_file(&file);
+            let navigator = Navigator::new(&file);
 
             let symbol = navigator.get_symbol(pos);
             ranges = navigator.find_symbols(&symbol);
@@ -139,10 +138,10 @@ impl NavigationHandler {
     /// `textDocument/hover` implementation.
     ///
     /// Provides such information:
-    /// For types: returns full type definition (TODO: if type is too huge -- reduce)
-    /// For dependencies: Type name ('message Type') and dependency declaration
-    /// For fields: Type name ('message Type'), Constructor if not message('    Ctr'), field declaration
-    /// For Constructors: Type name ('enum Enum'), Constructor declaration without pattern
+    /// * For types: returns full type definition (TODO: if type is too huge -- reduce)
+    /// * For dependencies: Type name ('message Type') and dependency declaration
+    /// * For fields: Type name ('message Type'), Constructor if not message('    Ctr'), field declaration
+    /// * For Constructors: Type name ('enum Enum'), Constructor declaration without pattern
     ///
     /// TODO:
     /// * Enum + constructor support
@@ -154,7 +153,7 @@ impl NavigationHandler {
         document: Url,
     ) -> Result<Option<Hover>> {
         let file = access.read(&document);
-        let navigator = Navigator::for_file(&file);
+        let navigator = Navigator::new(&file);
 
         let symbol = navigator.get_symbol(pos);
 
@@ -269,7 +268,7 @@ impl NavigationHandler {
         let ranges;
         {
             let file = access.read(&document);
-            let navigator = Navigator::for_file(&file);
+            let navigator = Navigator::new(&file);
 
             let symbol = navigator.get_symbol(pos);
             ranges = navigator.find_symbols(&symbol);

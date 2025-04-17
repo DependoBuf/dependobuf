@@ -21,6 +21,8 @@
 //!
 //!
 
+mod rename;
+
 use std::cell::RefCell;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -30,10 +32,7 @@ use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
 use tower_lsp::Client;
 
-use crate::common::ast_access::ElaboratedAst;
-use crate::common::ast_access::ElaboratedHelper;
 use crate::common::ast_access::WorkspaceAccess;
-use crate::common::dbuf_language;
 use crate::common::errors::*;
 use crate::common::handler::Handler;
 use crate::common::navigator::Navigator;
@@ -124,12 +123,12 @@ impl ActionHandler {
             let file = access.read(document);
             doc_version = file.get_version();
 
-            let navigator = Navigator::for_file(&file);
+            let navigator = Navigator::new(&file);
 
             symbol = navigator.get_symbol(pos);
         }
 
-        if ActionHandler::renameable_symbol(&symbol) {
+        if rename::renameable_symbol(&symbol) {
             if let Ok(cell) = self.rename_cache.lock() {
                 let mut cache = cell.borrow_mut();
                 cache.document = Some(document.to_owned());
@@ -149,7 +148,7 @@ impl ActionHandler {
     /// `textDocument/rename` implementation.
     ///
     /// Renames symbol if possible. Checks that
-    /// there is no collision after rename.
+    /// there is no conflicts after rename.
     ///
     /// TODO:
     /// * Enum + constructors support.
@@ -172,7 +171,7 @@ impl ActionHandler {
                 version: Some(file.get_version()),
             };
 
-            let navigator = Navigator::for_file(&file);
+            let navigator = Navigator::new(&file);
 
             let mut cached_symbol = false;
             if let Ok(cell) = self.rename_cache.lock() {
@@ -190,7 +189,7 @@ impl ActionHandler {
                 symbol = navigator.get_symbol(pos);
             }
 
-            ActionHandler::renameable_to_symbol(&symbol, &new_name, file.get_elaborated())?;
+            rename::renameable_to_symbol(&symbol, &new_name, file.get_elaborated())?;
 
             ranges = navigator.find_symbols(&symbol);
         }
@@ -217,97 +216,6 @@ impl ActionHandler {
         };
 
         Ok(Some(workspace_edit))
-    }
-
-    fn renameable_symbol(symbol: &Symbol) -> bool {
-        match symbol {
-            Symbol::Type(t) => !dbuf_language::get_bultin_types().contains(t),
-            Symbol::Dependency {
-                t: _,
-                dependency: _,
-            } => true,
-            Symbol::Field {
-                constructor: _,
-                field: _,
-            } => true,
-            Symbol::Constructor(_) => false,
-            Symbol::None => false,
-        }
-    }
-
-    fn renameable_to_symbol(symbol: &Symbol, new_name: &String, ast: &ElaboratedAst) -> Result<()> {
-        if new_name.is_empty() {
-            return Err(bad_rename_error("rename to empty string"));
-        }
-        if dbuf_language::get_bultin_types().contains(new_name) {
-            return Err(bad_rename_error("rename to buildin type is forbidden"));
-        }
-        if dbuf_language::get_keywords().contains(new_name) {
-            return Err(bad_rename_error("rename to keyword is forbidden"));
-        }
-
-        match symbol {
-            Symbol::Type(t) => {
-                if dbuf_language::get_bultin_types().contains(t) {
-                    return Err(bad_rename_error("buildin type can't be renamed"));
-                }
-                if !dbuf_language::is_correct_type_name(new_name) {
-                    return Err(bad_rename_error(
-                        format!("'{}' is not correct type name", new_name).as_ref(),
-                    ));
-                }
-                if t == new_name {
-                    return Err(bad_rename_error("useless rename"));
-                }
-                if ast.has_type_or_constructor(new_name) {
-                    return Err(bad_rename_error(
-                        format!("constructor or type '{}' exist", new_name).as_ref(),
-                    ));
-                }
-            }
-            Symbol::Dependency {
-                t: type_name,
-                dependency: d,
-            } => {
-                if d == new_name {
-                    return Err(bad_rename_error("useless rename"));
-                }
-                if !dbuf_language::is_correct_dependency_name(new_name) {
-                    return Err(bad_rename_error(
-                        format!("'{}' is not correct dependency name", new_name).as_ref(),
-                    ));
-                }
-                if !ast.type_dependency_valid_rename(type_name, new_name) {
-                    return Err(bad_rename_error(
-                        format!("type '{}' already contains '{}'", type_name, new_name).as_ref(),
-                    ));
-                }
-            }
-            Symbol::Field {
-                constructor: ctr,
-                field: f,
-            } => {
-                if f == new_name {
-                    return Err(bad_rename_error("useless rename"));
-                }
-                if !dbuf_language::is_correct_field_name(new_name) {
-                    return Err(bad_rename_error(
-                        format!("'{}' is not correct field name", new_name).as_ref(),
-                    ));
-                }
-                if !ast.constructor_field_valid_rename(ctr, new_name) {
-                    return Err(bad_rename_error(
-                        format!("constructor '{}' already contains '{}'", ctr, new_name).as_ref(),
-                    ));
-                }
-            }
-            Symbol::Constructor(_) => {
-                return Err(bad_rename_error("Constructors rename is not supported yet"))
-            }
-            Symbol::None => return Err(bad_rename_error("can't rename not symbol")),
-        };
-
-        Ok(())
     }
 }
 

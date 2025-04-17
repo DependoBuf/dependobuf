@@ -14,7 +14,7 @@ use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 use dbuf_core::location::*;
 
-use crate::common::ast_access::{Loc, Str};
+use crate::common::ast_access::{Loc, LocStringHelper, Str};
 
 // TODO:
 //   * find a way to easily clone from crate::common::pretty_printer

@@ -1,4 +1,4 @@
-//! Contains dbuf language specific information, like builtin types or constants
+//! Contains dbuf language specific information, like builtin types or constants.
 //!
 
 use std::{collections::HashSet, sync::OnceLock};
@@ -6,6 +6,7 @@ use std::{collections::HashSet, sync::OnceLock};
 static BUILDIN_TYPES: OnceLock<HashSet<String>> = OnceLock::new();
 static KEYWORDS: OnceLock<HashSet<String>> = OnceLock::new();
 
+/// Returns buildint types set.
 pub fn get_bultin_types() -> &'static HashSet<String> {
     BUILDIN_TYPES.get_or_init(|| {
         let mut m = HashSet::new();
@@ -17,6 +18,7 @@ pub fn get_bultin_types() -> &'static HashSet<String> {
     })
 }
 
+/// Returns dbuf keywords set.
 pub fn get_keywords() -> &'static HashSet<String> {
     KEYWORDS.get_or_init(|| {
         let mut m = HashSet::new();
@@ -28,6 +30,7 @@ pub fn get_keywords() -> &'static HashSet<String> {
     })
 }
 
+/// Checks if `type_name` is correct name for Type or Constructor.
 pub fn is_correct_type_name(type_name: &str) -> bool {
     let mut iterator = type_name.chars();
     if iterator.next().map(|c| !c.is_uppercase()).unwrap_or(true) {
@@ -39,6 +42,7 @@ pub fn is_correct_type_name(type_name: &str) -> bool {
     true
 }
 
+/// Checks if `field_name` is correct name for field.
 pub fn is_correct_field_name(field_name: &str) -> bool {
     let mut iterator = field_name.chars();
     if iterator.next().map(|c| !c.is_lowercase()).unwrap_or(true) {
@@ -50,6 +54,7 @@ pub fn is_correct_field_name(field_name: &str) -> bool {
     true
 }
 
+/// Checks if `dependency_name` is correct name for dependency.
 pub fn is_correct_dependency_name(dependency_name: &str) -> bool {
     is_correct_field_name(dependency_name)
 }

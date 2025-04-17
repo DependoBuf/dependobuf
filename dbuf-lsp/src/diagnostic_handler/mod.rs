@@ -1,11 +1,11 @@
 //! Module provides colorful diagnostic.
 //!
 //! Module should help with such requests:
-//! * `textDocument/diagnostic`
+//! * `textDocument/documentSymbol`
 //!
 //! Also it might be good idea to handle such requests:
+//! * `textDocument/diagnostic`
 //! * `workspace/diagnostic`
-//! * `textDocument/documentSymbol`
 //! * `textDocument/semanticTokens/full`
 //! * `textDocument/semanticTokens/full/delta`
 //! * `textDocument/semanticTokens/range`

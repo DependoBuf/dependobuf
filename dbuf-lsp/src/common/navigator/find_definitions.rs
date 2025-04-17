@@ -5,6 +5,7 @@ use dbuf_core::ast::parsed::TypeDefinition;
 use tower_lsp::lsp_types::Range;
 
 use crate::common::ast_access::ElaboratedHelper;
+use crate::common::ast_access::LocStringHelper;
 use crate::common::ast_access::LocationHelpers;
 
 use super::Navigator;

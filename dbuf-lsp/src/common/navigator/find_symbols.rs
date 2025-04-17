@@ -9,8 +9,8 @@ use dbuf_core::ast::operators::{OpCall, UnaryOp};
 use dbuf_core::ast::{elaborated, parsed::*};
 use tower_lsp::lsp_types::Range;
 
-use crate::common::ast_access::LocationHelpers;
 use crate::common::ast_access::{Loc, Str};
+use crate::common::ast_access::{LocStringHelper, LocationHelpers};
 
 use super::Navigator;
 use super::Symbol;

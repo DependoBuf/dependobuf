@@ -1,37 +1,61 @@
+//! Module exports
+//! * ConvertibleToString trait, wich allows any type conversation to LocString.
+//! * LocStringHelper trait with helpfull funtions for LocString.
+//! * 'temporary' LocString, since there is no one in dbuf-core.
+//!
+
 use std::fmt;
 
 use super::location::*;
 
+/// String, containing location.
 #[derive(Debug, Clone)]
 pub struct LocString {
     string: String,
     location: Location,
 }
 
+/// Trait for types, that can be converted to LocString.
 pub trait ConvertibleToString {
     fn to_loc_string(&self) -> LocString;
 }
 
-impl LocString {
-    pub fn new(string: &str) -> LocString {
+/// Helpers for dbuf-core::LocString (in future).
+pub trait LocStringHelper {
+    /// Constructs LocString with empty locations by &str.
+    fn new(string: &str) -> Self;
+    /// Checks if string is empty.
+    fn is_empty(&self) -> bool;
+    /// Returns string's len.
+    fn len(&self) -> usize;
+    /// Returns string's location.
+    fn get_location(&self) -> Location;
+    /// Sets begin of string's location.
+    fn set_location_start(&mut self, start: Position);
+    /// Sets end of string's location.
+    fn set_location_end(&mut self, end: Position);
+}
+
+impl LocStringHelper for LocString {
+    fn new(string: &str) -> LocString {
         LocString {
             string: string.to_string(),
             location: Location::new_empty(),
         }
     }
-    pub fn is_empty(&self) -> bool {
+    fn is_empty(&self) -> bool {
         self.string.is_empty()
     }
-    pub fn len(&self) -> usize {
+    fn len(&self) -> usize {
         self.string.len()
     }
-    pub fn get_location(&self) -> Location {
+    fn get_location(&self) -> Location {
         self.location
     }
-    pub fn set_location_start(&mut self, start: Position) {
+    fn set_location_start(&mut self, start: Position) {
         self.location.start = start;
     }
-    pub fn set_location_end(&mut self, end: Position) {
+    fn set_location_end(&mut self, end: Position) {
         self.location.end = end;
     }
 }

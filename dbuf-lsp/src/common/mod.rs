@@ -1,4 +1,4 @@
-//! Helpfull tools
+//! Helpfull tools.
 
 pub mod ast_access;
 pub mod dbuf_language;

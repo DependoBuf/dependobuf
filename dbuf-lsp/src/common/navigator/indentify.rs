@@ -9,7 +9,7 @@ use tower_lsp::lsp_types::Position;
 
 use dbuf_core::ast::{elaborated, parsed::*};
 
-use crate::common::ast_access::{ElaboratedHelper, LocationHelpers};
+use crate::common::ast_access::{ElaboratedHelper, LocStringHelper, LocationHelpers};
 use crate::common::ast_access::{Loc, Str};
 
 use super::Navigator;

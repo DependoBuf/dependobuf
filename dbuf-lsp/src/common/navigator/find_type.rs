@@ -16,12 +16,13 @@ pub fn find_type_impl(navigator: &Navigator, symbol: &Symbol) -> Symbol {
     match symbol {
         Symbol::Type(t) => Symbol::Type(t.to_owned()),
         Symbol::Dependency { t, dependency } => {
-            let dep = navigator
+            let dependencies = navigator
                 .parsed
                 .iter()
                 .find(|d| d.name.as_ref() == t)
                 .map(|d| &d.data.dependencies);
-            if let Some(dependencies) = dep {
+
+            if let Some(dependencies) = dependencies {
                 let te = dependencies
                     .iter()
                     .find(|d| d.name.as_ref() == dependency)
@@ -58,8 +59,23 @@ pub fn find_type_impl(navigator: &Navigator, symbol: &Symbol) -> Symbol {
                         Symbol::None
                     }
                 }
-                Some(TypeDefinition::Enum(_e)) => {
-                    panic!("enums are not supported")
+                Some(TypeDefinition::Enum(branches)) => {
+                    for b in branches.iter() {
+                        let my_ctr = b
+                            .constructors
+                            .iter()
+                            .find(|c| c.name.as_ref() == constructor);
+
+                        if let Some(ctr) = my_ctr {
+                            let te = ctr.iter().find(|f| f.name.as_ref() == field);
+
+                            if let Some(expr) = te {
+                                return get_type_in_type_expr(expr);
+                            }
+                            break;
+                        }
+                    }
+                    Symbol::None
                 }
                 None => Symbol::None,
             }

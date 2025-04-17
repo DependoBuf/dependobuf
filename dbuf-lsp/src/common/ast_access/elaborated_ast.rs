@@ -1,29 +1,26 @@
+//! Module exports:
+//! * trait ElaboratedHelper - helpfull getters for Elaborated ast.
+//! * type ElaboratedAst, wich implements ElaboratedHelper.
+//!
+
 use dbuf_core::ast::elaborated::*;
 
 pub type Str = String;
 
 pub type ElaboratedAst = Module<Str>;
 
+/// Trait with getters for ElaboratedAst.
 pub trait ElaboratedHelper {
+    /// returns type name of `constructor_name`.
     fn get_constructor_type(&self, constructor_name: &str) -> Option<&str>;
+    /// returns Type by its `name`.
     fn get_type(&self, name: &str) -> Option<&Type<Str>>;
+    /// returns Constructor by its `name`.
+    fn get_constructor(&self, name: &str) -> Option<&Constructor<Str>>;
+    /// returns any constructor of `type_name`, if type is constructable.
     fn get_any_constructor(&self, type_name: &str) -> Option<&Str>;
+    /// returns if type or constructor with `name` exists.
     fn has_type_or_constructor(&self, name: &str) -> bool;
-    fn type_dependency_valid_rename(&self, type_name: &str, dependency: &str) -> bool;
-    fn constructor_field_valid_rename(&self, constructor_name: &str, field: &str) -> bool;
-}
-
-fn constructor_has_field(ast: &ElaboratedAst, ctr: &str, field: &str) -> bool {
-    if let Some(ctr) = ast.constructors.get(ctr) {
-        if ctr.implicits.iter().any(|i| i.0 == field) {
-            return true;
-        }
-        if ctr.fields.iter().any(|f| f.0 == field) {
-            return true;
-        }
-        return false;
-    }
-    false
 }
 
 impl ElaboratedHelper for ElaboratedAst {
@@ -79,29 +76,7 @@ impl ElaboratedHelper for ElaboratedAst {
         false
     }
 
-    fn type_dependency_valid_rename(&self, type_name: &str, dependency: &str) -> bool {
-        if let Some(t) = self.get_type(type_name) {
-            if t.dependencies.iter().any(|d| d.0 == dependency) {
-                return false;
-            }
-            match &t.constructor_names {
-                ConstructorNames::OfMessage(ctr) => {
-                    return !constructor_has_field(self, ctr, dependency)
-                }
-                ConstructorNames::OfEnum(ctrs) => {
-                    return !ctrs
-                        .iter()
-                        .any(|ctr| constructor_has_field(self, ctr, dependency))
-                }
-            }
-        }
-        false
-    }
-
-    fn constructor_field_valid_rename(&self, constructor_name: &str, field: &str) -> bool {
-        if let Some(type_name) = self.get_constructor_type(constructor_name) {
-            return self.type_dependency_valid_rename(type_name, field);
-        }
-        false
+    fn get_constructor(&self, name: &str) -> Option<&Constructor<Str>> {
+        self.constructors.get(name)
     }
 }

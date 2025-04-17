@@ -30,6 +30,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     const MESSAGE_TEXT: &'a str = "message ";
     const ENUM_TEXT: &'a str = "enum ";
 
+    /// Creates new printer for `writer` with default parameters.
     pub fn new(writer: &'a mut W) -> PrettyPrinter<'a, W> {
         PrettyPrinter {
             cursor: Position::new(0, 0),
@@ -40,16 +41,19 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         }
     }
 
+    /// Sets tab size for printer.
     pub fn with_tab_size(mut self, tab_size: u32) -> Self {
         self.tab_size = tab_size;
         self
     }
 
+    /// Sets header only for printer.
     pub fn with_header_only(mut self) -> Self {
         self.header_only = true;
         self
     }
 
+    /// Sets no dependencies for printer.
     pub fn without_dependencies(mut self) -> Self {
         self.with_dependencies = false;
         self
@@ -91,6 +95,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
+    /// Prints whole ast.
     pub fn print_ast(&mut self, ast: &ParsedAst) -> Result {
         let mut first = true;
 
@@ -106,6 +111,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
+    /// Prints type of ast.
     pub fn print_type(&mut self, ast: &ParsedAst, type_name: &str) -> Result {
         let t = ast.iter().find(|d| d.name.as_ref() == type_name);
         if let Some(td) = t {
@@ -114,6 +120,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
+    /// Prints only dependency of type.
     pub fn print_selected_dependency(
         &mut self,
         ast: &ParsedAst,
@@ -135,6 +142,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
+    /// Prints only field of constructor of type.
     pub fn print_selected_field(
         &mut self,
         ast: &ParsedAst,

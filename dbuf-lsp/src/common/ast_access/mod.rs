@@ -1,13 +1,22 @@
+//! Helps with controlling access to ast.
+//!
+//! Exports ast types:
+//! * ParsedAst.
+//! * ElaboratedAst.
+//!
+//! Exports controll access:
+//! * WorkspaceAccess.
+//!
+
 mod elaborated_ast;
 mod file;
 mod location;
+mod parsed_ast;
 mod parsers;
 mod string;
 
 use dashmap::DashMap;
 use tower_lsp::lsp_types::Url;
-
-use dbuf_core::ast::parsed;
 
 use parsers::*;
 
@@ -16,12 +25,16 @@ pub use file::*;
 pub use location::*;
 pub use string::*;
 
+/// String for ParsedAst
 pub type Str = LocString;
+/// Location for ParsedAst
 pub type Loc = Location;
-pub type ParsedAst = parsed::Module<Loc, Str>;
+/// Alias for ElaboratedAst
 pub use elaborated_ast::ElaboratedAst;
+/// Alias for ParsedAst
+pub use parsed_ast::ParsedAst;
 
-#[derive(Debug)]
+/// Guards multicore access to files in workspace.
 pub struct WorkspaceAccess {
     files: DashMap<Url, File>,
 }
@@ -39,16 +52,17 @@ impl WorkspaceAccess {
         }
     }
 
+    /// Builds asts for text and setup File for it.
     pub fn open(&self, url: Url, version: i32, text: &str) {
         let parsed: ParsedAst = get_parsed(text);
         let elaborated: ElaboratedAst = get_elaborated(text);
 
-        let mut file = File::new();
-        file.set_ast(version, parsed, elaborated);
+        let file = File::new(version, parsed, elaborated);
 
         self.files.insert(url, file);
     }
 
+    /// Builds asts for text and change File's asts.
     pub fn change(&self, url: &Url, version: i32, text: &str) {
         let parsed: ParsedAst = get_parsed(text);
         let elaborated: ElaboratedAst = get_elaborated(text);
@@ -58,10 +72,12 @@ impl WorkspaceAccess {
         file.set_ast(version, parsed, elaborated);
     }
 
+    /// Returns File by `url`. Panics File was not opened.
     pub fn read(&self, url: &Url) -> dashmap::mapref::one::Ref<'_, Url, file::File> {
         self.files.get(url).expect("file should be opened")
     }
 
+    /// Removes File from opened files.
     pub fn close(&self, url: &Url) {
         self.files.remove(url);
     }
