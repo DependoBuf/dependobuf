@@ -185,7 +185,7 @@ impl GetImpl<'_> {
             if field.name.get_location().contains(&self.target) {
                 return Symbol::Field {
                     t: std::mem::take(&mut self.t),
-                    constructor: std::mem::take(&mut self.t),
+                    constructor: std::mem::take(&mut self.constructor),
                     field: field.name.to_string(),
                 };
             }
