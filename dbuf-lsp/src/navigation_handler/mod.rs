@@ -24,8 +24,6 @@
 //! * `documentLink/resolve`
 //!
 
-use std::sync::Arc;
-
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::request::*;
 use tower_lsp::lsp_types::OneOf::*;
@@ -40,7 +38,7 @@ use crate::common::navigator::Navigator;
 use crate::common::pretty_printer::PrettyPrinter;
 
 pub struct NavigationHandler {
-    _client: Arc<Client>,
+    _client: Client,
 }
 
 impl NavigationHandler {
@@ -281,7 +279,7 @@ impl NavigationHandler {
 }
 
 impl Handler for NavigationHandler {
-    fn new(client: std::sync::Arc<Client>) -> Self {
+    fn new(client: Client) -> Self {
         NavigationHandler { _client: client }
     }
 

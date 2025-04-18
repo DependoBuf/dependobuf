@@ -22,10 +22,9 @@
 //!
 
 mod rename;
+mod rename_cache;
 
-use std::sync::Arc;
-use std::sync::Mutex;
-
+use rename_cache::RenameCache;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
@@ -35,21 +34,12 @@ use crate::common::ast_access::WorkspaceAccess;
 use crate::common::errors::format_errors;
 use crate::common::handler::Handler;
 use crate::common::navigator::Navigator;
-use crate::common::navigator::Symbol;
 use crate::common::pretty_printer::PrettyPrinter;
 
-#[derive(Default)]
-struct SymbolInfo {
-    document: Option<Url>,
-    version: i32,
-    pos: Position,
-    symbol: Option<Symbol>,
-}
-
 pub struct ActionHandler {
-    _client: Arc<Client>,
+    _client: Client,
 
-    rename_cache: Mutex<SymbolInfo>,
+    rename_cache: RenameCache,
 }
 
 impl ActionHandler {
@@ -124,13 +114,8 @@ impl ActionHandler {
         }
 
         if rename::renameable_symbol(&symbol) {
-            if let Ok(mut cache) = self.rename_cache.lock() {
-                cache.document = Some(document.to_owned());
-                cache.version = doc_version;
-                cache.pos = pos;
-                cache.symbol = Some(symbol);
-            }
-
+            self.rename_cache
+                .set(document.to_owned(), doc_version, pos, symbol);
             Ok(Some(PrepareRenameResponse::DefaultBehavior {
                 default_behavior: true,
             }))
@@ -154,7 +139,7 @@ impl ActionHandler {
         pos: Position,
         document: &Url,
     ) -> Result<Option<WorkspaceEdit>> {
-        let mut symbol = Symbol::None;
+        let symbol;
         let ranges;
         let text_document;
         {
@@ -167,18 +152,9 @@ impl ActionHandler {
 
             let navigator = Navigator::new(&file);
 
-            let mut cached_symbol = false;
-            if let Ok(mut last) = self.rename_cache.lock() {
-                if let Some(url) = &last.document {
-                    if last.pos == pos && url == document && last.version == file.get_version() {
-                        cached_symbol = true;
-                        symbol = last.symbol.take().expect("added when add url");
-                        last.document.take();
-                    }
-                }
-            }
-
-            if !cached_symbol {
+            if let Some(cached) = self.rename_cache.get(document, file.get_version(), pos) {
+                symbol = cached
+            } else {
                 symbol = navigator.get_symbol(pos);
             }
 
@@ -213,10 +189,10 @@ impl ActionHandler {
 }
 
 impl Handler for ActionHandler {
-    fn new(client: Arc<Client>) -> ActionHandler {
+    fn new(client: Client) -> ActionHandler {
         ActionHandler {
             _client: client,
-            rename_cache: Mutex::new(SymbolInfo::default()),
+            rename_cache: RenameCache::default(),
         }
     }
 

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use dbuf_lsp::completion_handler::CompletitionHandler;
 use dbuf_lsp::diagnostic_handler::DiagnosticHandler;
 use tower_lsp::jsonrpc::Result;
@@ -14,7 +12,7 @@ use dbuf_lsp::common::handler::Handler;
 use dbuf_lsp::navigation_handler::NavigationHandler;
 
 struct Backend {
-    client: Arc<Client>,
+    client: Client,
     workspace: WorkspaceAccess,
     action_handler: ActionHandler,
     completition_handler: CompletitionHandler,
@@ -24,14 +22,13 @@ struct Backend {
 
 impl Backend {
     fn new(client: Client) -> Backend {
-        let client_arc = Arc::new(client);
         Backend {
-            client: client_arc.clone(),
+            client: client.clone(),
             workspace: WorkspaceAccess::new(),
-            action_handler: ActionHandler::new(client_arc.clone()),
-            completition_handler: CompletitionHandler::new(client_arc.clone()),
-            diagnosti_handker: DiagnosticHandler::new(client_arc.clone()),
-            navigation_handler: NavigationHandler::new(client_arc),
+            action_handler: ActionHandler::new(client.clone()),
+            completition_handler: CompletitionHandler::new(client.clone()),
+            diagnosti_handker: DiagnosticHandler::new(client.clone()),
+            navigation_handler: NavigationHandler::new(client),
         }
     }
 }

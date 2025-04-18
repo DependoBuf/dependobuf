@@ -12,21 +12,19 @@
 //!
 //!
 
-use std::sync::Arc;
-
 use tower_lsp::lsp_types::*;
 use tower_lsp::Client;
 
 use crate::common::handler::Handler;
 
 pub struct CompletitionHandler {
-    _client: Arc<Client>,
+    _client: Client,
 }
 
 impl CompletitionHandler {}
 
 impl Handler for CompletitionHandler {
-    fn new(client: Arc<Client>) -> Self {
+    fn new(client: Client) -> Self {
         CompletitionHandler { _client: client }
     }
 

@@ -18,21 +18,19 @@
 //!
 //!
 
-use std::sync::Arc;
-
 use tower_lsp::lsp_types::*;
 use tower_lsp::Client;
 
 use crate::common::handler::Handler;
 
 pub struct DiagnosticHandler {
-    _client: Arc<Client>,
+    _client: Client,
 }
 
 impl DiagnosticHandler {}
 
 impl Handler for DiagnosticHandler {
-    fn new(client: Arc<Client>) -> Self {
+    fn new(client: Client) -> Self {
         DiagnosticHandler { _client: client }
     }
 
