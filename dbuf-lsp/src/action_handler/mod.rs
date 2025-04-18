@@ -23,7 +23,6 @@
 
 mod rename;
 
-use std::cell::RefCell;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -50,7 +49,7 @@ struct SymbolInfo {
 pub struct ActionHandler {
     _client: Arc<Client>,
 
-    rename_cache: Mutex<RefCell<SymbolInfo>>,
+    rename_cache: Mutex<SymbolInfo>,
 }
 
 impl ActionHandler {
@@ -129,8 +128,7 @@ impl ActionHandler {
         }
 
         if rename::renameable_symbol(&symbol) {
-            if let Ok(cell) = self.rename_cache.lock() {
-                let mut cache = cell.borrow_mut();
+            if let Ok(mut cache) = self.rename_cache.lock() {
                 cache.document = Some(document.to_owned());
                 cache.version = doc_version;
                 cache.pos = pos;
@@ -174,8 +172,7 @@ impl ActionHandler {
             let navigator = Navigator::new(&file);
 
             let mut cached_symbol = false;
-            if let Ok(cell) = self.rename_cache.lock() {
-                let mut last = cell.borrow_mut();
+            if let Ok(mut last) = self.rename_cache.lock() {
                 if let Some(url) = &last.document {
                     if last.pos == pos && url == document && last.version == file.get_version() {
                         cached_symbol = true;
@@ -223,7 +220,7 @@ impl Handler for ActionHandler {
     fn new(client: Arc<Client>) -> ActionHandler {
         ActionHandler {
             _client: client,
-            rename_cache: Mutex::new(RefCell::new(SymbolInfo::default())),
+            rename_cache: Mutex::new(SymbolInfo::default()),
         }
     }
 
