@@ -9,7 +9,7 @@ use dbuf_core::ast::operators::{OpCall, UnaryOp};
 use dbuf_core::ast::{elaborated, parsed::*};
 use tower_lsp::lsp_types::Range;
 
-use crate::common::ast_access::{Loc, Str};
+use crate::common::ast_access::{ElaboratedHelper, Loc, Str};
 use crate::common::ast_access::{LocStringHelper, LocationHelpers};
 
 use super::Navigator;
@@ -40,18 +40,10 @@ pub fn find_symbols_impl(navigator: &Navigator, symbol: &Symbol) -> Vec<Range> {
 impl FindImpl<'_> {
     fn setup_constructor_if_need(&mut self) {
         if self.constructor.is_empty() {
-            self.constructor = self.t.clone();
-            /*
-            eprintln!("type is {:?}", self.t);
-            let t = &self.t;
-            let ctr_name = self
-                .navigator
-                .elaborated
-                .get_any_constructor(&t)
-                .take()
-                .expect("type is constructable");
-            self.constructor = ctr_name.to_owned();
-            */
+            let ast = self.navigator.elaborated;
+            if ast.is_message(&self.t) {
+                self.constructor = self.t.clone();
+            }
         }
     }
     fn apply_variable(&mut self, var: &Str) {

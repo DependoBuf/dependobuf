@@ -21,6 +21,8 @@ pub trait ElaboratedHelper {
     fn get_any_constructor(&self, type_name: &str) -> Option<&Str>;
     /// returns if type or constructor with `name` exists.
     fn has_type_or_constructor(&self, name: &str) -> bool;
+    /// returns if `type_name` is message.
+    fn is_message(&self, type_name: &str) -> bool;
 }
 
 impl ElaboratedHelper for ElaboratedAst {
@@ -78,5 +80,15 @@ impl ElaboratedHelper for ElaboratedAst {
 
     fn get_constructor(&self, name: &str) -> Option<&Constructor<Str>> {
         self.constructors.get(name)
+    }
+
+    fn is_message(&self, type_name: &str) -> bool {
+        let t = self.get_type(type_name);
+        if let Some(t) = t {
+            if let ConstructorNames::OfMessage(_) = t.constructor_names {
+                return true;
+            }
+        }
+        false
     }
 }

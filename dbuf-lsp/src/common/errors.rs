@@ -1,5 +1,5 @@
 //! Contains errors for LanguageServer.
-//! 
+//!
 
 use std::borrow::Cow;
 

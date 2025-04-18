@@ -63,17 +63,13 @@ impl GetImpl<'_> {
 
     fn setup_constructor_if_need(&mut self) {
         if self.constructor.is_empty() {
-            let t = &self.t;
-            let ctr_name = self
-                .navigator
-                .elaborated
-                .get_any_constructor(t.as_ref())
-                .expect("type is constructable");
-            self.constructor = ctr_name.to_owned();
+            let ast = self.navigator.elaborated;
+            if ast.is_message(&self.t) {
+                self.constructor = self.t.clone();
+            }
         }
     }
     fn apply_variable(&mut self, var: &Str) {
-        // TODO: modify in case of inconstructable type
         self.setup_constructor_if_need();
 
         let ctr_name = &self.constructor;
