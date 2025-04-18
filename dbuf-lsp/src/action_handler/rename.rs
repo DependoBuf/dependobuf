@@ -6,7 +6,7 @@ use tower_lsp::jsonrpc::Result;
 
 use crate::common::ast_access::{ElaboratedAst, ElaboratedHelper};
 use crate::common::dbuf_language;
-use crate::common::errors::bad_rename_error;
+use crate::common::errors::rename_errors;
 use crate::common::navigator::Symbol;
 
 /// Check if symbol can be renamed.
@@ -30,32 +30,28 @@ pub fn renameable_symbol(symbol: &Symbol) -> bool {
 /// Check if symbol can be renamed to new_name without conflicts.
 pub fn renameable_to_symbol(symbol: &Symbol, new_name: &String, ast: &ElaboratedAst) -> Result<()> {
     if new_name.is_empty() {
-        return Err(bad_rename_error("rename to empty string"));
+        return rename_errors::rename_to_empty_error();
     }
     if dbuf_language::get_bultin_types().contains(new_name) {
-        return Err(bad_rename_error("rename to buildin type is forbidden"));
+        return rename_errors::rename_to_builtin_type_error();
     }
     if dbuf_language::get_keywords().contains(new_name) {
-        return Err(bad_rename_error("rename to keyword is forbidden"));
+        return rename_errors::rename_to_keyword_error();
     }
 
     match symbol {
         Symbol::Type(t) => {
             if dbuf_language::get_bultin_types().contains(t) {
-                return Err(bad_rename_error("buildin type can't be renamed"));
+                return rename_errors::rename_of_buildin_type_error();
             }
             if !dbuf_language::is_correct_type_name(new_name) {
-                return Err(bad_rename_error(
-                    format!("'{}' is not correct type name", new_name).as_ref(),
-                ));
+                return rename_errors::rename_to_bad_type_error(new_name);
             }
             if t == new_name {
-                return Err(bad_rename_error("useless rename"));
+                return rename_errors::rename_to_old_error();
             }
             if ast.has_type_or_constructor(new_name) {
-                return Err(bad_rename_error(
-                    format!("constructor or type '{}' exist", new_name).as_ref(),
-                ));
+                return rename_errors::rename_to_existing_type_error(new_name);
             }
         }
         Symbol::Dependency {
@@ -63,17 +59,13 @@ pub fn renameable_to_symbol(symbol: &Symbol, new_name: &String, ast: &Elaborated
             dependency: d,
         } => {
             if d == new_name {
-                return Err(bad_rename_error("useless rename"));
+                return rename_errors::rename_to_old_error();
             }
             if !dbuf_language::is_correct_dependency_name(new_name) {
-                return Err(bad_rename_error(
-                    format!("'{}' is not correct dependency name", new_name).as_ref(),
-                ));
+                return rename_errors::rename_to_bad_dependency_error(new_name);
             }
             if !type_dependency_valid_rename(ast, type_name, new_name) {
-                return Err(bad_rename_error(
-                    format!("type '{}' already contains '{}'", type_name, new_name).as_ref(),
-                ));
+                return rename_errors::rename_to_existing_resource_error(type_name, new_name);
             }
         }
         Symbol::Field {
@@ -82,23 +74,17 @@ pub fn renameable_to_symbol(symbol: &Symbol, new_name: &String, ast: &Elaborated
             field: f,
         } => {
             if f == new_name {
-                return Err(bad_rename_error("useless rename"));
+                return rename_errors::rename_to_old_error();
             }
             if !dbuf_language::is_correct_field_name(new_name) {
-                return Err(bad_rename_error(
-                    format!("'{}' is not correct field name", new_name).as_ref(),
-                ));
+                return rename_errors::rename_to_bad_field_error(new_name);
             }
             if !constructor_field_valid_rename(ast, t, ctr, new_name) {
-                return Err(bad_rename_error(
-                    format!("constructor '{}' already contains '{}'", ctr, new_name).as_ref(),
-                ));
+                return rename_errors::rename_to_existing_resource_error(t, new_name);
             }
         }
-        Symbol::Constructor(_) => {
-            return Err(bad_rename_error("Constructors rename is not supported yet"))
-        }
-        Symbol::None => return Err(bad_rename_error("can't rename not symbol")),
+        Symbol::Constructor(_) => return rename_errors::rename_of_constructor_error(),
+        Symbol::None => return rename_errors::rename_none_symbol_error(),
     };
 
     Ok(())

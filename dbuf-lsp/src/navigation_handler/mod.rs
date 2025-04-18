@@ -165,7 +165,7 @@ impl NavigationHandler {
                     code = t;
                 } else {
                     let mut printer = PrettyPrinter::new(&mut code);
-                    printer.print_type(file.get_parsed(), t.as_ref()).unwrap();
+                    printer.print_type(file.get_parsed(), t.as_ref());
                 }
                 let ls = LanguageString {
                     language: "dbuf".to_owned(),
@@ -179,7 +179,7 @@ impl NavigationHandler {
                 let mut p_header = PrettyPrinter::new(&mut type_header)
                     .with_header_only()
                     .without_dependencies();
-                p_header.print_type(file.get_parsed(), t.as_ref()).unwrap();
+                p_header.print_type(file.get_parsed(), t.as_ref());
 
                 let ls1 = LanguageString {
                     language: "dbuf".to_owned(),
@@ -191,9 +191,7 @@ impl NavigationHandler {
                 let mut dependency_declaration = String::new();
 
                 let mut p_dependency_decl = PrettyPrinter::new(&mut dependency_declaration);
-                p_dependency_decl
-                    .print_selected_dependency(file.get_parsed(), &t, &dependency)
-                    .unwrap();
+                p_dependency_decl.print_selected_dependency(file.get_parsed(), &t, &dependency);
 
                 let ls2 = LanguageString {
                     language: "dbuf".to_owned(),
@@ -213,7 +211,7 @@ impl NavigationHandler {
                 let mut p_header = PrettyPrinter::new(&mut type_header)
                     .with_header_only()
                     .without_dependencies();
-                p_header.print_type(file.get_parsed(), t.as_ref()).unwrap();
+                p_header.print_type(file.get_parsed(), t.as_ref());
 
                 let ls1 = LanguageString {
                     language: "dbuf".to_owned(),
@@ -229,9 +227,7 @@ impl NavigationHandler {
                 let mut s_field = String::new();
 
                 let mut p_field = PrettyPrinter::new(&mut s_field);
-                p_field
-                    .print_selected_field(file.get_parsed(), &t, &constructor, &field)
-                    .unwrap();
+                p_field.print_selected_field(file.get_parsed(), &t, &constructor, &field);
 
                 let ls3 = LanguageString {
                     language: "dbuf".to_owned(),

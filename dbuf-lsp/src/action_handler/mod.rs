@@ -32,7 +32,7 @@ use tower_lsp::lsp_types::*;
 use tower_lsp::Client;
 
 use crate::common::ast_access::WorkspaceAccess;
-use crate::common::errors::*;
+use crate::common::errors::format_errors;
 use crate::common::handler::Handler;
 use crate::common::navigator::Navigator;
 use crate::common::navigator::Symbol;
@@ -69,21 +69,19 @@ impl ActionHandler {
             .await;
 
         if !options.insert_spaces {
-            return Err(bad_param_error("property 'insert_spaces' not true"));
+            return format_errors::bad_insert_spaces();
         }
         if !options.properties.is_empty() {
-            return Err(bad_param_error("property 'properties' not empty"));
+            return format_errors::bad_propertis();
         }
         if options.trim_trailing_whitespace.is_some() {
-            return Err(bad_param_error(
-                "property 'trim_trailing_whitespace' not none",
-            ));
+            return format_errors::bad_trim_trailing_whitespace();
         }
         if options.insert_final_newline.is_some() {
-            return Err(bad_param_error("property 'insert_final_newline' not none"));
+            return format_errors::bad_insert_final_newline();
         }
         if options.trim_final_newlines.is_some() {
-            return Err(bad_param_error("property 'trim_final_newlines' not none"));
+            return format_errors::bad_trim_final_newlines();
         }
 
         let mut edit = TextEdit {
@@ -95,9 +93,7 @@ impl ActionHandler {
         let ast = file.get_parsed();
 
         let mut writer = PrettyPrinter::new(&mut edit.new_text).with_tab_size(options.tab_size);
-        if writer.print_ast(ast).is_err() {
-            return Err(internal_error("pretty printer couldn't parse ast"));
-        }
+        writer.print_ast(ast);
 
         Ok(Some(vec![edit]))
     }
