@@ -18,6 +18,7 @@ pub fn renameable_symbol(symbol: &Symbol) -> bool {
             dependency: _,
         } => true,
         Symbol::Field {
+            t: _,
             constructor: _,
             field: _,
         } => true,
@@ -76,6 +77,7 @@ pub fn renameable_to_symbol(symbol: &Symbol, new_name: &String, ast: &Elaborated
             }
         }
         Symbol::Field {
+            t,
             constructor: ctr,
             field: f,
         } => {
@@ -87,7 +89,7 @@ pub fn renameable_to_symbol(symbol: &Symbol, new_name: &String, ast: &Elaborated
                     format!("'{}' is not correct field name", new_name).as_ref(),
                 ));
             }
-            if !constructor_field_valid_rename(ast, ctr, new_name) {
+            if !constructor_field_valid_rename(ast, t, ctr, new_name) {
                 return Err(bad_rename_error(
                     format!("constructor '{}' already contains '{}'", ctr, new_name).as_ref(),
                 ));
@@ -127,13 +129,11 @@ fn type_dependency_valid_rename(ast: &ElaboratedAst, type_name: &str, rename: &s
 /// Check if any constructor's field can be renamed to rename.
 fn constructor_field_valid_rename(
     ast: &ElaboratedAst,
-    constructor_name: &str,
+    type_name: &str,
+    _constructor_name: &str,
     rename: &str,
 ) -> bool {
-    if let Some(type_name) = ast.get_constructor_type(constructor_name) {
-        return type_dependency_valid_rename(ast, type_name, rename);
-    }
-    false
+    type_dependency_valid_rename(ast, type_name, rename)
 }
 
 /// Check if constructor have field or implicit variable field.

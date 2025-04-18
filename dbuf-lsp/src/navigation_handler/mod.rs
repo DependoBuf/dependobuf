@@ -203,45 +203,43 @@ impl NavigationHandler {
                 strings.push(MarkedString::LanguageString(ls2));
                 strings.push(MarkedString::String(format!("dependency of {}", t)));
             }
-            crate::common::navigator::Symbol::Field { constructor, field } => {
-                let type_name = file.get_elaborated().get_constructor_type(&constructor);
-                if let Some(type_name) = type_name {
-                    let mut type_header = String::new();
+            crate::common::navigator::Symbol::Field {
+                t,
+                constructor,
+                field,
+            } => {
+                let mut type_header = String::new();
 
-                    let mut p_header = PrettyPrinter::new(&mut type_header)
-                        .with_header_only()
-                        .without_dependencies();
-                    p_header
-                        .print_type(file.get_parsed(), type_name.as_ref())
-                        .unwrap();
+                let mut p_header = PrettyPrinter::new(&mut type_header)
+                    .with_header_only()
+                    .without_dependencies();
+                p_header.print_type(file.get_parsed(), t.as_ref()).unwrap();
 
-                    let ls1 = LanguageString {
-                        language: "dbuf".to_owned(),
-                        value: type_header,
-                    };
+                let ls1 = LanguageString {
+                    language: "dbuf".to_owned(),
+                    value: type_header,
+                };
 
-                    strings.push(MarkedString::LanguageString(ls1));
+                strings.push(MarkedString::LanguageString(ls1));
 
-                    // TODO: improve Enum check
-                    if type_name != constructor {
-                        todo!(); // Enums are not implemented
-                    }
-
-                    let mut s_field = String::new();
-
-                    let mut p_field = PrettyPrinter::new(&mut s_field);
-                    p_field
-                        .print_selected_field(file.get_parsed(), type_name, &constructor, &field)
-                        .unwrap();
-
-                    let ls3 = LanguageString {
-                        language: "dbuf".to_owned(),
-                        value: s_field,
-                    };
-
-                    strings.push(MarkedString::LanguageString(ls3));
-                    strings.push(MarkedString::String(format!("field of {}", constructor)));
+                if !file.get_elaborated().is_message(&t) {
+                    todo!(); // Enums are not implemented
                 }
+
+                let mut s_field = String::new();
+
+                let mut p_field = PrettyPrinter::new(&mut s_field);
+                p_field
+                    .print_selected_field(file.get_parsed(), &t, &constructor, &field)
+                    .unwrap();
+
+                let ls3 = LanguageString {
+                    language: "dbuf".to_owned(),
+                    value: s_field,
+                };
+
+                strings.push(MarkedString::LanguageString(ls3));
+                strings.push(MarkedString::String(format!("field of {}", constructor)));
             }
             crate::common::navigator::Symbol::Constructor(_) => {} // Not implemented
             crate::common::navigator::Symbol::None => {}

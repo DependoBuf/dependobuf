@@ -1,6 +1,6 @@
 use dbuf_core::ast::parsed::{ExpressionNode, TypeDefinition, TypeExpression};
 
-use crate::common::ast_access::{ElaboratedHelper, Loc, Str};
+use crate::common::ast_access::{Loc, Str};
 
 use super::{Navigator, Symbol};
 
@@ -36,17 +36,15 @@ pub fn find_type_impl(navigator: &Navigator, symbol: &Symbol) -> Symbol {
                 Symbol::None
             }
         }
-        Symbol::Field { constructor, field } => {
-            let t = navigator.elaborated.get_constructor_type(constructor);
-            let type_name = match t {
-                Some(t) => t,
-                None => return Symbol::None,
-            };
-
+        Symbol::Field {
+            t,
+            constructor,
+            field,
+        } => {
             let body = navigator
                 .parsed
                 .iter()
-                .find(|d| d.name.as_ref() == type_name)
+                .find(|d| d.name.as_ref() == t)
                 .map(|d| &d.data.body);
 
             match body {

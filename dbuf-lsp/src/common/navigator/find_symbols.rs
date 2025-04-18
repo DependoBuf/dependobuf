@@ -111,7 +111,11 @@ impl FindImpl<'_> {
                 }
                 self.ans.push(str.get_location().to_lsp());
             }
-            Symbol::Field { constructor, field } => {
+            Symbol::Field {
+                t: _,
+                constructor,
+                field,
+            } => {
                 if constructor != &self.constructor {
                     return;
                 }

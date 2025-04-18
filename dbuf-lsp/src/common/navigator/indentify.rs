@@ -159,7 +159,7 @@ impl GetImpl<'_> {
             }
             if dependency.name.get_location().contains(&self.target) {
                 return Symbol::Dependency {
-                    t: self.t.clone(),
+                    t: std::mem::take(&mut self.t),
                     dependency: dependency.name.to_string(),
                 };
             }
@@ -184,7 +184,8 @@ impl GetImpl<'_> {
             }
             if field.name.get_location().contains(&self.target) {
                 return Symbol::Field {
-                    constructor: self.constructor.clone(),
+                    t: std::mem::take(&mut self.t),
+                    constructor: std::mem::take(&mut self.t),
                     field: field.name.to_string(),
                 };
             }
@@ -264,13 +265,14 @@ impl GetImpl<'_> {
         // In future, it might be part of constructors chain
         if self.is_dependency(variable) {
             return Symbol::Dependency {
-                t: self.t.clone(),
+                t: std::mem::take(&mut self.t),
                 dependency: variable.to_string(),
             };
         }
         if self.is_field(variable) {
             return Symbol::Field {
-                constructor: self.constructor.clone(),
+                t: std::mem::take(&mut self.t),
+                constructor: std::mem::take(&mut self.constructor),
                 field: variable.to_string(),
             };
         }

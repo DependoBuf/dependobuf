@@ -4,7 +4,6 @@
 use dbuf_core::ast::parsed::TypeDefinition;
 use tower_lsp::lsp_types::Range;
 
-use crate::common::ast_access::ElaboratedHelper;
 use crate::common::ast_access::LocStringHelper;
 use crate::common::ast_access::LocationHelpers;
 
@@ -33,17 +32,15 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
                 None
             }
         }
-        Symbol::Field { constructor, field } => {
-            let t = navigator.elaborated.get_constructor_type(constructor);
-            let type_name = match t {
-                Some(t) => t,
-                None => return None,
-            };
-
+        Symbol::Field {
+            t,
+            constructor: _temp,
+            field,
+        } => {
             let body = navigator
                 .parsed
                 .iter()
-                .find(|d| d.name.as_ref() == type_name)
+                .find(|d| d.name.as_ref() == t)
                 .map(|d| &d.data.body);
 
             match body {
