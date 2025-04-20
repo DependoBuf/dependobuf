@@ -13,7 +13,7 @@ use dbuf_core::ast::parsed::*;
 use super::ast_access::{Loc, ParsedAst, Position, Str};
 
 // TODO:
-//   * use pretty lib ()
+//   * use pretty lib (?)
 //   * make configuration
 //   * TODO resolutions in code
 

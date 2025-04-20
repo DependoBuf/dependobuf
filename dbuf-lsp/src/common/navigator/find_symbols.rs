@@ -40,7 +40,10 @@ impl<'a> FindImpl<'a> {
                 }
             }
             Symbol::Dependency { t, dependency } => {
-                if t != self.scope.get_option_type() {
+                if !self.scope.has_type() {
+                    return;
+                }
+                if t != self.scope.get_type() {
                     return;
                 }
                 if dependency != str.as_ref() {
@@ -48,7 +51,10 @@ impl<'a> FindImpl<'a> {
                 }
             }
             Symbol::Field { constructor, field } => {
-                if constructor != self.scope.get_option_constructor() {
+                if !self.scope.has_constructor() {
+                    return;
+                }
+                if constructor != self.scope.get_constructor() {
                     return;
                 }
                 if field != str.as_ref() {
@@ -56,7 +62,10 @@ impl<'a> FindImpl<'a> {
                 }
             }
             Symbol::Alias { t, branch_id, name } => {
-                if t != self.scope.get_option_type() {
+                if !self.scope.has_type() {
+                    return;
+                }
+                if t != self.scope.get_type() {
                     return;
                 }
                 if *branch_id != self.scope.get_branch_id() {

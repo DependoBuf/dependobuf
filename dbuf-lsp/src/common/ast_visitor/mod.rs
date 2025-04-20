@@ -1,3 +1,15 @@
+//! Convinient visitor for parsed ast.
+//!
+//! Module exports:
+//! * trait Visitor, indicating, that object wants to visit parsed ast,
+//! * enum Visit for parsed ast tokens.
+//! * enum VisitResult for Visitor results for visit.
+//! * fn visit_ast for invoking visitor.
+//!
+//! Module also contains other useful modules:
+//! * mod scope visitor containing ScopeVisitor, wich helps with scope control
+//!
+
 pub mod scope_visitor;
 
 use dbuf_core::ast::operators::*;
@@ -12,42 +24,213 @@ use super::ast_access::ParsedAst;
 use super::ast_access::Position;
 use super::dbuf_language::is_correct_type_name;
 
+/// Constructor characteristic. Do not confuse with constructor calls.
+///
+/// 'a is lifetime of parsed ast reference.
 pub struct Constructor<'a> {
+    /// Name of constructor
     pub name: &'a Str,
+    /// Indicating if constructor constructs message
     pub of_message: bool,
+    /// Location of whole constructor
     pub loc: &'a Loc,
 }
 
+/// Contains parsed ast tokens.
+///
+/// 'a is lifetime of parsed ast reference.
 pub enum Visit<'a> {
-    Keyword(&'static str, Loc), // TODO better find location
+    /// Keyword. Currently one of:
+    /// * `message`,
+    /// * `enum`.
+    ///
+    /// Can be skipped (to next type declaration).
+    ///
+    /// 0: keyword.
+    ///
+    /// 1: location.
+    ///
+    /// Location calculations is bad
+    /// due to incomplete parsed ast.
+    ///
+    /// TODO:
+    /// * better find location algorithm.
+    Keyword(&'static str, Loc),
+    /// Type declaration.
+    ///
+    /// Can be skipped (to next type declaration).
+    ///
+    /// 0: type name.
+    ///
+    /// 1: location of whole type.
     Type(&'a Str, &'a Loc),
+    /// Type dependency.
+    ///
+    /// Can be skipped (to next dependency).
+    ///
+    /// 0: dependency name.
+    ///
+    /// 1: location of whole dependency.
     Dependency(&'a Str, &'a Loc),
+    /// New branch in enum.
+    ///
+    /// Can be skipped (to next enum branch).
     Branch,
-
+    /// Pattern alias.
+    ///
+    /// No skip allowed.
+    ///
+    /// 0: alias.
     PatternAlias(&'a Str),
+    /// Constructor call in pattern.
+    ///
+    /// Can be skipped (to next pattern).
+    ///
+    /// 0: constructor name.
+    ///
+    /// 1: location of whole call.
     PatternCall(&'a Str, &'a Loc),
-    PatternCallArgument(Option<&'a Str>), // TODO pass pattern name
+    /// Constructor field name.
+    ///
+    /// Can be skipped (to next call argument).
+    ///
+    /// 0: field name.
+    ///
+    /// Currently, always None
+    /// due to incomplete parsed ast.
+    ///
+    /// TODO:
+    /// * return not none.
+    PatternCallArgument(Option<&'a Str>),
+    /// Call end.
+    ///
+    /// No skip allowed.
+    ///
     PatternCallStop,
-    PatternLiteral(&'a Literal, &'a Loc), // TODO: better find location (?)
+    /// Literal in pattern.
+    ///
+    /// No skip allowed.
+    ///
+    /// 0: literal.
+    ///
+    /// 1: location.
+    ///
+    /// due to incomplete ast interface
+    /// is not optimal. Changes are expected.
+    ///
+    /// TODO:
+    /// * changes (?).
+    PatternLiteral(&'a Literal, &'a Loc),
+    /// Underscore in pattern.
+    ///
+    /// No skip allowed.
+    ///
+    /// 0: location.
     PatternUnderscore(&'a Loc),
-
+    /// Constructor. Do not confuse with constructor call.
+    ///
+    /// Can be skipped (to next constructor).
+    ///
+    /// 0: constructor characteristic.
     Constructor(Constructor<'a>),
+    /// Field.
+    ///
+    /// Can be skipped (to next field).
+    ///
+    /// 0: field name.
+    ///
+    /// 1: location of whole field.
     Filed(&'a Str, &'a Loc),
-
+    /// Type expression.
+    ///
+    /// Can be skipped (to next dependency/field).
+    ///
+    /// 0: type name.
+    ///
+    /// 1: location of whole expression.
     TypeExpression(&'a Str, &'a Loc),
+    /// Expression.
+    ///
+    /// Can be skipped (to next expression).
+    ///
+    /// 0: location of whole expression.
     Expression(&'a Loc),
-
+    /// Start of access chain.
+    ///
+    /// Can be skipped (to next expression).
     AccessChainStart,
+    /// Access in access chain.
+    ///
+    /// No skip allowed.
+    ///
+    /// 0: access.
     AccessChain(&'a Str),
-    AccessDot(Loc), // TODO: better find location
+    /// Dot in access chain.
+    ///
+    /// No skip allowed.
+    ///
+    /// 0: Location of dot.
+    ///
+    /// location calculation might be
+    /// inaccurate due to incomplete ast.
+    ///
+    /// TODO:
+    /// * better location calculation.
+    AccessDot(Loc),
+    /// Last access in access chain.
+    ///
+    /// No skip allowed.
+    ///
     AccessChainLast(&'a Str),
-
+    /// Constuctor call in expression.
+    ///
+    /// Can be skipped (to next expression).
+    ///
+    /// 0: constructor name.
     ConstructorExpr(&'a Str),
-    ConstructorExprArgument(Option<&'a Str>), // TODO pass pattern name
+    /// Constructor field name.
+    ///
+    /// Can be skipped (to next argument).
+    ///
+    /// 0: constructor field name.
+    ///
+    /// Currently, always None
+    /// due to incomplete parsed ast.
+    ///
+    /// TODO:
+    /// * return not none.
+    ConstructorExprArgument(Option<&'a Str>),
+    /// Constructor call end.
+    ///
+    /// No skip allowed.
     ConstructorExprStop,
-
+    /// Access.
+    ///
+    /// No skip allowed.
+    ///
+    /// 0: access
     VarAccess(&'a Str),
-    Operator(&'static str, Loc), // TODO better find location
+    /// Operator.
+    ///
+    /// No skip allowed.
+    ///
+    /// 0: operator string.
+    ///
+    /// 1: location of operator.
+    ///
+    /// Location might be inaccurate
+    /// due to incomplete parsed ast.
+    ///
+    /// TODO:
+    /// * better location calculation.
+    Operator(&'static str, Loc),
+    /// Literal in expression.
+    ///
+    /// No skip allowed.
+    ///
+    /// 0: literal.
+    ///
+    /// 1: its location.
     Literal(&'a Literal, &'a Loc),
 }
 
@@ -76,16 +259,31 @@ impl<'a> Visit<'a> {
     }
 }
 
+/// Visit result. One of:
+/// * Continue - parse current subtree (if any),
+/// * Skip - skip current subtree. Panics if no such.
+/// * Stop - stop parsing.
 pub enum VisitResult {
     Continue,
     Skip,
     Stop,
 }
 
+/// Visitor - the one, who can parse Visit tokens.
+///
+/// 'a is lifetime of parsed ast reference.
 pub trait Visitor<'a> {
     fn visit(&mut self, visit: Visit<'a>) -> VisitResult;
 }
 
+/// Visit whole ast. Skips parts, if visitor tells so.
+///
+/// Currently takes elaborated ast as argument to generate
+/// `message` and `enum` keywords. That's due incomplete
+/// parsed tree.
+///
+/// Todo:
+/// * remove elaborated ast argument.
 pub fn visit_ast<'a, V: Visitor<'a>>(
     ast: &'a ParsedAst,
     visitor: &mut V,
@@ -116,7 +314,7 @@ pub fn visit_ast<'a, V: Visitor<'a>>(
             VisitResult::Continue => {
                 stop_visit |= visit_type_declaration(td, &td.name, &td.loc, visitor).is_err()
             }
-            VisitResult::Skip => {}
+            VisitResult::Skip => continue,
             VisitResult::Stop => stop_visit = true,
         }
         if stop_visit {
@@ -149,7 +347,7 @@ fn visit_type_declaration<'a, V: Visitor<'a>>(
         let res = visitor.visit(Visit::Dependency(&d.name, &d.loc));
         match res {
             VisitResult::Continue => visit_type_expression(d, visitor)?,
-            VisitResult::Skip => {}
+            VisitResult::Skip => continue,
             VisitResult::Stop => return STOP,
         }
     }
@@ -158,12 +356,10 @@ fn visit_type_declaration<'a, V: Visitor<'a>>(
         TypeDefinition::Message(fields) => {
             let res = visitor.visit(Visit::message_constructor(type_name, type_loc));
             match res {
-                VisitResult::Continue => {}
+                VisitResult::Continue => visit_constructor(fields, visitor)?,
                 VisitResult::Skip => return CONTINUE,
                 VisitResult::Stop => return STOP,
             }
-
-            visit_constructor(fields, visitor)?;
         }
         TypeDefinition::Enum(enum_branchs) => {
             for branch in enum_branchs.iter() {
@@ -212,7 +408,7 @@ fn visit_pattern<'a, V: Visitor<'a>>(p: &'a Pattern<Loc, Str>, visitor: &mut V) 
                 let res = visitor.visit(Visit::PatternAlias(name));
                 match res {
                     VisitResult::Continue => return CONTINUE,
-                    VisitResult::Skip => return CONTINUE,
+                    VisitResult::Skip => panic!("pattern alias can't be skipped"),
                     VisitResult::Stop => return STOP,
                 }
             }
@@ -222,7 +418,7 @@ fn visit_pattern<'a, V: Visitor<'a>>(p: &'a Pattern<Loc, Str>, visitor: &mut V) 
             let res = visitor.visit(Visit::PatternUnderscore(&p.loc));
             match res {
                 VisitResult::Continue => return CONTINUE,
-                VisitResult::Skip => return CONTINUE,
+                VisitResult::Skip => panic!("pattern underscore can't be skipped"),
                 VisitResult::Stop => return STOP,
             }
         }
@@ -249,7 +445,7 @@ fn visit_pattern_call_arguments<'a, V: Visitor<'a>>(
     let res = visitor.visit(Visit::PatternCallStop);
     match res {
         VisitResult::Continue => CONTINUE,
-        VisitResult::Skip => CONTINUE,
+        VisitResult::Skip => panic!("pattern call stop can't be skipped"),
         VisitResult::Stop => STOP,
     }
 }
@@ -262,7 +458,7 @@ fn visit_pattern_literal<'a, V: Visitor<'a>>(
     let res = visitor.visit(Visit::PatternLiteral(l, loc));
     match res {
         VisitResult::Continue => {}
-        VisitResult::Skip => {}
+        VisitResult::Skip => panic!("pattern literal can't be skipped"),
         VisitResult::Stop => return STOP,
     }
 
@@ -324,26 +520,23 @@ fn visit_expression<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: &m
             let (op, loc) = get_operator(e);
             let res = visitor.visit(Visit::Operator(op, loc));
             match res {
-                VisitResult::Continue => {}
-                VisitResult::Skip => return CONTINUE,
+                VisitResult::Continue => visit_expression(rhs, visitor)?,
+                VisitResult::Skip => panic!("operator can't be skipped"),
                 VisitResult::Stop => return STOP,
             }
-            visit_expression(rhs, visitor)?;
         }
         ExpressionNode::OpCall(OpCall::Unary(UnaryOp::Access(s), lhs)) => {
             let res = visitor.visit(Visit::AccessChainStart);
             match res {
-                VisitResult::Continue => {}
+                VisitResult::Continue => visit_access_chain(lhs, visitor)?,
                 VisitResult::Skip => return CONTINUE,
                 VisitResult::Stop => return STOP,
             }
 
-            visit_access_chain(lhs, visitor)?;
-
             let res = visitor.visit(Visit::AccessChainLast(s));
             match res {
                 VisitResult::Continue => return CONTINUE,
-                VisitResult::Skip => return CONTINUE,
+                VisitResult::Skip => panic!("access chain last can't be skipped"),
                 VisitResult::Stop => return STOP,
             }
         }
@@ -351,17 +544,16 @@ fn visit_expression<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: &m
             let (op, loc) = get_operator(e);
             let res = visitor.visit(Visit::Operator(op, loc));
             match res {
-                VisitResult::Continue => {}
-                VisitResult::Skip => return CONTINUE,
+                VisitResult::Continue => visit_expression(rhs, visitor)?,
+                VisitResult::Skip => panic!("operator can't be skipped"),
                 VisitResult::Stop => return STOP,
             }
-            visit_expression(rhs, visitor)?;
         }
         ExpressionNode::OpCall(OpCall::Literal(l)) => {
             let res = visitor.visit(Visit::Literal(l, &e.loc));
             match res {
                 VisitResult::Continue => return CONTINUE,
-                VisitResult::Skip => return CONTINUE,
+                VisitResult::Skip => panic!("literal can't be skipped"),
                 VisitResult::Stop => return STOP,
             }
         }
@@ -388,17 +580,18 @@ fn visit_expression<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: &m
                 let res = visitor.visit(Visit::ConstructorExprStop);
                 match res {
                     VisitResult::Continue => return CONTINUE,
-                    VisitResult::Skip => return CONTINUE,
+                    VisitResult::Skip => panic!("constructor expression stop can't be skipped"),
                     VisitResult::Stop => return STOP,
                 }
-            }
-            assert!(fun.as_ref().chars().next().unwrap().is_lowercase());
-            assert!(args.is_empty());
-            let res = visitor.visit(Visit::VarAccess(fun));
-            match res {
-                VisitResult::Continue => return CONTINUE,
-                VisitResult::Skip => return CONTINUE,
-                VisitResult::Stop => return STOP,
+            } else {
+                assert!(fun.as_ref().chars().next().unwrap().is_lowercase());
+                assert!(args.is_empty());
+                let res = visitor.visit(Visit::VarAccess(fun));
+                match res {
+                    VisitResult::Continue => return CONTINUE,
+                    VisitResult::Skip => panic!("variable access can't be skipped"),
+                    VisitResult::Stop => return STOP,
+                }
             }
         }
         ExpressionNode::TypedHole => panic!("bad expression: type hole"),
@@ -415,7 +608,7 @@ fn visit_access_chain<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: 
             let res = visitor.visit(Visit::AccessChain(s));
             match res {
                 VisitResult::Continue => {}
-                VisitResult::Skip => {}
+                VisitResult::Skip => panic!("access chain can't be skipped"),
                 VisitResult::Stop => return STOP,
             }
         }
@@ -426,7 +619,7 @@ fn visit_access_chain<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: 
             let res = visitor.visit(Visit::AccessChain(fun));
             match res {
                 VisitResult::Continue => {}
-                VisitResult::Skip => {}
+                VisitResult::Skip => panic!("acess chain can't be skiped"),
                 VisitResult::Stop => return STOP,
             }
         }
@@ -439,7 +632,7 @@ fn visit_access_chain<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: 
     let res = visitor.visit(Visit::AccessDot(loc)); // TODO: better find location
     match res {
         VisitResult::Continue => CONTINUE,
-        VisitResult::Skip => CONTINUE,
+        VisitResult::Skip => panic!("access chain dot can't be skipped"),
         VisitResult::Stop => STOP,
     }
 }

@@ -1,3 +1,7 @@
+//! Module provides enum Modifier - enum of modifiers lsp uses to
+//! response to `textDocument/semantic` request.
+//!
+
 use tower_lsp::lsp_types::*;
 
 #[derive(Debug)]

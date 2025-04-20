@@ -1,3 +1,6 @@
+//! Module provides SemanticTokenProvider
+//!
+
 mod modifier;
 mod token;
 
@@ -60,6 +63,7 @@ impl TokenBuilder {
     }
 }
 
+/// Semantic token provider.
 pub struct SemanticTokenProvider<'a> {
     parsed: &'a ParsedAst,
     elaborated: &'a ElaboratedAst,
@@ -82,14 +86,15 @@ impl<'a> SemanticTokenProvider<'a> {
             scope: ScopeVisitor::new(file.get_elaborated()),
         }
     }
+    /// Returns all semantic tokens types in correct order.
     pub fn get_token_types() -> Vec<SemanticTokenType> {
         token::get_all_tokens()
     }
-
+    /// Returns all semantic token modifiers in correct order.
     pub fn get_token_modifiers() -> Vec<SemanticTokenModifier> {
         modifier::get_all_modifiers()
     }
-
+    /// Returns all semantic tokens of file
     pub fn provide(&mut self) -> SemanticTokens {
         self.last_line = 0;
         self.last_char = 0;

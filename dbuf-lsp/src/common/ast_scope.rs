@@ -1,3 +1,7 @@
+//! Module provides AstScope - scope control
+//! for parsed ast.
+//!
+
 use dbuf_core::ast::elaborated::*;
 
 use crate::common::ast_access::ElaboratedHelper;
@@ -18,6 +22,12 @@ impl<'a> From<&mut AstScope<'a>> for Cache<'a> {
     }
 }
 
+/// Scope control for parsed ast.
+///
+/// Usage:
+/// * call `enter_in_type` on entering in type.
+/// * call `enter_in_constructor` on entering in constructor.
+/// * call `apply_variable` on scope change.
 pub struct AstScope<'a> {
     elaborated: &'a ElaboratedAst,
 
@@ -37,25 +47,36 @@ impl<'a> AstScope<'a> {
         }
     }
 
+    /// Returns if type is set
+    pub fn has_type(&self) -> bool {
+        !self.type_name.is_empty()
+    }
+
+    /// Returns type name.
+    ///
+    /// Panic if type is not set.
     pub fn get_type(&self) -> &'a str {
         assert!(!self.type_name.is_empty());
         self.type_name
     }
 
-    pub fn get_option_type(&self) -> &'a str {
-        self.type_name
+    /// Returns if constructor is set.
+    pub fn has_constructor(&self) -> bool {
+        !self.constructor_name.is_empty()
     }
 
+    /// Returns constructor name.
+    ///
+    /// Panic if constructor is not set.
     pub fn get_constructor(&self) -> &'a str {
         assert!(!self.constructor_name.is_empty());
         self.constructor_name
     }
 
-    pub fn get_option_constructor(&self) -> &'a str {
-        self.constructor_name
-    }
-
-    pub fn enter_into_type(&mut self, type_name: &'a str) {
+    /// Enters in type.
+    ///
+    /// Panic if no such type in elaborated ast.
+    pub fn enter_in_type(&mut self, type_name: &'a str) {
         assert!(
             self.elaborated.has_type(type_name),
             "no type in elaborated ast"
@@ -65,7 +86,12 @@ impl<'a> AstScope<'a> {
         self.constructor_name = "";
     }
 
-    pub fn enter_into_constructor(&mut self, constructor_name: &'a str) {
+    /// Enters in constructor.
+    ///
+    /// Panics if:
+    /// * type is not set.
+    /// * type hasn't got that constructor.
+    pub fn enter_in_constructor(&mut self, constructor_name: &'a str) {
         assert!(!self.type_name.is_empty());
         assert!(
             self.elaborated
@@ -76,24 +102,31 @@ impl<'a> AstScope<'a> {
         self.constructor_name = constructor_name;
     }
 
+    /// Exits type.
     pub fn exit_type(&mut self) {
         self.type_name = "";
+        self.constructor_name = "";
     }
 
+    /// Exits constructor.
     pub fn exit_constructor(&mut self) {
         self.constructor_name = "";
     }
 
-    pub fn enter_into_message(&mut self, message: &'a str) {
-        self.enter_into_type(message);
-        self.enter_into_constructor(message);
+    /// Enters in message:
+    ///
+    /// Enter in type `message` and then
+    /// enter in constructor `message`.
+    pub fn enter_in_message(&mut self, message: &'a str) {
+        self.enter_in_type(message);
+        self.enter_in_constructor(message);
     }
 
     fn switch_to_type(&mut self, type_name: &'a str) {
         if self.elaborated.is_message(type_name) {
-            self.enter_into_message(type_name);
+            self.enter_in_message(type_name);
         } else {
-            self.enter_into_type(type_name);
+            self.enter_in_type(type_name);
         }
     }
 
@@ -116,6 +149,9 @@ impl<'a> AstScope<'a> {
         }
     }
 
+    /// Changes scopes according to variable.
+    ///
+    /// Panics on fail
     pub fn apply_variable(&mut self, variable: &str) {
         assert!(!self.type_name.is_empty(), "unknow type to apply variable");
 
@@ -137,12 +173,18 @@ impl<'a> AstScope<'a> {
         self.switch_to_type(switch);
     }
 
+    /// Save state to local cache.
+    ///
+    /// Panics if cache is not empty.
     pub fn save_state(&mut self) {
         assert!(self.cache.is_none(), "no saved state");
 
         self.cache = Some(self.into());
     }
 
+    /// Loads state from cache.
+    ///
+    /// Panics if cache is empty.
     pub fn load_state(&mut self) {
         assert!(self.cache.is_some(), "has saved state");
 

@@ -1,3 +1,7 @@
+//! Module provides enum Token - enum of tokens lsp uses to
+//! response to `textDocument/semantic` request.
+//!
+
 use tower_lsp::lsp_types::*;
 
 #[derive(Debug)]
