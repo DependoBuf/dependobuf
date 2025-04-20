@@ -4,278 +4,223 @@
 //! * parse enums
 //! * parse constructors in future
 //!
-use dbuf_core::ast::operators::{OpCall, UnaryOp};
+
 use tower_lsp::lsp_types::Position;
 
-use dbuf_core::ast::{elaborated, parsed::*};
+use crate::common::ast_access::{
+    ElaboratedAst, ElaboratedHelper, LocStringHelper, LocationHelpers, Str,
+};
 
-use crate::common::ast_access::{ElaboratedHelper, LocStringHelper, LocationHelpers};
-use crate::common::ast_access::{Loc, Str};
+use crate::common::ast_visitor::scope_visitor::ScopeVisitor;
+use crate::common::ast_visitor::VisitResult::*;
+use crate::common::ast_visitor::*;
 
 use super::Navigator;
 use super::Symbol;
 
 struct GetImpl<'a> {
-    navigator: &'a Navigator<'a>,
+    elaborated: &'a ElaboratedAst,
     target: Position,
-    t: String,
-    constructor: String,
+    scope: ScopeVisitor<'a>,
+    result: Symbol,
 }
 
 pub fn get_symbol_impl(navigator: &Navigator, pos: Position) -> Symbol {
     let mut implementation = GetImpl {
-        navigator,
+        elaborated: navigator.elaborated,
         target: pos,
-        t: String::new(),
-        constructor: String::new(),
+        scope: ScopeVisitor::new(navigator.elaborated),
+        result: Symbol::None,
     };
 
-    implementation.get()
+    visit_ast(navigator.parsed, &mut implementation, navigator.elaborated);
+
+    implementation.result
 }
 
-impl GetImpl<'_> {
-    fn is_dependency(&self, dep: &Str) -> bool {
-        if let Some(t) = self.navigator.elaborated.get_type(&self.t) {
-            for (d, _) in t.dependencies.iter() {
-                if d != dep.as_ref() {
-                    continue;
-                }
-                return true;
-            }
-            return false;
-        }
-        panic!("no type {:?} in elaborated ast", dep);
-    }
-    fn is_field(&self, field: &Str) -> bool {
-        let ctr_name = &self.constructor;
-        let ctr = self.navigator.elaborated.constructors.get(ctr_name);
-        if let Some(ctr) = ctr {
-            for (f, _) in ctr.fields.iter() {
-                if f != field.as_ref() {
-                    continue;
-                }
-                return true;
-            }
-            return false;
-        }
-        panic!("constructor {:?} not found in elaborated ast", field);
+impl<'a> GetImpl<'a> {
+    fn no_result(&self) -> bool {
+        matches!(self.result, Symbol::None)
     }
 
-    fn setup_constructor_if_need(&mut self) {
-        if self.constructor.is_empty() {
-            let ast = self.navigator.elaborated;
-            if ast.is_message(&self.t) {
-                self.constructor = self.t.clone();
-            }
-        }
-    }
-    fn apply_variable(&mut self, var: &Str) {
-        self.setup_constructor_if_need();
-
-        let ctr_name = &self.constructor;
-        let ctr = self.navigator.elaborated.constructors.get(ctr_name);
-
-        if let Some(ctr) = ctr {
-            for (i, te) in ctr.implicits.iter() {
-                if i != var.as_ref() {
-                    continue;
-                }
-
-                if let elaborated::Expression::Type {
-                    name,
-                    dependencies: _,
-                } = te
-                {
-                    self.constructor = "".to_owned();
-                    self.t = name.to_owned();
-                    self.setup_constructor_if_need();
-                    return;
-                }
-
-                panic!("bad type expression");
-            }
-            for (f, te) in ctr.fields.iter() {
-                if f != var.as_ref() {
-                    continue;
-                }
-
-                if let elaborated::Expression::Type {
-                    name,
-                    dependencies: _,
-                } = te
-                {
-                    self.constructor = "".to_owned();
-                    self.t = name.to_owned();
-                    self.setup_constructor_if_need();
-                    return;
-                }
-
-                panic!("bad type expression");
-            }
-        }
-        panic!("constructor {:?} not found in elaborated ast", ctr_name);
+    fn return_type(&mut self, type_name: &Str) {
+        assert!(self.no_result());
+        self.result = Symbol::Type(type_name.to_string());
     }
 
-    fn apply_access_chain(&mut self, op: &Expression<Loc, Str>) {
-        match &op.node {
-            ExpressionNode::FunCall { fun, args } => {
-                if !args.is_empty() {
-                    panic!("bad access chain");
-                }
-                self.apply_variable(fun);
-            }
-            ExpressionNode::OpCall(op) => {
-                if let OpCall::Unary(UnaryOp::Access(s), rhs) = op {
-                    self.apply_access_chain(rhs);
-                    self.apply_variable(s);
-                    return;
-                }
-                panic!("bad access chain");
-            }
-            _ => {
-                panic!("bad access chain");
-            }
+    fn return_dependency(&mut self, dependency: &Str) {
+        assert!(self.no_result());
+        self.result = Symbol::Dependency {
+            t: self.scope.get_type().to_owned(),
+            dependency: dependency.to_string(),
+        };
+    }
+
+    fn return_field(&mut self, field: &Str) {
+        assert!(self.no_result());
+        self.result = Symbol::Field {
+            constructor: self.scope.get_constructor().to_owned(),
+            field: field.to_string(),
+        };
+    }
+
+    fn return_alias(&mut self, alias: &Str) {
+        assert!(self.no_result());
+        self.result = Symbol::Alias {
+            t: self.scope.get_type().to_owned(),
+            branch_id: self.scope.get_branch_id(),
+            name: alias.to_string(),
+        };
+    }
+
+    fn return_constructor(&mut self, constructor: &Str) {
+        assert!(self.no_result());
+
+        if self.elaborated.is_message(constructor.as_ref()) {
+            self.result = Symbol::Type(constructor.to_string());
+        } else {
+            self.result = Symbol::Constructor(constructor.to_string());
         }
     }
 
-    fn get(&mut self) -> Symbol {
-        for definition in self.navigator.parsed.iter() {
-            if !definition.loc.contains(&self.target) {
-                continue;
-            }
-            if definition.name.get_location().contains(&self.target) {
-                return Symbol::Type(definition.name.to_string());
-            }
-            self.t = definition.name.to_string();
-            return self.get_in_type(definition);
-        }
-        Symbol::None
-    }
+    fn return_access(&mut self, access: &Str) {
+        assert!(access.get_location().contains(&self.target));
 
-    fn get_in_type(&mut self, t: &TypeDeclaration<Loc, Str>) -> Symbol {
-        for dependency in t.dependencies.iter() {
-            if !dependency.loc.contains(&self.target) {
-                continue;
-            }
-            if dependency.name.get_location().contains(&self.target) {
-                return Symbol::Dependency {
-                    t: std::mem::take(&mut self.t),
-                    dependency: dependency.name.to_string(),
-                };
-            }
-            return self.get_in_type_expr(dependency);
-        }
-        if let TypeDefinition::Message(body) = &t.body {
-            self.constructor = self.t.clone();
-            return self.get_in_constructor(body);
-        }
-
-        if let TypeDefinition::Enum(_branches) = &t.body {
-            panic!("indentify symbol in enums not implemented");
-        }
-
-        Symbol::None
-    }
-
-    fn get_in_constructor(&mut self, ctr: &ConstructorBody<Loc, Str>) -> Symbol {
-        for field in ctr.iter() {
-            if !field.loc.contains(&self.target) {
-                continue;
-            }
-            if field.name.get_location().contains(&self.target) {
-                return Symbol::Field {
-                    t: std::mem::take(&mut self.t),
-                    constructor: std::mem::take(&mut self.constructor),
-                    field: field.name.to_string(),
-                };
-            }
-            return self.get_in_type_expr(field);
-        }
-
-        Symbol::None
-    }
-
-    fn get_in_type_expr(&mut self, te: &TypeExpression<Loc, Str>) -> Symbol {
-        if !te.loc.contains(&self.target) {
-            return Symbol::None;
-        }
-
-        if let ExpressionNode::FunCall { fun, args } = &te.node {
-            if fun.get_location().contains(&self.target) {
-                return Symbol::Type(fun.to_string());
-            }
-            for expr in args.iter() {
-                if !expr.loc.contains(&self.target) {
-                    continue;
-                }
-                return self.get_in_expr(expr);
-            }
-
-            return Symbol::None;
-        }
-
-        panic!("bad type expression");
-    }
-
-    fn get_in_expr(&mut self, expr: &Expression<Loc, Str>) -> Symbol {
-        if !expr.loc.contains(&self.target) {
-            return Symbol::None;
-        }
-
-        match &expr.node {
-            ExpressionNode::FunCall { fun, args } => {
-                if !args.is_empty() {
-                    // TODO: parse constructor
-                    panic!("constructors API will be changed");
-                }
-                self.get_variable(fun)
-            }
-            ExpressionNode::OpCall(op) => match op {
-                OpCall::Literal(_) => Symbol::None,
-                OpCall::Binary(_, lhs, rhs) => {
-                    if lhs.loc.contains(&self.target) {
-                        return self.get_in_expr(lhs);
-                    }
-                    if rhs.loc.contains(&self.target) {
-                        return self.get_in_expr(rhs);
-                    }
-                    Symbol::None
-                }
-                OpCall::Unary(op, rhs) => {
-                    if let UnaryOp::Access(s) = op {
-                        if s.get_location().contains(&self.target) {
-                            self.apply_access_chain(rhs);
-                            return self.get_variable(s);
-                        }
-                    }
-                    self.get_in_expr(rhs)
-                }
-            },
-            _ => {
-                panic!("bad expression node")
-            }
-        }
-    }
-
-    fn get_variable(&mut self, variable: &Str) -> Symbol {
-        if !variable.get_location().contains(&self.target) {
-            return Symbol::None;
-        }
         // Variable should be either dependency or field
-        // In future, it might be part of constructors chain
-        if self.is_dependency(variable) {
-            return Symbol::Dependency {
-                t: std::mem::take(&mut self.t),
-                dependency: variable.to_string(),
-            };
+        if self
+            .elaborated
+            .is_type_dependency(self.scope.get_type(), access.as_ref())
+        {
+            self.return_dependency(access);
+        } else if self
+            .elaborated
+            .is_constructor_field(self.scope.get_constructor(), access.as_ref())
+        {
+            self.return_field(access);
+        } else {
+            panic!("bad variable expr")
         }
-        if self.is_field(variable) {
-            return Symbol::Field {
-                t: std::mem::take(&mut self.t),
-                constructor: std::mem::take(&mut self.constructor),
-                field: variable.to_string(),
-            };
-        }
-        panic!("bad variable expr")
+    }
+}
+
+impl<'a> Visitor<'a> for GetImpl<'a> {
+    fn visit(&mut self, visit: Visit<'a>) -> VisitResult {
+        match &visit {
+            Visit::Keyword(_, _) => {}
+            Visit::Type(type_name, type_location) => {
+                if !type_location.contains(&self.target) {
+                    return Skip;
+                }
+                if type_name.get_location().contains(&self.target) {
+                    self.return_type(type_name);
+                    return Stop;
+                }
+            }
+            Visit::Dependency(dep_name, dependency_location) => {
+                if !dependency_location.contains(&self.target) {
+                    return Skip;
+                }
+                if dep_name.get_location().contains(&self.target) {
+                    self.return_dependency(dep_name);
+                    return Stop;
+                }
+            }
+            Visit::Branch => {}
+            Visit::PatternAlias(alias) => {
+                if alias.get_location().contains(&self.target) {
+                    self.return_alias(alias);
+                    return Stop;
+                }
+            }
+            Visit::PatternCall(constructor, loc) => {
+                if !loc.contains(&self.target) {
+                    return Skip;
+                }
+                if constructor.get_location().contains(&self.target) {
+                    self.return_constructor(constructor);
+                    return Stop;
+                }
+            }
+            Visit::PatternCallArgument(loc_string) => {
+                assert!(
+                    loc_string.is_none(),
+                    "constructor call argument name is not implemented"
+                );
+            }
+            Visit::PatternCallStop => {}
+            Visit::PatternLiteral(_, _) => {}
+            Visit::PatternUnderscore(_) => {}
+            Visit::Constructor(constructor) => {
+                if !constructor.loc.contains(&self.target) {
+                    return Skip;
+                }
+                if constructor.name.get_location().contains(&self.target) {
+                    self.return_constructor(constructor.name);
+                    return Stop;
+                }
+            }
+            Visit::Filed(field, loc) => {
+                if !loc.contains(&self.target) {
+                    return Skip;
+                }
+                if field.get_location().contains(&self.target) {
+                    self.return_field(field);
+                    return Stop;
+                }
+            }
+            Visit::TypeExpression(type_name, loc) => {
+                if !loc.contains(&self.target) {
+                    return Skip;
+                }
+                if type_name.get_location().contains(&self.target) {
+                    self.return_type(type_name);
+                    return Stop;
+                }
+            }
+            Visit::Expression(loc) => {
+                if !loc.contains(&self.target) {
+                    return Skip;
+                }
+            }
+            Visit::AccessChainStart => {}
+            Visit::AccessChain(access) => {
+                if access.get_location().contains(&self.target) {
+                    self.return_access(access);
+                    return Stop;
+                }
+            }
+            Visit::AccessDot(_) => {}
+            Visit::AccessChainLast(access) => {
+                if access.get_location().contains(&self.target) {
+                    self.return_access(access);
+                    return Stop;
+                }
+            }
+            Visit::ConstructorExpr(constructor) => {
+                if constructor.get_location().contains(&self.target) {
+                    self.return_constructor(constructor);
+                    return Stop;
+                }
+            }
+            Visit::ConstructorExprArgument(loc_string) => {
+                assert!(
+                    loc_string.is_none(),
+                    "constructor call argument name is not implemented"
+                );
+            }
+            Visit::ConstructorExprStop => {}
+            Visit::VarAccess(access) => {
+                if access.get_location().contains(&self.target) {
+                    self.return_access(access);
+                    return Stop;
+                }
+            }
+            Visit::Operator(_, _) => {}
+            Visit::Literal(_, _) => {}
+        };
+
+        assert!(matches!(self.scope.visit(visit), VisitResult::Continue));
+
+        Continue
     }
 }

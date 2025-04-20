@@ -30,6 +30,8 @@ pub trait LocStringHelper {
     fn len(&self) -> usize;
     /// Returns string's location.
     fn get_location(&self) -> Location;
+    /// Sets location.
+    fn set_location(&mut self, location: Location);
     /// Sets begin of string's location.
     fn set_location_start(&mut self, start: Position);
     /// Sets end of string's location.
@@ -51,6 +53,9 @@ impl LocStringHelper for LocString {
     }
     fn get_location(&self) -> Location {
         self.location
+    }
+    fn set_location(&mut self, location: Location) {
+        self.location = location;
     }
     fn set_location_start(&mut self, start: Position) {
         self.location.start = start;

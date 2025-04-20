@@ -82,6 +82,10 @@ pub fn rename_to_existing_resource_error<T>(type_name: &str, new_field_name: &st
     ))
 }
 
+pub fn rename_of_alias_error<T>() -> Result<T> {
+    Err(bad_rename_error("alias rename is not supported yet", 98))
+}
+
 pub fn rename_of_constructor_error<T>() -> Result<T> {
     Err(bad_rename_error(
         "constructors rename is not supported yet",

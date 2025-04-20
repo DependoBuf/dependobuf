@@ -16,7 +16,7 @@ struct Backend {
     workspace: WorkspaceAccess,
     action_handler: ActionHandler,
     completition_handler: CompletitionHandler,
-    diagnosti_handker: DiagnosticHandler,
+    diagnosti_handler: DiagnosticHandler,
     navigation_handler: NavigationHandler,
 }
 
@@ -27,7 +27,7 @@ impl Backend {
             workspace: WorkspaceAccess::new(),
             action_handler: ActionHandler::new(client.clone()),
             completition_handler: CompletitionHandler::new(client.clone()),
-            diagnosti_handker: DiagnosticHandler::new(client.clone()),
+            diagnosti_handler: DiagnosticHandler::new(client.clone()),
             navigation_handler: NavigationHandler::new(client),
         }
     }
@@ -51,7 +51,7 @@ impl LanguageServer for Backend {
 
         self.action_handler.init(&init, &mut capabilities);
         self.completition_handler.init(&init, &mut capabilities);
-        self.diagnosti_handker.init(&init, &mut capabilities);
+        self.diagnosti_handler.init(&init, &mut capabilities);
         self.navigation_handler.init(&init, &mut capabilities);
 
         Ok(InitializeResult {
@@ -103,6 +103,17 @@ impl LanguageServer for Backend {
         self.client
             .log_message(MessageType::INFO, "file closed")
             .await;
+    }
+
+    async fn semantic_tokens_full(
+        &self,
+        params: SemanticTokensParams,
+    ) -> Result<Option<SemanticTokensResult>> {
+        let doc = params.text_document.uri;
+
+        self.diagnosti_handler
+            .semantic_tokens_full(&self.workspace, &doc)
+            .await
     }
 
     async fn goto_definition(

@@ -24,6 +24,10 @@
 //! * `documentLink/resolve`
 //!
 
+mod navigation;
+
+use navigation::find_definition;
+use navigation::find_type;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::request::*;
 use tower_lsp::lsp_types::OneOf::*;
@@ -59,7 +63,7 @@ impl NavigationHandler {
             let navigator = Navigator::new(&file);
 
             let symbol = navigator.get_symbol(pos);
-            range = navigator.find_definition(&symbol);
+            range = find_definition(&navigator, &symbol);
         }
 
         match range {
@@ -88,9 +92,9 @@ impl NavigationHandler {
             let navigator = Navigator::new(&file);
 
             let symbol = navigator.get_symbol(pos);
-            let t = navigator.find_type(&symbol);
+            let t = find_type(&navigator, symbol);
 
-            range = navigator.find_definition(&t);
+            range = find_definition(&navigator, &t);
         }
 
         match range {
@@ -199,11 +203,12 @@ impl NavigationHandler {
                 strings.push(MarkedString::LanguageString(ls2));
                 strings.push(MarkedString::String(format!("dependency of {}", t)));
             }
-            crate::common::navigator::Symbol::Field {
-                t,
-                constructor,
-                field,
-            } => {
+            crate::common::navigator::Symbol::Field { constructor, field } => {
+                let elaborated = file.get_elaborated();
+                let t = elaborated
+                    .get_constructor_type(&constructor)
+                    .expect("valid ast");
+
                 let mut type_header = String::new();
 
                 let mut p_header = PrettyPrinter::new(&mut type_header)
@@ -218,14 +223,14 @@ impl NavigationHandler {
 
                 strings.push(MarkedString::LanguageString(ls1));
 
-                if !file.get_elaborated().is_message(&t) {
+                if !file.get_elaborated().is_message(t) {
                     todo!(); // Enums are not implemented
                 }
 
                 let mut s_field = String::new();
 
                 let mut p_field = PrettyPrinter::new(&mut s_field);
-                p_field.print_selected_field(file.get_parsed(), &t, &constructor, &field);
+                p_field.print_selected_field(file.get_parsed(), t, &constructor, &field);
 
                 let ls3 = LanguageString {
                     language: "dbuf".to_owned(),
@@ -235,7 +240,12 @@ impl NavigationHandler {
                 strings.push(MarkedString::LanguageString(ls3));
                 strings.push(MarkedString::String(format!("field of {}", constructor)));
             }
-            crate::common::navigator::Symbol::Constructor(_) => {} // Not implemented
+            crate::common::navigator::Symbol::Alias {
+                t: _,
+                branch_id: _,
+                name: _,
+            } => {}
+            crate::common::navigator::Symbol::Constructor(_) => {}
             crate::common::navigator::Symbol::None => {}
         };
 

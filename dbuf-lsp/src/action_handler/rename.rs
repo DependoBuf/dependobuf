@@ -18,10 +18,14 @@ pub fn renameable_symbol(symbol: &Symbol) -> bool {
             dependency: _,
         } => true,
         Symbol::Field {
-            t: _,
             constructor: _,
             field: _,
         } => true,
+        Symbol::Alias {
+            t: _,
+            branch_id: _,
+            name: _,
+        } => false,
         Symbol::Constructor(_) => false,
         Symbol::None => false,
     }
@@ -69,7 +73,6 @@ pub fn renameable_to_symbol(symbol: &Symbol, new_name: &String, ast: &Elaborated
             }
         }
         Symbol::Field {
-            t,
             constructor: ctr,
             field: f,
         } => {
@@ -79,10 +82,16 @@ pub fn renameable_to_symbol(symbol: &Symbol, new_name: &String, ast: &Elaborated
             if !dbuf_language::is_correct_field_name(new_name) {
                 return rename_errors::rename_to_bad_field_error(new_name);
             }
+            let t = ast.get_constructor_type(ctr).expect("valid symbol");
             if !constructor_field_valid_rename(ast, t, ctr, new_name) {
                 return rename_errors::rename_to_existing_resource_error(t, new_name);
             }
         }
+        Symbol::Alias {
+            t: _,
+            branch_id: _,
+            name: _,
+        } => return rename_errors::rename_of_alias_error(),
         Symbol::Constructor(_) => return rename_errors::rename_of_constructor_error(),
         Symbol::None => return rename_errors::rename_none_symbol_error(),
     };

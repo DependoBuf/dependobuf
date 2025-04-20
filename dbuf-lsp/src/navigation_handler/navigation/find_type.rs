@@ -1,20 +1,23 @@
+// TODO: alias
+
 use dbuf_core::ast::parsed::{ExpressionNode, TypeDefinition, TypeExpression};
 
-use crate::common::ast_access::{Loc, Str};
+use crate::common::ast_access::{ElaboratedHelper, Loc, Str};
 
-use super::{Navigator, Symbol};
+use crate::common::navigator::Navigator;
+use crate::common::navigator::Symbol;
 
 fn get_type_in_type_expr(te: &TypeExpression<Loc, Str>) -> Symbol {
     if let ExpressionNode::FunCall { fun, args: _ } = &te.node {
         Symbol::Type(fun.to_string())
     } else {
-        Symbol::None
+        panic!("bad type expression");
     }
 }
 
-pub fn find_type_impl(navigator: &Navigator, symbol: &Symbol) -> Symbol {
-    match symbol {
-        Symbol::Type(t) => Symbol::Type(t.to_owned()),
+pub fn find_type_impl(navigator: &Navigator, symbol: Symbol) -> Symbol {
+    match &symbol {
+        Symbol::Type(_) => symbol,
         Symbol::Dependency { t, dependency } => {
             let dependencies = navigator
                 .parsed
@@ -28,19 +31,14 @@ pub fn find_type_impl(navigator: &Navigator, symbol: &Symbol) -> Symbol {
                     .find(|d| d.name.as_ref() == dependency)
                     .map(|d| &d.data);
                 if let Some(expr) = te {
-                    get_type_in_type_expr(expr)
-                } else {
-                    Symbol::None
+                    return get_type_in_type_expr(expr);
                 }
-            } else {
-                Symbol::None
             }
+            panic!("dependency not found\n{:#?}", symbol);
         }
-        Symbol::Field {
-            t,
-            constructor,
-            field,
-        } => {
+        Symbol::Field { constructor, field } => {
+            let elaborated = navigator.elaborated;
+            let t = elaborated.get_constructor_type(constructor).unwrap();
             let body = navigator
                 .parsed
                 .iter()
@@ -50,35 +48,34 @@ pub fn find_type_impl(navigator: &Navigator, symbol: &Symbol) -> Symbol {
             match body {
                 Some(TypeDefinition::Message(m)) => {
                     let te = m.iter().find(|f| f.name.as_ref() == field).map(|f| &f.data);
-
                     if let Some(expr) = te {
-                        get_type_in_type_expr(expr)
-                    } else {
-                        Symbol::None
+                        return get_type_in_type_expr(expr);
                     }
                 }
                 Some(TypeDefinition::Enum(branches)) => {
                     for b in branches.iter() {
-                        let my_ctr = b
-                            .constructors
-                            .iter()
-                            .find(|c| c.name.as_ref() == constructor);
-
-                        if let Some(ctr) = my_ctr {
-                            let te = ctr.iter().find(|f| f.name.as_ref() == field);
-
+                        for c in b.constructors.iter() {
+                            if c.name.as_ref() != constructor {
+                                continue;
+                            }
+                            let te = c.iter().find(|f| f.name.as_ref() == field);
                             if let Some(expr) = te {
                                 return get_type_in_type_expr(expr);
                             }
                             break;
                         }
                     }
-                    Symbol::None
                 }
-                None => Symbol::None,
-            }
+                None => {}
+            };
+            panic!("field not found\n{:#?}", symbol);
         }
-        Symbol::Constructor(_) => Symbol::None, // Not implemented
+        Symbol::Alias {
+            t: _,
+            branch_id: _,
+            name: _,
+        } => todo!(),
+        Symbol::Constructor(_) => symbol,
         Symbol::None => Symbol::None,
     }
 }
