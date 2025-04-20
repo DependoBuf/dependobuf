@@ -11,13 +11,17 @@ use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 
 use super::ast_access::{Loc, ParsedAst, Position, Str};
-
-// TODO:
-//   * use pretty lib (?)
-//   * make configuration
-//   * TODO resolutions in code
+use super::dbuf_language::is_correct_type_name;
 
 /// A configurable AST pretty-printer.
+///
+/// TODO:
+/// * use pretty lib (?)
+/// * make configuration
+/// * TODO resolutions in code
+/// * rewrite using ast_visitor?
+///   * Pros: easier to write selected
+///   * Cons: harder to put symbols correctly (bad whitespaces might occur). Fixes with pretty lib.
 pub struct PrettyPrinter<'a, W: Write> {
     cursor: Position,
     writer: &'a mut W,
@@ -109,6 +113,52 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         let t = ast.iter().find(|d| d.name.as_ref() == type_name);
         if let Some(td) = t {
             self.print_type_definition(td);
+        }
+    }
+
+    /// Prints constructor of ast.
+    pub fn print_selected_constructor(
+        &mut self,
+        ast: &ParsedAst,
+        type_name: &str,
+        consructor: &str,
+    ) {
+        let t = ast
+            .iter()
+            .find(|d| d.name.as_ref() == type_name)
+            .map(|d| &d.body);
+
+        if let Some(TypeDefinition::Enum(e)) = t {
+            for b in e {
+                for c in b.constructors.iter() {
+                    if c.name.as_ref() != consructor {
+                        continue;
+                    }
+                    self.write(&c.name);
+                    self.write(" {");
+                    self.new_line_if(!c.data.is_empty());
+                    self.print_constructor(&c.data, 1);
+                    self.new_line();
+                    self.write("}");
+                    return;
+                }
+            }
+        }
+    }
+
+    /// Prints selected branch of enum.
+    pub fn print_selected_branch(&mut self, ast: &ParsedAst, type_name: &str, branch_id: usize) {
+        let t = ast
+            .iter()
+            .find(|d| d.name.as_ref() == type_name)
+            .map(|d| &d.body);
+
+        if let Some(TypeDefinition::Enum(e)) = t {
+            let b = e.get(branch_id);
+            if let Some(b) = b {
+                self.print_all_patterns(&b.patterns);
+                self.write("=> {}");
+            }
         }
     }
 
@@ -233,15 +283,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     fn print_enum_bracnh(&mut self, branch: &EnumBranch<Loc, Str>) {
         self.write_tabs(1);
 
-        let mut first = true;
-        for p in branch.patterns.iter() {
-            if !first {
-                self.write(", ");
-            }
-            self.print_pattern(p);
-            first = false;
-        }
-
+        self.print_all_patterns(&branch.patterns);
         self.write(" => {");
 
         for c in branch.constructors.iter() {
@@ -254,10 +296,22 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         self.write("}");
     }
 
+    fn print_all_patterns(&mut self, patterns: &[Pattern<Loc, Str>]) {
+        let mut first = true;
+        for p in patterns.iter() {
+            if !first {
+                self.write(", ");
+            }
+            self.print_pattern(p);
+            first = false;
+        }
+    }
+
     fn print_pattern(&mut self, pattern: &Pattern<Loc, Str>) {
         match &pattern.node {
             PatternNode::Call { name, fields } => {
-                if fields.is_empty() {
+                if !is_correct_type_name(name.as_ref()) {
+                    assert!(fields.is_empty());
                     // Assuming: variable
                     self.write(name);
                 } else {
@@ -328,11 +382,11 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         }
     }
 
-    // TODO: change logic: distinguish variable from empty constructor
     fn print_expression(&mut self, expression: &Expression<Loc, Str>) {
         match &expression.node {
             ExpressionNode::FunCall { fun, args } => {
-                if args.is_empty() {
+                if !is_correct_type_name(fun.as_ref()) {
+                    assert!(args.is_empty());
                     // Assuming: variable cal
                     self.write(fun);
                 } else {

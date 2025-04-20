@@ -24,22 +24,22 @@
 //! * `documentLink/resolve`
 //!
 
+mod hover;
 mod navigation;
 
+use hover::get_hover;
 use navigation::find_definition;
 use navigation::find_type;
+
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::request::*;
 use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
 use tower_lsp::Client;
 
-use crate::common::ast_access::ElaboratedHelper;
 use crate::common::ast_access::WorkspaceAccess;
-use crate::common::dbuf_language::get_bultin_types;
 use crate::common::handler::Handler;
 use crate::common::navigator::Navigator;
-use crate::common::pretty_printer::PrettyPrinter;
 
 pub struct NavigationHandler {
     _client: Client,
@@ -47,9 +47,6 @@ pub struct NavigationHandler {
 
 impl NavigationHandler {
     /// `textDocument/definition` implementation.
-    ///
-    /// TODO:
-    /// * Enum + constructor support
     ///
     pub async fn goto_definition(
         &self,
@@ -76,9 +73,6 @@ impl NavigationHandler {
     }
 
     /// `textDocument/typeDefintion` implementation.
-    ///
-    /// TODO:
-    /// * Enum + constructor support
     ///
     pub async fn goto_type_definition(
         &self,
@@ -107,9 +101,6 @@ impl NavigationHandler {
     }
 
     /// `textDocument/references` implementation.
-    ///
-    /// TODO:
-    /// * Enum + constructor support
     ///
     pub async fn references(
         &self,
@@ -143,10 +134,8 @@ impl NavigationHandler {
     /// * For types: returns full type definition (TODO: if type is too huge -- reduce)
     /// * For dependencies: Type name ('message Type') and dependency declaration
     /// * For fields: Type name ('message Type'), Constructor if not message('    Ctr'), field declaration
-    /// * For Constructors: Type name ('enum Enum'), Constructor declaration without pattern
-    ///
-    /// TODO:
-    /// * Enum + constructor support
+    /// * For constructors: Type name ('enum Enum'), Constructor declaration without pattern
+    /// * For aliases: Type name ('enum Enum') with dependencies, enum branch
     ///
     pub async fn hover(
         &self,
@@ -159,96 +148,7 @@ impl NavigationHandler {
 
         let symbol = navigator.get_symbol(pos);
 
-        let mut strings = Vec::new();
-        match symbol {
-            crate::common::navigator::Symbol::Type(t) => {
-                let mut code = String::new();
-                if get_bultin_types().contains(&t) {
-                    code = t;
-                } else {
-                    let mut printer = PrettyPrinter::new(&mut code);
-                    printer.print_type(file.get_parsed(), t.as_ref());
-                }
-                let ls = LanguageString {
-                    language: "dbuf".to_owned(),
-                    value: code,
-                };
-                strings.push(MarkedString::LanguageString(ls));
-            }
-            crate::common::navigator::Symbol::Dependency { t, dependency } => {
-                let mut type_header = String::new();
-
-                let mut p_header = PrettyPrinter::new(&mut type_header)
-                    .with_header_only()
-                    .without_dependencies();
-                p_header.print_type(file.get_parsed(), t.as_ref());
-
-                let ls1 = LanguageString {
-                    language: "dbuf".to_owned(),
-                    value: type_header,
-                };
-
-                strings.push(MarkedString::LanguageString(ls1));
-
-                let mut dependency_declaration = String::new();
-
-                let mut p_dependency_decl = PrettyPrinter::new(&mut dependency_declaration);
-                p_dependency_decl.print_selected_dependency(file.get_parsed(), &t, &dependency);
-
-                let ls2 = LanguageString {
-                    language: "dbuf".to_owned(),
-                    value: dependency_declaration,
-                };
-
-                strings.push(MarkedString::LanguageString(ls2));
-                strings.push(MarkedString::String(format!("dependency of {}", t)));
-            }
-            crate::common::navigator::Symbol::Field { constructor, field } => {
-                let elaborated = file.get_elaborated();
-                let t = elaborated
-                    .get_constructor_type(&constructor)
-                    .expect("valid ast");
-
-                let mut type_header = String::new();
-
-                let mut p_header = PrettyPrinter::new(&mut type_header)
-                    .with_header_only()
-                    .without_dependencies();
-                p_header.print_type(file.get_parsed(), t.as_ref());
-
-                let ls1 = LanguageString {
-                    language: "dbuf".to_owned(),
-                    value: type_header,
-                };
-
-                strings.push(MarkedString::LanguageString(ls1));
-
-                if !file.get_elaborated().is_message(t) {
-                    todo!(); // Enums are not implemented
-                }
-
-                let mut s_field = String::new();
-
-                let mut p_field = PrettyPrinter::new(&mut s_field);
-                p_field.print_selected_field(file.get_parsed(), t, &constructor, &field);
-
-                let ls3 = LanguageString {
-                    language: "dbuf".to_owned(),
-                    value: s_field,
-                };
-
-                strings.push(MarkedString::LanguageString(ls3));
-                strings.push(MarkedString::String(format!("field of {}", constructor)));
-            }
-            crate::common::navigator::Symbol::Alias {
-                t: _,
-                branch_id: _,
-                name: _,
-            } => {}
-            crate::common::navigator::Symbol::Constructor(_) => {}
-            crate::common::navigator::Symbol::None => {}
-        };
-
+        let strings = get_hover(symbol, &file);
         if strings.is_empty() {
             Ok(None)
         } else {

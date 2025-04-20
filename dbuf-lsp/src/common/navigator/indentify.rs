@@ -1,8 +1,4 @@
-//! Indetifies symbol at location and returns it type
-//! TODO:
-//! * think about inconstructuble types (probably, no need)
-//! * parse enums
-//! * parse constructors in future
+//! Indetifies symbol at location and returns it type.
 //!
 
 use tower_lsp::lsp_types::Position;

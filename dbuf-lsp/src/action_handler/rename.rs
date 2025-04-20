@@ -10,6 +10,10 @@ use crate::common::errors::rename_errors;
 use crate::common::navigator::Symbol;
 
 /// Check if symbol can be renamed.
+///
+/// TODO:
+/// * renameable constructor.
+/// * renameable alias.
 pub fn renameable_symbol(symbol: &Symbol) -> bool {
     match symbol {
         Symbol::Type(t) => !dbuf_language::get_bultin_types().contains(t),

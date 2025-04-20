@@ -282,7 +282,7 @@ pub trait Visitor<'a> {
 /// `message` and `enum` keywords. That's due incomplete
 /// parsed tree.
 ///
-/// Todo:
+/// TODO:
 /// * remove elaborated ast argument.
 pub fn visit_ast<'a, V: Visitor<'a>>(
     ast: &'a ParsedAst,

@@ -93,9 +93,6 @@ impl ActionHandler {
     /// Currently checks if symbol can be renamed and,
     /// if so, caches it.
     ///
-    /// TODO:
-    /// * Enum + constructors support.
-    ///
     pub async fn prepare_rename(
         &self,
         access: &WorkspaceAccess,
@@ -128,9 +125,6 @@ impl ActionHandler {
     ///
     /// Renames symbol if possible. Checks that
     /// there is no conflicts after rename.
-    ///
-    /// TODO:
-    /// * Enum + constructors support.
     ///
     pub async fn rename(
         &self,
