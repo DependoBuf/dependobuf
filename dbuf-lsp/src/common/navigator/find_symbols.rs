@@ -101,7 +101,11 @@ impl<'a> Visitor<'a> for FindImpl<'a> {
             Visit::PatternCallStop => {}
             Visit::PatternLiteral(_, _) => {}
             Visit::PatternUnderscore(_) => {}
-            Visit::Constructor(cons) => self.check_add(cons.name),
+            Visit::Constructor(cons) => {
+                if !cons.of_message {
+                    self.check_add(cons.name)
+                }
+            }
             Visit::Filed(field, _) => self.check_add(field),
             Visit::TypeExpression(type_name, _) => self.check_add(type_name),
             Visit::Expression(_) => {}

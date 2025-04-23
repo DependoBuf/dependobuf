@@ -16,7 +16,7 @@ struct Backend {
     workspace: WorkspaceAccess,
     action_handler: ActionHandler,
     completition_handler: CompletitionHandler,
-    diagnosti_handler: DiagnosticHandler,
+    diagnostic_handler: DiagnosticHandler,
     navigation_handler: NavigationHandler,
 }
 
@@ -27,7 +27,7 @@ impl Backend {
             workspace: WorkspaceAccess::new(),
             action_handler: ActionHandler::new(client.clone()),
             completition_handler: CompletitionHandler::new(client.clone()),
-            diagnosti_handler: DiagnosticHandler::new(client.clone()),
+            diagnostic_handler: DiagnosticHandler::new(client.clone()),
             navigation_handler: NavigationHandler::new(client),
         }
     }
@@ -51,7 +51,7 @@ impl LanguageServer for Backend {
 
         self.action_handler.init(&init, &mut capabilities);
         self.completition_handler.init(&init, &mut capabilities);
-        self.diagnosti_handler.init(&init, &mut capabilities);
+        self.diagnostic_handler.init(&init, &mut capabilities);
         self.navigation_handler.init(&init, &mut capabilities);
 
         Ok(InitializeResult {
@@ -105,15 +105,32 @@ impl LanguageServer for Backend {
             .await;
     }
 
+    async fn document_symbol(
+        &self,
+        params: DocumentSymbolParams,
+    ) -> Result<Option<DocumentSymbolResponse>> {
+        let doc = params.text_document.uri;
+
+        self.diagnostic_handler
+            .document_symbol(&self.workspace, &doc)
+            .await
+    }
+
     async fn semantic_tokens_full(
         &self,
         params: SemanticTokensParams,
     ) -> Result<Option<SemanticTokensResult>> {
         let doc = params.text_document.uri;
 
-        self.diagnosti_handler
+        self.diagnostic_handler
             .semantic_tokens_full(&self.workspace, &doc)
             .await
+    }
+
+    async fn code_lens(&self, params: CodeLensParams) -> Result<Option<Vec<CodeLens>>> {
+        let doc = params.text_document.uri;
+
+        self.navigation_handler.code_lens(&self.workspace, &doc).await
     }
 
     async fn goto_definition(
@@ -125,7 +142,7 @@ impl LanguageServer for Backend {
         let uri = doc_pos.text_document.uri;
 
         self.navigation_handler
-            .goto_definition(&self.workspace, pos, uri)
+            .goto_definition(&self.workspace, pos, &uri)
             .await
     }
 
@@ -138,7 +155,7 @@ impl LanguageServer for Backend {
         let uri = doc_pos.text_document.uri;
 
         self.navigation_handler
-            .goto_type_definition(&self.workspace, pos, uri)
+            .goto_type_definition(&self.workspace, pos, &uri)
             .await
     }
 
@@ -148,7 +165,7 @@ impl LanguageServer for Backend {
         let uri = doc_pos.text_document.uri;
 
         self.navigation_handler
-            .references(&self.workspace, pos, uri)
+            .references(&self.workspace, pos, &uri)
             .await
     }
 
@@ -158,7 +175,7 @@ impl LanguageServer for Backend {
         let uri = doc_pos.text_document.uri;
 
         self.navigation_handler
-            .hover(&self.workspace, pos, uri)
+            .hover(&self.workspace, pos, &uri)
             .await
     }
 
@@ -171,7 +188,7 @@ impl LanguageServer for Backend {
         let uri = doc_pos.text_document.uri;
 
         self.navigation_handler
-            .document_highlight(&self.workspace, pos, uri)
+            .document_highlight(&self.workspace, pos, &uri)
             .await
     }
 

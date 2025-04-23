@@ -5,20 +5,14 @@
 //! * (✓) `textDocument/rename`
 //! * (✓) `textDocument/prepareRename`
 //!
-//! Also it might be good idea to handle such requests:
-//! * `textDocument/selectionRange`
-//! * `textDocument/inlayHint`
-//! * `inlayHint/resolve`
-//! * `textDocument/foldingRange`
+//! Perhaps, next time:
 //! * `textDocument/codeAction`
 //! * `codeAction/resolve`
 //! * `textDocument/rangeFormatting`
 //! * `textDocument/onTypeFormatting`
+//! * `textDocument/foldingRange`
 //!
 //! These methods are also about action, but there no need to implement them:
-//! * `textDocument/codeLens`
-//! * `codeLens/resolve`
-//!
 //!
 
 mod rename;

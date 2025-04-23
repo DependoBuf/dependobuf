@@ -1,27 +1,32 @@
 //! Module provides colorful diagnostic.
 //!
 //! Module should help with such requests:
-//! * (✗) `textDocument/documentSymbol`
-//! * (✓)`textDocument/semanticTokens/full`
+//! * (✓) `textDocument/documentSymbol`
+//! * (✓) `textDocument/semanticTokens/full`
 //!
 //! Also it might be good idea to handle such requests:
-//! * `textDocument/diagnostic`
-//! * `workspace/diagnostic`
+//! ---
+//!
+//! Perhaps, next time:
 //! * `textDocument/semanticTokens/full/delta`
 //! * `textDocument/semanticTokens/range`
-//! * `textDocument/inlineValue`
-//! * `textDocument/inlayHint`
+//! * `textDocument/diagnostic`
+//! * `workspace/diagnostic`
 //!
 //! These methods are also about diagnostic, but there no need to implement them:
 //! * `textDocument/documentColor`
 //! * `textDocument/colorPresentation`
-//!
+//! * `textDocument/inlineValue`
 //!
 
+mod document_symbol;
 mod semantic_token;
 
+use document_symbol::DocumentSymbolProvider;
 use semantic_token::SemanticTokenProvider;
+
 use tower_lsp::jsonrpc::Result;
+use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
 use tower_lsp::Client;
 
@@ -33,6 +38,21 @@ pub struct DiagnosticHandler {
 }
 
 impl DiagnosticHandler {
+    /// `textDocument/documentSymbol` implementation.
+    ///
+    pub async fn document_symbol(
+        &self,
+        access: &WorkspaceAccess,
+        document: &Url,
+    ) -> Result<Option<DocumentSymbolResponse>> {
+        let file = access.read(document);
+        let mut provider = DocumentSymbolProvider::new(&file);
+        let symbols = provider.provide();
+
+        Ok(Some(symbols))
+    }
+
+    /// `textDocument/semanticTokens/full` implementation.
     pub async fn semantic_tokens_full(
         &self,
         access: &WorkspaceAccess,
@@ -52,6 +72,8 @@ impl Handler for DiagnosticHandler {
     }
 
     fn init(&self, _init: &InitializeParams, capabilites: &mut ServerCapabilities) {
+        capabilites.document_symbol_provider = Some(Left(true));
+
         let legend = SemanticTokensLegend {
             token_types: SemanticTokenProvider::get_token_types(),
             token_modifiers: SemanticTokenProvider::get_token_modifiers(),

@@ -1,6 +1,11 @@
-//! Also there are (after line 1136 in tower-lsp::lib.rs) some workspace commands, which are useless while we have no module system
-//!
-
+//! TODO:
+//! * `textDocument/InlayHint`
+//! * remove async/await -- clients log are useless (eprintln! is enough for debug, no need in other logs)
+//! * common utils tests
+//! * e2e server tests
+//! * overview
+//! * re-read files to fill documentation.
+//! 
 pub mod common;
 
 pub mod action_handler;

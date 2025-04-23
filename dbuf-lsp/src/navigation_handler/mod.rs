@@ -6,15 +6,22 @@
 //! * (✓) `textDocument/references`
 //! * (✓) `textDocument/hover`
 //! * (✓) `textDocument/documentHighlight`
+//! * (✓) `textDocument/codeLens`
+//! * (✗) `textDocument/inlayHint` // for constructors type
 //!  
 //! Also it might be good idea to handle such requests:
+//!
+//! Perhaps, next time:
+//! * `codeLens/resolve`
+//! * `inlayHint/resolve`
+//! * `textDocument/selectionRange`
+//! * `textDocument/moniker`
+//! * `textDocument/linkedEditingRange`
+//!
+//! These methods are also about navigation, but there no need to implement them:
 //! * `textDocument/prepareTypeHierarchy`
 //! * `typeHierarchy/supertypes`
 //! * `typeHierarchy/subtypes`
-//! * `textDocument/linkedEditingRange`
-//! * `textDocument/moniker`
-//!
-//! These methods are also about navigation, but there no need to implement them:
 //! * `textDocument/declaration`
 //! * `textDocument/implementation`
 //! * `textDocument/prepareCallHierarchy`
@@ -24,9 +31,12 @@
 //! * `documentLink/resolve`
 //!
 
+mod code_lens;
 mod hover;
+mod inlay_hint;
 mod navigation;
 
+use code_lens::CodeLensProvider;
 use hover::get_hover;
 use navigation::find_definition;
 use navigation::find_type;
@@ -46,13 +56,28 @@ pub struct NavigationHandler {
 }
 
 impl NavigationHandler {
+    /// `textDocument/codeLens` implementation.
+    /// 
+    /// Currently shows only reference count.
+    /// 
+    pub async fn code_lens(
+        &self,
+        access: &WorkspaceAccess,
+        document: &Url,
+    ) -> Result<Option<Vec<CodeLens>>> {
+        let file = access.read(document);
+        let mut provider = CodeLensProvider::new(&file);
+        let lens = provider.provide();
+
+        Ok(Some(lens))
+    }
     /// `textDocument/definition` implementation.
     ///
     pub async fn goto_definition(
         &self,
         access: &WorkspaceAccess,
         pos: Position,
-        document: Url,
+        document: &Url,
     ) -> Result<Option<GotoDefinitionResponse>> {
         let range;
         {
@@ -65,7 +90,7 @@ impl NavigationHandler {
 
         match range {
             Some(range) => Ok(Some(GotoDefinitionResponse::Scalar(Location {
-                uri: document,
+                uri: document.to_owned(),
                 range,
             }))),
             None => Ok(None),
@@ -78,7 +103,7 @@ impl NavigationHandler {
         &self,
         access: &WorkspaceAccess,
         pos: Position,
-        document: Url,
+        document: &Url,
     ) -> Result<Option<GotoTypeDefinitionResponse>> {
         let range;
         {
@@ -93,7 +118,7 @@ impl NavigationHandler {
 
         match range {
             Some(range) => Ok(Some(GotoTypeDefinitionResponse::Scalar(Location {
-                uri: document,
+                uri: document.to_owned(),
                 range,
             }))),
             None => Ok(None),
@@ -106,7 +131,7 @@ impl NavigationHandler {
         &self,
         access: &WorkspaceAccess,
         pos: Position,
-        document: Url,
+        document: &Url,
     ) -> Result<Option<Vec<Location>>> {
         let ranges;
         {
@@ -141,7 +166,7 @@ impl NavigationHandler {
         &self,
         access: &WorkspaceAccess,
         pos: Position,
-        document: Url,
+        document: &Url,
     ) -> Result<Option<Hover>> {
         let file = access.read(&document);
         let navigator = Navigator::new(&file);
@@ -165,7 +190,7 @@ impl NavigationHandler {
         &self,
         access: &WorkspaceAccess,
         pos: Position,
-        document: Url,
+        document: &Url,
     ) -> Result<Option<Vec<DocumentHighlight>>> {
         let ranges;
         {
@@ -194,6 +219,8 @@ impl Handler for NavigationHandler {
     }
 
     fn init(&self, _init: &InitializeParams, capabilites: &mut ServerCapabilities) {
+        capabilites.code_lens_provider = Some(CodeLensOptions { resolve_provider: Some(false) });
+
         capabilites.definition_provider = Some(Left(true));
         capabilites.type_definition_provider = Some(TypeDefinitionProviderCapability::Simple(true));
         capabilites.references_provider = Some(Left(true));
