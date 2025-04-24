@@ -5,6 +5,8 @@
 //! * e2e server tests
 //! * overview
 //! * re-read files to fill documentation.
+//! * add literals to navigator symbol.
+//! * rewrite pretty printer.
 //! 
 pub mod common;
 
