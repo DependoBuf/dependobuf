@@ -10,9 +10,7 @@ pub struct PagedStorage {
 }
 
 impl PagedStorage {
-    pub fn new(storage: Storage, buffer_capacity: usize) -> Self {
-        let buffer_pool = BufferPool::new(storage, buffer_capacity);
-
+    pub fn new(buffer_pool: BufferPool) -> Self {
         Self { buffer_pool }
     }
 
@@ -42,18 +40,18 @@ impl PagedStorage {
             }
 
             // Ensure the data vector is large enough
-            if data_end > page.data.len() {
-                page.data.resize(data_end, 0);
+            if data_end > page.0.data.len() {
+                page.0.data.resize(data_end, 0);
             }
 
-            page.data[offset..data_end].copy_from_slice(data);
+            page.0.data[offset..data_end].copy_from_slice(data);
 
-            if data_end as u32 > page.header.free_space_offset {
-                page.header.free_space_offset = data_end as u32;
+            if data_end as u32 > page.0.header.free_space_offset {
+                page.0.header.free_space_offset = data_end as u32;
             }
+
+            page.1 = true;
         }
-
-        self.buffer_pool.mark_dirty(page_id)?;
 
         Ok(())
     }
@@ -67,11 +65,11 @@ impl PagedStorage {
     ) -> Result<Vec<u8>, StorageError> {
         let page = self.buffer_pool.get_page_mut(page_id)?;
 
-        if offset + len > page.data.len() {
+        if offset + len > page.0.data.len() {
             return Err(StorageError::InvalidOperation);
         }
 
-        let result = page.data[offset..offset + len].to_vec();
+        let result = page.0.data[offset..offset + len].to_vec();
 
         Ok(result)
     }
@@ -79,31 +77,30 @@ impl PagedStorage {
     /// Append data to a page
     pub fn append_data(&mut self, page_id: PageId, data: &[u8]) -> Result<usize, StorageError> {
         let offset: usize;
-        {
-            let page_size = self.page_size();
-            let mut page = self.buffer_pool.get_page_mut(page_id)?;
 
-            offset = page.header.free_space_offset as usize;
+        let page_size = self.page_size();
+        let mut page = self.buffer_pool.get_page_mut(page_id)?;
 
-            // Ensure the data vector is large enough
-            let data_end = offset + data.len();
+        offset = page.0.header.free_space_offset as usize;
 
-            if data_end > page_size {
-                return Err(StorageError::PageFull);
-            }
+        // Ensure the data vector is large enough
+        let data_end = offset + data.len();
 
-            if offset + data.len() > page.data.len() {
-                page.data.resize(offset + data.len(), 0);
-            }
-
-            // Copy the data
-            page.data[offset..offset + data.len()].copy_from_slice(data);
-
-            // Update the free space offset
-            page.header.free_space_offset = (offset + data.len()) as u32;
+        if data_end > page_size {
+            return Err(StorageError::PageFull);
         }
 
-        self.buffer_pool.mark_dirty(page_id)?;
+        if offset + data.len() > page.0.data.len() {
+            page.0.data.resize(offset + data.len(), 0);
+        }
+
+        // Copy the data
+        page.0.data[offset..offset + data.len()].copy_from_slice(data);
+
+        // Update the free space offset
+        page.0.header.free_space_offset = (offset + data.len()) as u32;
+
+        page.1 = true;
 
         Ok(offset)
     }
