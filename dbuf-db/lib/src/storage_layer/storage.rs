@@ -1,11 +1,11 @@
-use bincode::{Decode, Encode, config};
+use bincode::{Decode, Encode};
 use marble::Marble;
 use std::path::Path;
 
 use super::error::StorageError;
 use super::page::{Page, PageHeader, PageId, PageType};
 
-use super::utils::{BINCODE_CONFIG, load, save};
+use super::utils::{load, save};
 
 pub const DEFAULT_PAGE: PageId = 100;
 const STATE_INDEX: PageId = 0;

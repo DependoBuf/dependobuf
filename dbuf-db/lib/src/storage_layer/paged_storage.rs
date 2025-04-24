@@ -1,7 +1,6 @@
 use super::buffer_pool::BufferPool;
 use super::error::StorageError;
 use super::page::PageId;
-use super::storage::Storage;
 
 use marble::Marble;
 
@@ -22,6 +21,13 @@ impl PagedStorage {
         self.buffer_pool.marble()
     }
 
+    pub fn allocate_page(
+        &mut self,
+        page_type: super::page::PageType,
+    ) -> Result<PageId, StorageError> {
+        Ok(self.buffer_pool.allocate_page(page_type)?.0.header.id)
+    }
+
     /// Write data to a page at the specified offset
     pub fn write_data(
         &mut self,
@@ -29,41 +35,39 @@ impl PagedStorage {
         offset: usize,
         data: &[u8],
     ) -> Result<(), StorageError> {
-        {
-            let page_size = self.page_size();
-            let mut page = self.buffer_pool.get_page_mut(page_id)?;
+        let page_size = self.page_size();
+        let mut page = self.buffer_pool.get_page_mut(page_id)?;
 
-            let data_end = offset + data.len();
+        let data_end = offset + data.len();
 
-            if data_end > page_size {
-                return Err(StorageError::PageFull);
-            }
-
-            // Ensure the data vector is large enough
-            if data_end > page.0.data.len() {
-                page.0.data.resize(data_end, 0);
-            }
-
-            page.0.data[offset..data_end].copy_from_slice(data);
-
-            if data_end as u32 > page.0.header.free_space_offset {
-                page.0.header.free_space_offset = data_end as u32;
-            }
-
-            page.1 = true;
+        if data_end > page_size {
+            return Err(StorageError::PageFull);
         }
+
+        // Ensure the data vector is large enough
+        if data_end > page.0.data.len() {
+            page.0.data.resize(data_end, 0);
+        }
+
+        page.0.data[offset..data_end].copy_from_slice(data);
+
+        if data_end as u32 > page.0.header.free_space_offset {
+            page.0.header.free_space_offset = data_end as u32;
+        }
+
+        page.1 = true;
 
         Ok(())
     }
 
     /// Read data from a page
     pub fn read_data(
-        &mut self,
+        &self,
         page_id: PageId,
         offset: usize,
         len: usize,
     ) -> Result<Vec<u8>, StorageError> {
-        let page = self.buffer_pool.get_page_mut(page_id)?;
+        let page = self.buffer_pool.get_page(page_id)?;
 
         if offset + len > page.0.data.len() {
             return Err(StorageError::InvalidOperation);
@@ -90,19 +94,19 @@ impl PagedStorage {
             return Err(StorageError::PageFull);
         }
 
-        if offset + data.len() > page.0.data.len() {
+        if data_end > page.0.data.len() {
             page.0.data.resize(offset + data.len(), 0);
         }
 
         // Copy the data
-        page.0.data[offset..offset + data.len()].copy_from_slice(data);
+        page.0.data[offset..data_end].copy_from_slice(data);
 
         // Update the free space offset
-        page.0.header.free_space_offset = (offset + data.len()) as u32;
+        page.0.header.free_space_offset = data_end as u32;
 
         page.1 = true;
 
-        Ok(offset)
+        Ok(data_end)
     }
 
     /// Flush all dirty pages

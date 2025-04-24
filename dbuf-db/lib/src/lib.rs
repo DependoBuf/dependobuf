@@ -1,9 +1,11 @@
 pub mod storage_layer;
 
+#[cfg(test)]
 mod tests {
     pub mod utility {
         use std::process::Command;
 
+        #[cfg(test)]
         pub fn cleanup(path: &str) {
             Command::new("sh")
                 .arg("-c")
@@ -20,7 +22,8 @@ mod tests {
         let path = "temp_path1";
 
         {
-            let storage = storage::Storage::new(path, 4096).unwrap();
+            //create fresh storage
+            let _storage = storage::Storage::new(path, 4096).unwrap();
         }
 
         {
@@ -30,11 +33,12 @@ mod tests {
             assert_eq!(storage.state.next_page_id, storage::DEFAULT_PAGE);
 
             let page = storage.allocate_page(page::PageType::Free).unwrap();
+            assert_eq!(page.header.id, storage::DEFAULT_PAGE);
             assert_eq!(storage.state.next_page_id, storage::DEFAULT_PAGE + 1);
         }
 
         {
-            let mut storage = storage::Storage::new(path, 1234).unwrap();
+            let storage = storage::Storage::new(path, 1234).unwrap();
             //next_page_id is stored on disk
             assert_eq!(storage.state.next_page_id, storage::DEFAULT_PAGE + 1);
 
@@ -45,7 +49,7 @@ mod tests {
         }
 
         {
-            let mut storage = storage::Storage::new(path, 1337).unwrap();
+            let storage = storage::Storage::new(path, 1337).unwrap();
             assert_eq!(storage.state.next_page_id, storage::DEFAULT_PAGE + 1);
 
             //page content is stored on disk
@@ -56,7 +60,7 @@ mod tests {
         }
 
         {
-            let mut storage = storage::Storage::new(path, 1337).unwrap();
+            let storage = storage::Storage::new(path, 1337).unwrap();
             //page deletion does not mess with next_page_id
             assert_eq!(storage.state.next_page_id, storage::DEFAULT_PAGE + 1);
 
@@ -65,7 +69,7 @@ mod tests {
             assert!(result.is_err());
 
             //unallocated pages arent found
-            let another_result = storage.read_page(storage::DEFAULT_PAGE + 25);
+            let result = storage.read_page(storage::DEFAULT_PAGE + 25);
             assert!(result.is_err());
         }
 
@@ -81,7 +85,7 @@ mod tests {
             let mut buffer_pool = buffer_pool::BufferPool::new(storage, 3usize);
 
             for i in 0u64..10u64 {
-                let mut page = buffer_pool.allocate_page(page::PageType::Free).unwrap();
+                let page = buffer_pool.allocate_page(page::PageType::Free).unwrap();
                 assert_eq!(page.0.header.id, storage::DEFAULT_PAGE + i);
             }
         }
@@ -93,7 +97,7 @@ mod tests {
 
             for i in 0u64..10u64 {
                 let mut page = buffer_pool.get_page_mut(storage::DEFAULT_PAGE + i).unwrap();
-                page.0.data = vec![i as u8, i as u8, i as u8];
+                page.0.data = vec![i as u8; 3];
                 page.1 = true;
             }
 
@@ -108,8 +112,66 @@ mod tests {
             for i in 0u64..10u64 {
                 let page = buffer_pool.get_page(storage::DEFAULT_PAGE + i).unwrap();
                 assert_eq!(page.1, false);
-                assert_eq!(page.0.data, vec![i as u8, i as u8, i as u8]);
+                assert_eq!(page.0.data, vec![i as u8; 3]);
             }
+        }
+
+        utility::cleanup(path);
+    }
+
+    #[test]
+    fn paged_storage_test() {
+        let path = "temp_path3";
+
+        let page_id: page::PageId;
+
+        {
+            let storage = storage::Storage::new(path, 4096).unwrap();
+            let buffer_pool = buffer_pool::BufferPool::new(storage, 3usize);
+            let mut paged_storage = paged_storage::PagedStorage::new(buffer_pool);
+            assert_eq!(paged_storage.page_size(), 4096);
+
+            page_id = paged_storage.allocate_page(page::PageType::Free).unwrap();
+            assert_eq!(page_id, storage::DEFAULT_PAGE);
+
+            let new_offset = paged_storage.append_data(page_id, &[3u8; 5]).unwrap();
+            assert_eq!(new_offset, 5usize);
+
+            paged_storage
+                .write_data(page_id, 0usize, &[2u8; 3])
+                .unwrap();
+
+            paged_storage.flush().unwrap();
+        }
+
+        //written data is saved to disk properly
+        {
+            let storage = storage::Storage::new(path, 4096).unwrap();
+            let buffer_pool = buffer_pool::BufferPool::new(storage, 3usize);
+            let mut paged_storage = paged_storage::PagedStorage::new(buffer_pool);
+
+            let result = paged_storage.read_data(page_id, 0usize, 5usize).unwrap();
+            assert_eq!(result, vec![2u8, 2u8, 2u8, 3u8, 3u8]);
+
+            //cant read over bounds
+            let is_invalid = match paged_storage.read_data(page_id, 4095usize, 2usize) {
+                Err(error::StorageError::InvalidOperation) => true,
+                _ => false,
+            };
+            assert!(is_invalid);
+
+            //page does not overflow
+            let is_overflow = match paged_storage.append_data(page_id, &[5u8; 4092]) {
+                Err(error::StorageError::PageFull) => true,
+                _ => false,
+            };
+            assert!(is_overflow);
+
+            let is_overflow = match paged_storage.write_data(page_id, 4095, &[5u8; 2usize]) {
+                Err(error::StorageError::PageFull) => true,
+                _ => false,
+            };
+            assert!(is_overflow);
         }
 
         utility::cleanup(path);

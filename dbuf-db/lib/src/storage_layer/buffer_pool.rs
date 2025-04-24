@@ -52,7 +52,6 @@ impl BufferPool {
             if let Some((&page_id, _)) = pages.iter().next() {
                 let (page, _) = pages.remove(&page_id).unwrap();
                 self.storage.write_page(&page)?;
-                evict_id = Some(page_id);
             }
         } else {
             pages.remove(&evict_id.unwrap());
@@ -100,7 +99,7 @@ impl BufferPool {
     ) -> Result<RefMut<'a, (Page, bool)>, StorageError> {
         self.bump_page(id)?;
 
-        let mut pages = self.pages.borrow_mut();
+        let pages = self.pages.borrow_mut();
 
         Ok(RefMut::map(pages, |p| p.get_mut(&id).unwrap()))
     }
@@ -108,7 +107,7 @@ impl BufferPool {
     pub fn get_page<'a>(&'a self, id: PageId) -> Result<Ref<'a, (Page, bool)>, StorageError> {
         self.bump_page(id)?;
 
-        let mut pages = self.pages.borrow();
+        let pages = self.pages.borrow();
 
         Ok(Ref::map(pages, |p| p.get(&id).unwrap()))
     }
