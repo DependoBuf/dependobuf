@@ -33,7 +33,7 @@ impl PagedStorage {
     ) -> Result<(), StorageError> {
         {
             let page_size = self.page_size();
-            let mut page = self.buffer_pool.get_page(page_id)?;
+            let mut page = self.buffer_pool.get_page_mut(page_id)?;
 
             let data_end = offset + data.len();
 
@@ -65,7 +65,7 @@ impl PagedStorage {
         offset: usize,
         len: usize,
     ) -> Result<Vec<u8>, StorageError> {
-        let page = self.buffer_pool.get_page(page_id)?;
+        let page = self.buffer_pool.get_page_mut(page_id)?;
 
         if offset + len > page.data.len() {
             return Err(StorageError::InvalidOperation);
@@ -81,7 +81,7 @@ impl PagedStorage {
         let offset: usize;
         {
             let page_size = self.page_size();
-            let mut page = self.buffer_pool.get_page(page_id)?;
+            let mut page = self.buffer_pool.get_page_mut(page_id)?;
 
             offset = page.header.free_space_offset as usize;
 

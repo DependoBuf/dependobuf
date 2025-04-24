@@ -9,13 +9,13 @@ use std::collections::HashMap;
 
 pub struct BufferPool {
     storage: Storage,
+    //pages are refcell bc they are a cache that is modified by read ops
     pages: RefCell<HashMap<PageId, (Page, bool)>>, // (page, dirty)
     capacity: usize,
 }
 
 //TODO write a better rotation policy
-//TODO use refcel to get rid of mut
-//or not???
+//TODO iterate over all pages in cache
 impl BufferPool {
     pub fn new(storage: Storage, capacity: usize) -> Self {
         if capacity == 0 {
@@ -36,7 +36,7 @@ impl BufferPool {
         &self.storage.marble
     }
 
-    pub fn pop_page(&self) -> Result<(), StorageError> {
+    fn pop_page(&self) -> Result<(), StorageError> {
         let mut pages = self.pages.borrow_mut();
 
         let mut evict_id = None;
@@ -64,7 +64,7 @@ impl BufferPool {
     pub fn allocate_page<'a>(
         &'a mut self,
         page_type: PageType,
-    ) -> Result<RefMut<'a, Page>, StorageError> {
+    ) -> Result<RefMut<'a, (Page, bool)>, StorageError> {
         let page = self.storage.allocate_page(page_type)?;
 
         if self.pages.borrow().len() >= self.capacity {
@@ -76,14 +76,11 @@ impl BufferPool {
         let id = page.header.id;
         pages.insert(id, (page, false));
 
-        Ok(RefMut::map(pages, |p| {
-            let (page_mut, _) = p.get_mut(&id).unwrap();
-            page_mut
-        }))
+        Ok(RefMut::map(pages, |p| p.get_mut(&id).unwrap()))
     }
 
-    /// Get a page from the cache or load it from storage
-    pub fn get_page<'a>(&'a mut self, id: PageId) -> Result<RefMut<'a, Page>, StorageError> {
+    //place page into cache
+    fn bump_page(&self, id: PageId) -> Result<(), StorageError> {
         if !self.pages.borrow().contains_key(&id) {
             let page = self.storage.read_page(id)?;
             // Simple eviction policy: if at capacity, evict a random page
@@ -93,22 +90,27 @@ impl BufferPool {
 
             self.pages.borrow_mut().insert(id, (page, false));
         }
+        Ok(())
+    }
+
+    /// Get mut ref to page from the cache or load it from storage
+    pub fn get_page_mut<'a>(
+        &'a mut self,
+        id: PageId,
+    ) -> Result<RefMut<'a, (Page, bool)>, StorageError> {
+        self.bump_page(id)?;
 
         let mut pages = self.pages.borrow_mut();
 
-        Ok(RefMut::map(pages, |p| {
-            let (page_mut, _) = p.get_mut(&id).unwrap();
-            page_mut
-        }))
+        Ok(RefMut::map(pages, |p| p.get_mut(&id).unwrap()))
     }
 
-    pub fn mark_dirty(&mut self, id: PageId) -> Result<(), StorageError> {
-        if let Some((_, dirty)) = self.pages.borrow_mut().get_mut(&id) {
-            *dirty = true;
-            Ok(())
-        } else {
-            Err(StorageError::PageNotFound(id))
-        }
+    pub fn get_page<'a>(&'a self, id: PageId) -> Result<Ref<'a, (Page, bool)>, StorageError> {
+        self.bump_page(id)?;
+
+        let mut pages = self.pages.borrow();
+
+        Ok(Ref::map(pages, |p| p.get(&id).unwrap()))
     }
 
     pub fn flush(&mut self) -> Result<(), StorageError> {

@@ -73,5 +73,45 @@ mod tests {
     }
 
     #[test]
-    fn buffer_pool_test() {}
+    fn buffer_pool_test() {
+        let path = "temp_path2";
+
+        {
+            let storage = storage::Storage::new(path, 4096).unwrap();
+            let mut buffer_pool = buffer_pool::BufferPool::new(storage, 3usize);
+
+            for i in 0u64..10u64 {
+                let mut page = buffer_pool.allocate_page(page::PageType::Free).unwrap();
+                assert_eq!(page.0.header.id, storage::DEFAULT_PAGE + i);
+            }
+        }
+
+        //allocated pages are stored on disk
+        {
+            let storage = storage::Storage::new(path, 4096).unwrap();
+            let mut buffer_pool = buffer_pool::BufferPool::new(storage, 3usize);
+
+            for i in 0u64..10u64 {
+                let mut page = buffer_pool.get_page_mut(storage::DEFAULT_PAGE + i).unwrap();
+                page.0.data = vec![i as u8, i as u8, i as u8];
+                page.1 = true;
+            }
+
+            buffer_pool.flush().unwrap();
+        }
+
+        //changes are stored on disk and readable
+        {
+            let storage = storage::Storage::new(path, 4096).unwrap();
+            let buffer_pool = buffer_pool::BufferPool::new(storage, 3usize);
+
+            for i in 0u64..10u64 {
+                let page = buffer_pool.get_page(storage::DEFAULT_PAGE + i).unwrap();
+                assert_eq!(page.1, false);
+                assert_eq!(page.0.data, vec![i as u8, i as u8, i as u8]);
+            }
+        }
+
+        utility::cleanup(path);
+    }
 }
