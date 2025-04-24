@@ -1,3 +1,4 @@
+use chumsky::span::SimpleSpan;
 use logos::Logos;
 use unescape::unescape;
 
@@ -20,10 +21,10 @@ pub enum Token {
     #[regex(r#""([^"\\]|\\.)*""#, |lex| parse_string(lex.slice()))]
     StringLiteral(String),
 
-    #[regex(r"[A-Z][A-Za-z0-9_]*")]
-    UCIdentifier,
-    #[regex(r"[a-z][A-Za-z0-9_]*")]
-    LCIdentifier,
+    #[regex(r"[A-Z][A-Za-z0-9_]*", |lex| lex.slice().parse().ok())]
+    UCIdentifier(String),
+    #[regex(r"[a-z][A-Za-z0-9_]*", |lex| lex.slice().parse().ok())]
+    LCIdentifier(String),
 
     #[token("=>")]
     Arrow,
@@ -70,4 +71,17 @@ fn parse_string(s: &str) -> Option<String> {
     unescape(trimmed)
 }
 
-pub type Span = std::ops::Range<usize>;
+#[derive(Clone, Copy, Debug)]
+pub struct Span {
+    start: usize,
+    end: usize,
+}
+
+impl<C> From<SimpleSpan<usize, C>> for Span {
+    fn from(value: SimpleSpan<usize, C>) -> Self {
+        Span {
+            start: value.start,
+            end: value.end,
+        }
+    }
+}
