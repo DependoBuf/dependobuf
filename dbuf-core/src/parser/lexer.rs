@@ -1,0 +1,73 @@
+use logos::Logos;
+use unescape::unescape;
+
+#[derive(Logos, Debug, PartialEq, Clone)]
+pub enum Token {
+    #[token("message")]
+    Message,
+    #[token("enum")]
+    Enum,
+
+    #[token("true", |_| true)]
+    #[token("false", |_| false)]
+    BoolLiteral(bool),
+    #[regex(r"[0-9]+", |lex| lex.slice().parse().ok())]
+    IntLiteral(i64),
+    #[regex(r"[0-9]+u", |lex| lex.slice()[..lex.slice().len()-1].parse().ok())]
+    UintLiteral(u64),
+    #[regex(r"[0-9]+\.[0-9]+", |lex| lex.slice().parse().ok())]
+    FloatLiteral(f64),
+    #[regex(r#""([^"\\]|\\.)*""#, |lex| parse_string(lex.slice()))]
+    StringLiteral(String),
+
+    #[regex(r"[A-Z][A-Za-z0-9_]*")]
+    UCIdentifier,
+    #[regex(r"[a-z][A-Za-z0-9_]*")]
+    LCIdentifier,
+
+    #[token("=>")]
+    Arrow,
+    #[token(":")]
+    Colon,
+    #[token(";")]
+    Semicolon,
+    #[token(",")]
+    Comma,
+    #[token(".")]
+    Dot,
+    #[token("(")]
+    LParen,
+    #[token(")")]
+    RParen,
+    #[token("{")]
+    LBrace,
+    #[token("}")]
+    RBrace,
+
+    #[token("+")]
+    Plus,
+    #[token("-")]
+    Minus,
+    #[token("*")]
+    Star,
+    #[token("/")]
+    Slash,
+    #[token("&")]
+    Amp,
+    #[token("|")]
+    Pipe,
+    #[token("!")]
+    Bang,
+
+    #[regex(r"[ \t\r\n\f]+", logos::skip)]
+    #[regex(r"//[^\n]*", logos::skip)]
+    #[regex(r"/\*([^*]|\*+[^*/])*\*+/", logos::skip)]
+    Error,
+}
+
+fn parse_string(s: &str) -> Option<String> {
+    let trimmed = &s[1..s.len() - 1];
+    unescape(trimmed)
+}
+
+pub type Span = std::ops::Range<usize>;
