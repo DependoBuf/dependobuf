@@ -7,13 +7,13 @@ use super::page::{Page, PageHeader, PageId, PageType};
 
 use super::utils::{BINCODE_CONFIG, load, save};
 
-const DEFAULT_PAGE: PageId = 100;
+pub const DEFAULT_PAGE: PageId = 100;
 const STATE_INDEX: PageId = 0;
 
 #[derive(Encode, Decode)]
 pub struct StorageState {
     pub page_size: usize,
-    next_page_id: PageId,
+    pub next_page_id: PageId,
 }
 
 pub struct Storage {
@@ -51,6 +51,8 @@ impl Storage {
     pub fn allocate_page(&mut self, page_type: PageType) -> Result<Page, StorageError> {
         let page_id = self.state.next_page_id;
         self.state.next_page_id += 1;
+
+        save(&self.marble, &self.state, STATE_INDEX)?;
 
         let header = PageHeader {
             id: page_id,

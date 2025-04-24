@@ -7,8 +7,6 @@ pub type PageId = u64;
 pub enum PageType {
     TableData,
     IndexData,
-    Schema,
-    Overflow,
     Free,
 }
 
