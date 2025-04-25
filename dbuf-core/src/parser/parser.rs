@@ -5,7 +5,7 @@ use crate::ast::parsed::*;
 use chumsky::{input::*, pratt::*, prelude::*};
 
 pub fn create_parser<'src, I>(
-) -> impl Parser<'src, I, Module<Span, String>, extra::Err<Rich<'src, Token>>>
+) -> impl Parser<'src, I, Module<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
 {
@@ -20,7 +20,7 @@ fn parser_type_declaration<'src, I>() -> impl Parser<
     I,
     Definition<Span, String, TypeDeclaration<Span, String>>,
     extra::Err<Rich<'src, Token>>,
->
+> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
 {
@@ -34,25 +34,12 @@ where
 }
 
 pub fn parser_expression<'src, I>(
-) -> impl Parser<'src, I, Expression<Span, String>, extra::Err<Rich<'src, Token>>>
+) -> impl Parser<'src, I, Expression<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
 {
     recursive(|expr| {
-        let value = select! {
-            Token::BoolLiteral(b) => Literal::Bool(b),
-            Token::IntLiteral(i) => Literal::Int(i),
-            Token::UintLiteral(u) => Literal::UInt(u),
-            Token::FloatLiteral(f) => Literal::Double(f),
-            Token::StringLiteral(s) => Literal::Str(s),
-        }
-        .map_with(|l, extra| {
-            let span: SimpleSpan = extra.span();
-            Expression {
-                loc: span.into(),
-                node: ExpressionNode::OpCall(OpCall::Literal(l)),
-            }
-        });
+        let value = parser_literal();
 
         let field_init = select! {
             Token::LCIdentifier(s) => s,
@@ -224,6 +211,27 @@ where
             }),
         ));
 
-        choice((type_expr, op_expr))
+        choice((op_expr, type_expr))
+    })
+}
+
+fn parser_literal<'src, I>(
+) -> impl Parser<'src, I, Expression<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    select! {
+        Token::BoolLiteral(b) => Literal::Bool(b),
+        Token::IntLiteral(i) => Literal::Int(i),
+        Token::UintLiteral(u) => Literal::UInt(u),
+        Token::FloatLiteral(f) => Literal::Double(f),
+        Token::StringLiteral(s) => Literal::Str(s),
+    }
+    .map_with(|l, extra| {
+        let span: SimpleSpan = extra.span();
+        Expression {
+            loc: span.into(),
+            node: ExpressionNode::OpCall(OpCall::Literal(l)),
+        }
     })
 }

@@ -28,7 +28,7 @@ fn main() {
 
     let res = parser_expression().parse(token_stream);
     match res.into_result() {
-        Ok(expr) => println!("{:#?}", expr),
+        Ok(expr) => println!("{:#?}\n {:?}", &expr, &expr),
         Err(err) => println!("error: {:?}", err),
     }
 }
