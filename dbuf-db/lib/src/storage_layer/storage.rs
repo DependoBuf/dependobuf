@@ -10,6 +10,7 @@ use super::utils::{load, save};
 pub const DEFAULT_PAGE: PageId = 100;
 const STATE_INDEX: PageId = 0;
 
+//TODO write page id buffer that stores deleted page numbers and allocates them when needed
 #[derive(Encode, Decode)]
 pub struct StorageState {
     pub page_size: usize,
@@ -57,7 +58,6 @@ impl Storage {
         let header = PageHeader {
             id: page_id,
             page_type,
-            free_space_offset: 0,
         };
 
         let page = Page {

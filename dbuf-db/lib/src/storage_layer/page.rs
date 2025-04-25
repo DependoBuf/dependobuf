@@ -17,8 +17,6 @@ pub struct PageHeader {
     pub id: PageId,
     /// Type of page
     pub page_type: PageType,
-    /// Free space offset
-    pub free_space_offset: u32,
 }
 
 /// A database page that stores data

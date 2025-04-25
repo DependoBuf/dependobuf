@@ -158,7 +158,25 @@ mod tests {
             let result = paged_storage.read_data(page_id, 0usize, 5usize).unwrap();
             assert_eq!(result, vec![2u8, 2u8, 2u8, 3u8, 3u8]);
 
-            //cant read over bounds
+            paged_storage.cut_data(page_id, 2usize).unwrap();
+            paged_storage.flush().unwrap();
+        }
+
+        //data is cut properly
+        {
+            let storage = storage::Storage::new(path, 4096).unwrap();
+            let buffer_pool = buffer_pool::BufferPool::new(storage, 3usize);
+            let mut paged_storage = paged_storage::PagedStorage::new(buffer_pool);
+
+            let result = paged_storage.read_data(page_id, 0usize, 2usize).unwrap();
+            assert_eq!(result, vec![2u8, 2u8]);
+        }
+
+        //cant read over bounds
+        {
+            let storage = storage::Storage::new(path, 4096).unwrap();
+            let buffer_pool = buffer_pool::BufferPool::new(storage, 3usize);
+            let mut paged_storage = paged_storage::PagedStorage::new(buffer_pool);
             let is_invalid = match paged_storage.read_data(page_id, 4095usize, 2usize) {
                 Err(error::StorageError::InvalidOperation) => true,
                 _ => false,
@@ -166,7 +184,7 @@ mod tests {
             assert!(is_invalid);
 
             //page does not overflow
-            let is_overflow = match paged_storage.append_data(page_id, &[5u8; 4092]) {
+            let is_overflow = match paged_storage.append_data(page_id, &[5u8; 4095]) {
                 Err(error::StorageError::PageFull) => true,
                 _ => false,
             };

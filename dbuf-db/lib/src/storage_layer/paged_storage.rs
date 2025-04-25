@@ -51,10 +51,6 @@ impl PagedStorage {
 
         page.0.data[offset..data_end].copy_from_slice(data);
 
-        if data_end as u32 > page.0.header.free_space_offset {
-            page.0.header.free_space_offset = data_end as u32;
-        }
-
         page.1 = true;
 
         Ok(())
@@ -80,12 +76,10 @@ impl PagedStorage {
 
     /// Append data to a page
     pub fn append_data(&mut self, page_id: PageId, data: &[u8]) -> Result<usize, StorageError> {
-        let offset: usize;
-
         let page_size = self.page_size();
         let mut page = self.buffer_pool.get_page_mut(page_id)?;
 
-        offset = page.0.header.free_space_offset as usize;
+        let offset = page.0.data.len();
 
         // Ensure the data vector is large enough
         let data_end = offset + data.len();
@@ -94,19 +88,30 @@ impl PagedStorage {
             return Err(StorageError::PageFull);
         }
 
-        if data_end > page.0.data.len() {
-            page.0.data.resize(offset + data.len(), 0);
-        }
+        page.0.data.resize(data_end, 0);
 
         // Copy the data
         page.0.data[offset..data_end].copy_from_slice(data);
 
-        // Update the free space offset
-        page.0.header.free_space_offset = data_end as u32;
-
         page.1 = true;
 
         Ok(data_end)
+    }
+
+    pub fn cut_data(&mut self, page_id: PageId, len: usize) -> Result<(), StorageError> {
+        let page_size = self.page_size();
+        let mut page = self.buffer_pool.get_page_mut(page_id)?;
+
+        let offset = page.0.data.len();
+
+        if len >= offset {
+            return Ok(());
+        }
+
+        page.0.data.resize(len, 0);
+        page.1 = true;
+
+        Ok(())
     }
 
     /// Flush all dirty pages
