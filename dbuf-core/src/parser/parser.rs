@@ -4,20 +4,26 @@ use crate::ast::parsed::definition::*;
 use crate::ast::parsed::*;
 use chumsky::{input::*, pratt::*, prelude::*};
 
-pub fn create_parser<'src>(
-) -> impl Parser<'src, &'src [Token], Module<Span, String>, extra::Err<Rich<'src, Token>>> {
+pub fn create_parser<'src, I>(
+) -> impl Parser<'src, I, Module<Span, String>, extra::Err<Rich<'src, Token>>>
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
     parser_type_declaration()
         .repeated()
         .collect()
         .then_ignore(end())
 }
 
-fn parser_type_declaration<'src>() -> impl Parser<
+fn parser_type_declaration<'src, I>() -> impl Parser<
     'src,
-    &'src [Token],
+    I,
     Definition<Span, String, TypeDeclaration<Span, String>>,
     extra::Err<Rich<'src, Token>>,
-> {
+>
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
     end().map(|_| {
         (Definition {
             loc: todo!(),
@@ -38,7 +44,7 @@ where
             Token::IntLiteral(i) => Literal::Int(i),
             Token::UintLiteral(u) => Literal::UInt(u),
             Token::FloatLiteral(f) => Literal::Double(f),
-            Token::StringLiteral(s) => Literal::Str(s.clone()),
+            Token::StringLiteral(s) => Literal::Str(s),
         }
         .map_with(|l, extra| {
             let span: SimpleSpan = extra.span();
@@ -118,8 +124,24 @@ where
             .clone()
             .delimited_by(just(Token::LParen), just(Token::RParen));
 
-        let atom = choice((value, var_access, constructed_value, paren));
-        atom.pratt((
+        let primary = choice((value, var_access, constructed_value, paren));
+
+        let type_expr = select! {
+            Token::UCIdentifier(s) => s,
+        }
+        .then(primary.clone().repeated().collect::<Vec<_>>())
+        .map_with(|(name, vec), extra| {
+            let span: SimpleSpan = extra.span();
+            Expression {
+                loc: span.into(),
+                node: ExpressionNode::FunCall {
+                    fun: name,
+                    args: vec.into_boxed_slice().into(),
+                },
+            }
+        });
+
+        let op_expr = primary.pratt((
             prefix(5, just(Token::Minus), |_, rhs, extra| {
                 let span: SimpleSpan = extra.span();
                 Expression {
@@ -200,6 +222,8 @@ where
                     )),
                 }
             }),
-        ))
+        ));
+
+        choice((type_expr, op_expr))
     })
 }
