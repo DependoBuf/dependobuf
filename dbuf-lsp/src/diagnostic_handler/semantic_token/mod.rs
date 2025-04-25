@@ -75,7 +75,7 @@ pub struct SemanticTokenProvider<'a> {
     scope: ScopeVisitor<'a>,
 }
 
-impl<'a> SemanticTokenProvider<'a> {
+impl SemanticTokenProvider<'_> {
     pub fn new(file: &File) -> SemanticTokenProvider {
         SemanticTokenProvider {
             parsed: file.get_parsed(),

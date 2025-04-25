@@ -34,7 +34,7 @@ pub fn get_symbol_impl(navigator: &Navigator, pos: Position) -> Symbol {
     implementation.result
 }
 
-impl<'a> GetImpl<'a> {
+impl GetImpl<'_> {
     fn no_result(&self) -> bool {
         matches!(self.result, Symbol::None)
     }

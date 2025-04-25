@@ -31,7 +31,7 @@ pub fn find_symbols_impl(navigator: &Navigator, symbol: &Symbol) -> Vec<Range> {
     implementation.ans
 }
 
-impl<'a> FindImpl<'a> {
+impl FindImpl<'_> {
     fn check_add(&mut self, str: &Str) {
         match &self.target {
             Symbol::Type(type_name) => {
