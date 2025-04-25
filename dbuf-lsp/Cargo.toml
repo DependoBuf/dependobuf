@@ -4,8 +4,9 @@ edition = "2021"
 version.workspace = true
 
 [dependencies]
-tokio = {version = "1.44.2", features = ["full"]}
-tower-lsp = "0.20.0"
-dashmap = "6.1.0"
 dbuf-core.workspace = true
+
+tower-lsp.workspace = true
+tokio.workspace = true
+dashmap.workspace = true
 pretty.workspace = true

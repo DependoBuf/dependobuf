@@ -7,4 +7,7 @@ version = "0.1.0"
 
 [workspace.dependencies]
 dbuf-core = { path = "./dbuf-core" }
-pretty = "=0.12.3"
+tokio = {version = "1.44.2", features = ["full"]}
+tower-lsp = "0.20.0"
+dashmap = "6.1.0"
+pretty = "=0.12.3" # 0.12.4 is newer
