@@ -1,16 +1,24 @@
 use super::buffer_pool::BufferPool;
+
 use super::error::StorageError;
 use super::page::PageId;
 
 use marble::Marble;
+
+use std::path::Path;
 
 pub struct PagedStorage {
     buffer_pool: BufferPool,
 }
 
 impl PagedStorage {
-    pub fn new(buffer_pool: BufferPool) -> Self {
-        Self { buffer_pool }
+    pub fn new<P: AsRef<Path>>(
+        path: P,
+        page_size: usize,
+        buffer_capacity: usize,
+    ) -> Result<Self, StorageError> {
+        let buffer_pool = BufferPool::new(path, page_size, buffer_capacity)?;
+        Ok(Self { buffer_pool })
     }
 
     pub fn page_size(&self) -> usize {
@@ -99,7 +107,6 @@ impl PagedStorage {
     }
 
     pub fn cut_data(&mut self, page_id: PageId, len: usize) -> Result<(), StorageError> {
-        let page_size = self.page_size();
         let mut page = self.buffer_pool.get_page_mut(page_id)?;
 
         let offset = page.0.data.len();

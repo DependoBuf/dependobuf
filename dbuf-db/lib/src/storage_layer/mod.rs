@@ -86,8 +86,7 @@ mod tests {
         let path = "temp_path2";
 
         {
-            let storage = storage::Storage::new(path, 4096).unwrap();
-            let mut buffer_pool = buffer_pool::BufferPool::new(storage, 3usize);
+            let mut buffer_pool = buffer_pool::BufferPool::new(path, 4096usize, 3usize).unwrap();
 
             for i in 0u64..10u64 {
                 let page = buffer_pool.allocate_page(page::PageType::Free).unwrap();
@@ -97,8 +96,7 @@ mod tests {
 
         //allocated pages are stored on disk
         {
-            let storage = storage::Storage::new(path, 4096).unwrap();
-            let mut buffer_pool = buffer_pool::BufferPool::new(storage, 3usize);
+            let mut buffer_pool = buffer_pool::BufferPool::new(path, 4096usize, 3usize).unwrap();
 
             for i in 0u64..10u64 {
                 let mut page = buffer_pool.get_page_mut(storage::DEFAULT_PAGE + i).unwrap();
@@ -111,8 +109,7 @@ mod tests {
 
         //changes are stored on disk and readable
         {
-            let storage = storage::Storage::new(path, 4096).unwrap();
-            let buffer_pool = buffer_pool::BufferPool::new(storage, 3usize);
+            let buffer_pool = buffer_pool::BufferPool::new(path, 4096usize, 3usize).unwrap();
 
             for i in 0u64..10u64 {
                 let page = buffer_pool.get_page(storage::DEFAULT_PAGE + i).unwrap();
@@ -131,9 +128,8 @@ mod tests {
         let page_id: page::PageId;
 
         {
-            let storage = storage::Storage::new(path, 4096).unwrap();
-            let buffer_pool = buffer_pool::BufferPool::new(storage, 3usize);
-            let mut paged_storage = paged_storage::PagedStorage::new(buffer_pool);
+            let mut paged_storage =
+                paged_storage::PagedStorage::new(path, 4096usize, 3usize).unwrap();
             assert_eq!(paged_storage.page_size(), 4096);
 
             page_id = paged_storage.allocate_page(page::PageType::Free).unwrap();
@@ -151,9 +147,8 @@ mod tests {
 
         //written data is saved to disk properly
         {
-            let storage = storage::Storage::new(path, 4096).unwrap();
-            let buffer_pool = buffer_pool::BufferPool::new(storage, 3usize);
-            let mut paged_storage = paged_storage::PagedStorage::new(buffer_pool);
+            let mut paged_storage =
+                paged_storage::PagedStorage::new(path, 4096usize, 3usize).unwrap();
 
             let result = paged_storage.read_data(page_id, 0usize, 5usize).unwrap();
             assert_eq!(result, vec![2u8, 2u8, 2u8, 3u8, 3u8]);
@@ -164,9 +159,7 @@ mod tests {
 
         //data is cut properly
         {
-            let storage = storage::Storage::new(path, 4096).unwrap();
-            let buffer_pool = buffer_pool::BufferPool::new(storage, 3usize);
-            let mut paged_storage = paged_storage::PagedStorage::new(buffer_pool);
+            let paged_storage = paged_storage::PagedStorage::new(path, 4096usize, 3usize).unwrap();
 
             let result = paged_storage.read_data(page_id, 0usize, 2usize).unwrap();
             assert_eq!(result, vec![2u8, 2u8]);
@@ -174,9 +167,9 @@ mod tests {
 
         //cant read over bounds
         {
-            let storage = storage::Storage::new(path, 4096).unwrap();
-            let buffer_pool = buffer_pool::BufferPool::new(storage, 3usize);
-            let mut paged_storage = paged_storage::PagedStorage::new(buffer_pool);
+            let mut paged_storage =
+                paged_storage::PagedStorage::new(path, 4096usize, 3usize).unwrap();
+
             let is_invalid = match paged_storage.read_data(page_id, 4095usize, 2usize) {
                 Err(error::StorageError::InvalidOperation) => true,
                 _ => false,

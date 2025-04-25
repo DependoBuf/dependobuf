@@ -4,6 +4,8 @@ use super::storage::Storage;
 
 use marble::Marble;
 
+use std::path::Path;
+
 use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
 
@@ -17,15 +19,22 @@ pub struct BufferPool {
 //TODO write a better rotation policy
 //TODO iterate over all pages in cache
 impl BufferPool {
-    pub fn new(storage: Storage, capacity: usize) -> Self {
+    pub fn new<P: AsRef<Path>>(
+        path: P,
+        page_size: usize,
+        capacity: usize,
+    ) -> Result<Self, StorageError> {
         if capacity == 0 {
             panic!("Buffer pool capacity must not be zero!");
         }
-        Self {
+
+        let storage = Storage::new(path, page_size)?;
+
+        Ok(Self {
             storage,
             pages: RefCell::new(HashMap::with_capacity(capacity)),
             capacity,
-        }
+        })
     }
 
     pub fn page_size(&self) -> usize {
