@@ -1,9 +1,10 @@
 //! Module helps while user writes code.
+//! Requests are using real-time updating parsed ast.
 //!
 //! Module should help with such requests:
 //!
 //! Also it might be good idea to handle such requests:
-//! 
+//!
 //! Perhaps, next time:
 //! * `textDocument/completion`
 //! * `textDocument/signatureHelp`

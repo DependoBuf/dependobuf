@@ -7,3 +7,4 @@ version = "0.1.0"
 
 [workspace.dependencies]
 dbuf-core = { path = "./dbuf-core" }
+pretty = "=0.12.3"

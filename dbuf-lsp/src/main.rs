@@ -130,7 +130,9 @@ impl LanguageServer for Backend {
     async fn code_lens(&self, params: CodeLensParams) -> Result<Option<Vec<CodeLens>>> {
         let doc = params.text_document.uri;
 
-        self.navigation_handler.code_lens(&self.workspace, &doc).await
+        self.diagnostic_handler
+            .code_lens(&self.workspace, &doc)
+            .await
     }
 
     async fn goto_definition(
@@ -164,7 +166,7 @@ impl LanguageServer for Backend {
         let pos = doc_pos.position;
         let uri = doc_pos.text_document.uri;
 
-        self.navigation_handler
+        self.diagnostic_handler
             .references(&self.workspace, pos, &uri)
             .await
     }
@@ -187,7 +189,7 @@ impl LanguageServer for Backend {
         let pos = doc_pos.position;
         let uri = doc_pos.text_document.uri;
 
-        self.navigation_handler
+        self.diagnostic_handler
             .document_highlight(&self.workspace, pos, &uri)
             .await
     }

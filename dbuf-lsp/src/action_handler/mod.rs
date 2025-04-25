@@ -1,4 +1,5 @@
 //! Module aims to help formatting code.
+//! Reqeusts are changing ast.
 //!
 //! Module should help with such requests:
 //! * (✓) `textDocument/formatting`

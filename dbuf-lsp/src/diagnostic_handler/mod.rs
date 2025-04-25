@@ -1,13 +1,20 @@
 //! Module provides colorful diagnostic.
+//! Requests are passing through full ast to produce response.
 //!
 //! Module should help with such requests:
 //! * (✓) `textDocument/documentSymbol`
 //! * (✓) `textDocument/semanticTokens/full`
+//! * (✓) `textDocument/documentHighlight`
+//! * (✓) `textDocument/references`
+//! * (✓) `textDocument/codeLens`
+//! * (✗) `textDocument/inlayHint` // for constructors type
 //!
 //! Also it might be good idea to handle such requests:
 //! ---
 //!
 //! Perhaps, next time:
+//! * `codeLens/resolve`
+//! * `inlayHint/resolve`
 //! * `textDocument/semanticTokens/full/delta`
 //! * `textDocument/semanticTokens/range`
 //! * `textDocument/diagnostic`
@@ -19,8 +26,12 @@
 //! * `textDocument/inlineValue`
 //!
 
+mod code_lens;
 mod document_symbol;
+mod inlay_hint;
 mod semantic_token;
+
+use code_lens::CodeLensProvider;
 
 use document_symbol::DocumentSymbolProvider;
 use semantic_token::SemanticTokenProvider;
@@ -32,6 +43,7 @@ use tower_lsp::Client;
 
 use crate::common::ast_access::WorkspaceAccess;
 use crate::common::handler::Handler;
+use crate::common::navigator::Navigator;
 
 pub struct DiagnosticHandler {
     _client: Client,
@@ -64,6 +76,78 @@ impl DiagnosticHandler {
 
         Ok(Some(tokens.into()))
     }
+
+    /// `textDocument/references` implementation.
+    ///
+    pub async fn references(
+        &self,
+        access: &WorkspaceAccess,
+        pos: Position,
+        document: &Url,
+    ) -> Result<Option<Vec<Location>>> {
+        let ranges;
+        {
+            let file = access.read(document);
+            let navigator = Navigator::new(&file);
+
+            let symbol = navigator.get_symbol(pos);
+            ranges = navigator.find_symbols(&symbol);
+        }
+
+        let ans = ranges
+            .into_iter()
+            .map(|r| Location {
+                uri: document.to_owned(),
+                range: r,
+            })
+            .collect();
+
+        Ok(Some(ans))
+    }
+
+    /// `textDocument/documentHighlight` implementation.
+    ///
+    pub async fn document_highlight(
+        &self,
+        access: &WorkspaceAccess,
+        pos: Position,
+        document: &Url,
+    ) -> Result<Option<Vec<DocumentHighlight>>> {
+        let ranges;
+        {
+            let file = access.read(document);
+            let navigator = Navigator::new(&file);
+
+            let symbol = navigator.get_symbol(pos);
+            ranges = navigator.find_symbols(&symbol);
+        }
+
+        let mut ans = Vec::with_capacity(ranges.len());
+        for r in ranges.iter() {
+            ans.push(DocumentHighlight {
+                range: *r,
+                kind: Some(DocumentHighlightKind::TEXT),
+            });
+        }
+
+        Ok(Some(ans))
+    }
+
+    /// `textDocument/codeLens` implementation.
+    ///
+    /// Currently shows only reference count.
+    ///
+    pub async fn code_lens(
+        &self,
+        access: &WorkspaceAccess,
+        document: &Url,
+    ) -> Result<Option<Vec<CodeLens>>> {
+        let file = access.read(document);
+        let mut provider = CodeLensProvider::new(&file);
+        let lens = provider.provide();
+
+        Ok(Some(lens))
+    }
 }
 
 impl Handler for DiagnosticHandler {
@@ -87,5 +171,11 @@ impl Handler for DiagnosticHandler {
             }
             .into(),
         );
+
+        capabilites.references_provider = Some(Left(true));
+        capabilites.document_highlight_provider = Some(Left(true));
+        capabilites.code_lens_provider = Some(CodeLensOptions {
+            resolve_provider: Some(false),
+        });
     }
 }

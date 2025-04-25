@@ -1,19 +1,14 @@
 //! Module aims to help with searches in dbuf files.
+//! Responses are easy to compute.
 //!
 //! Module should help with such requests:
 //! * (✓) `textDocument/definition`
 //! * (✓) `textDocument/typeDefinition`
-//! * (✓) `textDocument/references`
-//! * (✓) `textDocument/hover`
-//! * (✓) `textDocument/documentHighlight`
-//! * (✓) `textDocument/codeLens`
-//! * (✗) `textDocument/inlayHint` // for constructors type
+//! * (✓) `textDocument/hover
 //!  
 //! Also it might be good idea to handle such requests:
 //!
 //! Perhaps, next time:
-//! * `codeLens/resolve`
-//! * `inlayHint/resolve`
 //! * `textDocument/selectionRange`
 //! * `textDocument/moniker`
 //! * `textDocument/linkedEditingRange`
@@ -31,12 +26,9 @@
 //! * `documentLink/resolve`
 //!
 
-mod code_lens;
 mod hover;
-mod inlay_hint;
 mod navigation;
 
-use code_lens::CodeLensProvider;
 use hover::get_hover;
 use navigation::find_definition;
 use navigation::find_type;
@@ -56,21 +48,6 @@ pub struct NavigationHandler {
 }
 
 impl NavigationHandler {
-    /// `textDocument/codeLens` implementation.
-    /// 
-    /// Currently shows only reference count.
-    /// 
-    pub async fn code_lens(
-        &self,
-        access: &WorkspaceAccess,
-        document: &Url,
-    ) -> Result<Option<Vec<CodeLens>>> {
-        let file = access.read(document);
-        let mut provider = CodeLensProvider::new(&file);
-        let lens = provider.provide();
-
-        Ok(Some(lens))
-    }
     /// `textDocument/definition` implementation.
     ///
     pub async fn goto_definition(
@@ -81,7 +58,7 @@ impl NavigationHandler {
     ) -> Result<Option<GotoDefinitionResponse>> {
         let range;
         {
-            let file = access.read(&document);
+            let file = access.read(document);
             let navigator = Navigator::new(&file);
 
             let symbol = navigator.get_symbol(pos);
@@ -107,7 +84,7 @@ impl NavigationHandler {
     ) -> Result<Option<GotoTypeDefinitionResponse>> {
         let range;
         {
-            let file = access.read(&document);
+            let file = access.read(document);
             let navigator = Navigator::new(&file);
 
             let symbol = navigator.get_symbol(pos);
@@ -125,34 +102,6 @@ impl NavigationHandler {
         }
     }
 
-    /// `textDocument/references` implementation.
-    ///
-    pub async fn references(
-        &self,
-        access: &WorkspaceAccess,
-        pos: Position,
-        document: &Url,
-    ) -> Result<Option<Vec<Location>>> {
-        let ranges;
-        {
-            let file = access.read(&document);
-            let navigator = Navigator::new(&file);
-
-            let symbol = navigator.get_symbol(pos);
-            ranges = navigator.find_symbols(&symbol);
-        }
-
-        let ans = ranges
-            .into_iter()
-            .map(|r| Location {
-                uri: document.to_owned(),
-                range: r,
-            })
-            .collect();
-
-        Ok(Some(ans))
-    }
-
     /// `textDocument/hover` implementation.
     ///
     /// Provides such information:
@@ -168,7 +117,7 @@ impl NavigationHandler {
         pos: Position,
         document: &Url,
     ) -> Result<Option<Hover>> {
-        let file = access.read(&document);
+        let file = access.read(document);
         let navigator = Navigator::new(&file);
 
         let symbol = navigator.get_symbol(pos);
@@ -183,34 +132,6 @@ impl NavigationHandler {
             }))
         }
     }
-
-    /// `textDocument/documentHighlight` implementation.
-    ///
-    pub async fn document_highlight(
-        &self,
-        access: &WorkspaceAccess,
-        pos: Position,
-        document: &Url,
-    ) -> Result<Option<Vec<DocumentHighlight>>> {
-        let ranges;
-        {
-            let file = access.read(&document);
-            let navigator = Navigator::new(&file);
-
-            let symbol = navigator.get_symbol(pos);
-            ranges = navigator.find_symbols(&symbol);
-        }
-
-        let mut ans = Vec::with_capacity(ranges.len());
-        for r in ranges.iter() {
-            ans.push(DocumentHighlight {
-                range: *r,
-                kind: Some(DocumentHighlightKind::TEXT),
-            });
-        }
-
-        Ok(Some(ans))
-    }
 }
 
 impl Handler for NavigationHandler {
@@ -219,12 +140,8 @@ impl Handler for NavigationHandler {
     }
 
     fn init(&self, _init: &InitializeParams, capabilites: &mut ServerCapabilities) {
-        capabilites.code_lens_provider = Some(CodeLensOptions { resolve_provider: Some(false) });
-
         capabilites.definition_provider = Some(Left(true));
         capabilites.type_definition_provider = Some(TypeDefinitionProviderCapability::Simple(true));
-        capabilites.references_provider = Some(Left(true));
         capabilites.hover_provider = Some(HoverProviderCapability::Simple(true));
-        capabilites.document_highlight_provider = Some(Left(true));
     }
 }

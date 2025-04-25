@@ -11,7 +11,7 @@ pub struct CodeLensProvider<'a> {
     parsed: &'a ParsedAst,
     elaborated: &'a ElaboratedAst,
 
-    result: Vec<CodeLens>
+    result: Vec<CodeLens>,
 }
 
 impl CodeLensProvider<'_> {
@@ -41,13 +41,13 @@ impl CodeLensProvider<'_> {
     fn push_type(&mut self, type_name: &Str, _: &Loc) {
         let ref_count = self.calc_reference_count(type_name);
         let title = format!("{} references", ref_count).to_string();
-        let command = Command{
+        let command = Command {
             title,
             command: "".to_owned(),
             arguments: None,
         };
 
-        let lens = CodeLens{
+        let lens = CodeLens {
             range: type_name.get_location().to_lsp(),
             command: Some(command),
             data: None,

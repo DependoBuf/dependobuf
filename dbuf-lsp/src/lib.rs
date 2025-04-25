@@ -7,7 +7,7 @@
 //! * re-read files to fill documentation.
 //! * add literals to navigator symbol.
 //! * rewrite pretty printer.
-//! 
+//!
 pub mod common;
 
 pub mod action_handler;
