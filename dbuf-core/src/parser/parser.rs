@@ -33,6 +33,70 @@ where
     })
 }
 
+pub fn parser_constructors_block<'src, I>() -> impl Parser<
+    'src,
+    I,
+    Definitions<Span, String, ConstructorBody<Span, String>>,
+    extra::Err<Rich<'src, Token>>,
+> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    let constructor_body = parser_constructor_body();
+    let constructor_declaration = select! {
+        Token::UCIdentifier(s) => s,
+    }
+    .then(constructor_body.or_not())
+    .map_with(|(name, body), extra| {
+        let span: SimpleSpan = extra.span();
+        Definition {
+            loc: span.into(),
+            name,
+            data: body.unwrap_or_default(),
+        }
+    });
+
+    constructor_declaration
+        .repeated()
+        .collect::<Vec<_>>()
+        .delimited_by(just(Token::LBrace), just(Token::RBrace))
+}
+
+pub fn parser_constructor_body<'src, I>(
+) -> impl Parser<'src, I, ConstructorBody<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    let typed_variable = parser_typed_variable();
+    let field_declaration = typed_variable.then_ignore(just(Token::Semicolon));
+    let fields = field_declaration.repeated().collect::<Vec<_>>();
+    fields.delimited_by(just(Token::LBrace), just(Token::RBrace))
+}
+
+pub fn parser_typed_variable<'src, I>() -> impl Parser<
+    'src,
+    I,
+    Definition<Span, String, Expression<Span, String>>,
+    extra::Err<Rich<'src, Token>>,
+> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    let type_expr = parser_type_expression();
+    select! {
+        Token::LCIdentifier(s) => s,
+    }
+    .then(type_expr)
+    .map_with(|(name, expr), extra| {
+        let span: SimpleSpan = extra.span();
+        Definition {
+            loc: span.into(),
+            name,
+            data: expr,
+        }
+    })
+}
+
 pub fn parser_pattern<'src, I>(
 ) -> impl Parser<'src, I, Pattern<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
 where
