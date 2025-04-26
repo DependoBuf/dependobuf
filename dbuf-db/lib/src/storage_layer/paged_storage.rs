@@ -2,6 +2,7 @@ use super::buffer_pool::BufferPool;
 
 use super::error::StorageError;
 use super::page::PageId;
+use super::storage::Storage;
 
 use marble::Marble;
 
@@ -27,6 +28,10 @@ impl PagedStorage {
 
     pub fn marble(&self) -> &Marble {
         self.buffer_pool.marble()
+    }
+
+    pub fn storage(&self) -> &Storage {
+        self.buffer_pool.storage()
     }
 
     pub fn allocate_page(
@@ -84,6 +89,18 @@ impl PagedStorage {
         let result = page.0.data[offset..offset + len].to_vec();
 
         Ok(result)
+    }
+
+    pub fn get_obj_count(&self, page_id: PageId) -> Result<usize, StorageError> {
+        let page = self.buffer_pool.get_page(page_id)?;
+        Ok(page.0.header.obj_count)
+    }
+
+    pub fn set_obj_count(&mut self, page_id: PageId, obj_count: usize) -> Result<(), StorageError> {
+        let mut page = self.buffer_pool.get_page_mut(page_id)?;
+        page.0.header.obj_count = obj_count;
+
+        Ok(())
     }
 
     /// Append data to a page

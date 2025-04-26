@@ -87,6 +87,7 @@ impl Storage {
         let header = PageHeader {
             id: page_id,
             page_type,
+            obj_count: 0,
         };
 
         let page = Page {

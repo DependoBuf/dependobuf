@@ -17,6 +17,7 @@ pub struct PageHeader {
     pub id: PageId,
     /// Type of page
     pub page_type: PageType,
+    pub obj_count: usize,
 }
 
 /// A database page that stores data
