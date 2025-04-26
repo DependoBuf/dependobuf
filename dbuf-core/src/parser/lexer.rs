@@ -14,7 +14,7 @@ pub enum Token {
     BoolLiteral(bool),
     #[regex(r"[0-9]+", |lex| lex.slice().parse().ok())]
     IntLiteral(i64),
-    #[regex(r"[0-9]+u", |lex| lex.slice()[..lex.slice().len()-1].parse().ok())]
+    #[regex(r"[0-9]+u", |lex| parse_uint(lex.slice()))]
     UintLiteral(u64),
     #[regex(r"[0-9]+\.[0-9]+", |lex| lex.slice().parse().ok())]
     FloatLiteral(f64),
@@ -69,6 +69,10 @@ pub enum Token {
 fn parse_string(s: &str) -> Option<String> {
     let trimmed = &s[1..s.len() - 1];
     unescape(trimmed)
+}
+
+fn parse_uint(s: &str) -> Option<u64> {
+    s[..s.len() - 1].parse().ok()
 }
 
 #[derive(Clone, Copy, Debug)]

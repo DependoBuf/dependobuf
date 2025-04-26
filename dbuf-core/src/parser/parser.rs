@@ -2,7 +2,7 @@ use super::lexer::*;
 use crate::ast::operators::*;
 use crate::ast::parsed::definition::*;
 use crate::ast::parsed::*;
-use chumsky::{combinator::To, input::*, pratt::*, prelude::*};
+use chumsky::{input::*, pratt::*, prelude::*};
 
 pub fn create_parser<'src, I>(
 ) -> impl Parser<'src, I, Module<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
@@ -99,71 +99,24 @@ where
     })
 }
 
+pub fn parser_type_expression<'src, I>(
+) -> impl Parser<'src, I, Expression<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    let expr = parser_expression();
+    let primary = parser_primary_with_expression(expr);
+    parser_type_expression_with_primary(primary)
+}
+
 pub fn parser_expression<'src, I>(
 ) -> impl Parser<'src, I, Expression<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
 {
     recursive(|expr| {
-        let field_init = select! {
-            Token::LCIdentifier(s) => s,
-        }
-        .then_ignore(just(Token::Colon))
-        .then(expr.clone());
-
-        let field_init_list = field_init
-            .separated_by(just(Token::Comma))
-            .allow_trailing()
-            .collect::<Vec<_>>();
-
-        let constructed_value = select! {
-            Token::UCIdentifier(s) => s,
-        }
-        .then(field_init_list.delimited_by(just(Token::LBrace), just(Token::RBrace)))
-        .map_with(|(name, fields), extra| {
-            let span: SimpleSpan = extra.span();
-            Expression {
-                loc: span.into(),
-                node: ExpressionNode::ConstructorCall {
-                    name,
-                    fields: fields.into_boxed_slice().into(),
-                },
-            }
-        })
-        .labelled("constructed value");
-
-        let value = parser_literal().map_with(|l, extra| {
-            let span: SimpleSpan = extra.span();
-            Expression {
-                loc: span.into(),
-                node: ExpressionNode::OpCall(OpCall::Literal(l)),
-            }
-        });
-
-        let var_access = parser_var_access();
-
-        let paren = expr
-            .clone()
-            .delimited_by(just(Token::LParen), just(Token::RParen))
-            .labelled("paren");
-
-        let primary = choice((paren, value, var_access, constructed_value));
-
-        let type_expr = select! {
-            Token::UCIdentifier(s) => s,
-        }
-        .then(primary.clone().repeated().collect::<Vec<_>>())
-        .map_with(|(fun, args), extra| {
-            let span: SimpleSpan = extra.span();
-            Expression {
-                loc: span.into(),
-                node: ExpressionNode::FunCall {
-                    fun,
-                    args: args.into_boxed_slice().into(),
-                },
-            }
-        })
-        .labelled("type expression");
+        let primary = parser_primary_with_expression(expr);
+        let type_expr = parser_type_expression_with_primary(primary.clone());
 
         let op_expr = primary
             .pratt((
@@ -259,6 +212,80 @@ where
 
         choice((type_expr, op_expr))
     })
+}
+
+fn parser_type_expression_with_primary<'src, I>(
+    primary: impl Parser<'src, I, Expression<Span, String>, extra::Err<Rich<'src, Token>>> + Clone,
+) -> impl Parser<'src, I, Expression<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    select! {
+        Token::UCIdentifier(s) => s,
+    }
+    .then(primary.clone().repeated().collect::<Vec<_>>())
+    .map_with(|(fun, args), extra| {
+        let span: SimpleSpan = extra.span();
+        Expression {
+            loc: span.into(),
+            node: ExpressionNode::FunCall {
+                fun,
+                args: args.into_boxed_slice().into(),
+            },
+        }
+    })
+    .labelled("type expression")
+}
+
+fn parser_primary_with_expression<'src, I>(
+    expr: impl Parser<'src, I, Expression<Span, String>, extra::Err<Rich<'src, Token>>> + Clone,
+) -> impl Parser<'src, I, Expression<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    let field_init = select! {
+        Token::LCIdentifier(s) => s,
+    }
+    .then_ignore(just(Token::Colon))
+    .then(expr.clone());
+
+    let field_init_list = field_init
+        .separated_by(just(Token::Comma))
+        .allow_trailing()
+        .collect::<Vec<_>>();
+
+    let constructed_value = select! {
+        Token::UCIdentifier(s) => s,
+    }
+    .then(field_init_list.delimited_by(just(Token::LBrace), just(Token::RBrace)))
+    .map_with(|(name, fields), extra| {
+        let span: SimpleSpan = extra.span();
+        Expression {
+            loc: span.into(),
+            node: ExpressionNode::ConstructorCall {
+                name,
+                fields: fields.into_boxed_slice().into(),
+            },
+        }
+    })
+    .labelled("constructed value");
+
+    let value = parser_literal().map_with(|l, extra| {
+        let span: SimpleSpan = extra.span();
+        Expression {
+            loc: span.into(),
+            node: ExpressionNode::OpCall(OpCall::Literal(l)),
+        }
+    });
+
+    let var_access = parser_var_access();
+
+    let paren = expr
+        .clone()
+        .delimited_by(just(Token::LParen), just(Token::RParen))
+        .labelled("paren");
+
+    choice((paren, value, var_access, constructed_value))
 }
 
 fn parser_literal<'src, I>() -> impl Parser<'src, I, Literal, extra::Err<Rich<'src, Token>>> + Clone
