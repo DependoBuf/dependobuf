@@ -84,5 +84,9 @@ impl WorkspaceAccess {
     }
 }
 
+
+/// Safety: WorkspaceAccess has only
+/// one field of type DashMap, which
+/// is thread safe.
 unsafe impl Send for WorkspaceAccess {}
 unsafe impl Sync for WorkspaceAccess {}
