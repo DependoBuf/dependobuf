@@ -10,11 +10,12 @@ use super::utils::{load, save};
 pub const DEFAULT_PAGE: PageId = 100;
 const STATE_INDEX: PageId = 0;
 
-//TODO write page id buffer that stores deleted page numbers and allocates them when needed
 #[derive(Encode, Decode)]
 pub struct StorageState {
     pub page_size: usize,
     pub next_page_id: PageId,
+    //MAYBE wrap it in RefCell?
+    pub free_ids: std::collections::VecDeque<PageId>,
 }
 
 pub struct Storage {
@@ -36,11 +37,39 @@ impl Storage {
         let state = StorageState {
             page_size,
             next_page_id: DEFAULT_PAGE,
+            free_ids: std::collections::VecDeque::<PageId>::new(),
         };
 
         save(&marble, &state, STATE_INDEX)?;
 
         Ok(Self { marble, state })
+    }
+
+    fn save_state(&self) -> Result<(), StorageError> {
+        save(&self.marble, &self.state, STATE_INDEX)?;
+        Ok(())
+    }
+
+    pub fn allocate_id(&mut self) -> Result<PageId, StorageError> {
+        if let Some(id) = self.state.free_ids.pop_front() {
+            self.save_state()?;
+            return Ok(id);
+        }
+
+        let id = self.state.next_page_id;
+        self.state.next_page_id += 1;
+
+        self.save_state()?;
+        return Ok(id);
+    }
+
+    pub fn free_id(&mut self, id: PageId) -> Result<(), StorageError> {
+        self.marble
+            .write_batch::<&[u8], [(PageId, Option<&[u8]>); 1]>([(id, None)])?;
+        self.state.free_ids.push_back(id);
+        self.save_state()?;
+
+        Ok(())
     }
 
     /// Write a page to storage
@@ -79,9 +108,12 @@ impl Storage {
     }
 
     /// Delete a page from storage
-    pub fn delete_page(&self, id: PageId) -> Result<(), StorageError> {
+    pub fn delete_page(&mut self, id: PageId) -> Result<(), StorageError> {
         self.marble
             .write_batch::<&[u8], [(PageId, Option<&[u8]>); 1]>([(id, None)])?;
+        self.state.free_ids.push_back(id);
+        self.save_state()?;
+
         Ok(())
     }
 

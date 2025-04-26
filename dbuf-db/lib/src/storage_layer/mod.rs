@@ -25,10 +25,11 @@ mod tests {
     #[test]
     fn storage_test() {
         let path = "temp_path1";
+        utility::cleanup(path);
 
         {
             //create fresh storage
-            let _storage = storage::Storage::new(path, 4096).unwrap();
+            storage::Storage::new(path, 4096).unwrap();
         }
 
         {
@@ -54,7 +55,7 @@ mod tests {
         }
 
         {
-            let storage = storage::Storage::new(path, 1337).unwrap();
+            let mut storage = storage::Storage::new(path, 1337).unwrap();
             assert_eq!(storage.state.next_page_id, storage::DEFAULT_PAGE + 1);
 
             //page content is stored on disk
@@ -65,9 +66,19 @@ mod tests {
         }
 
         {
-            let storage = storage::Storage::new(path, 1337).unwrap();
+            let mut storage = storage::Storage::new(path, 1337).unwrap();
             //page deletion does not mess with next_page_id
             assert_eq!(storage.state.next_page_id, storage::DEFAULT_PAGE + 1);
+
+            assert_eq!(storage.allocate_id().unwrap(), storage::DEFAULT_PAGE);
+            assert_eq!(storage.allocate_id().unwrap(), storage::DEFAULT_PAGE + 1);
+            assert_eq!(storage.allocate_id().unwrap(), storage::DEFAULT_PAGE + 2);
+
+            storage.free_id(storage::DEFAULT_PAGE + 2).unwrap();
+            storage.free_id(storage::DEFAULT_PAGE + 1).unwrap();
+
+            assert_eq!(storage.allocate_id().unwrap(), storage::DEFAULT_PAGE + 2);
+            assert_eq!(storage.allocate_id().unwrap(), storage::DEFAULT_PAGE + 1);
 
             //page is deleted
             let result = storage.read_page(storage::DEFAULT_PAGE);
@@ -84,6 +95,7 @@ mod tests {
     #[test]
     fn buffer_pool_test() {
         let path = "temp_path2";
+        utility::cleanup(path);
 
         {
             let mut buffer_pool = buffer_pool::BufferPool::new(path, 4096usize, 3usize).unwrap();
@@ -124,6 +136,7 @@ mod tests {
     #[test]
     fn paged_storage_test() {
         let path = "temp_path3";
+        utility::cleanup(path);
 
         let page_id: page::PageId;
 
