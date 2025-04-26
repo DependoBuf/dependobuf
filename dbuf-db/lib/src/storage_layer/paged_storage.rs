@@ -36,6 +36,10 @@ impl PagedStorage {
         Ok(self.buffer_pool.allocate_page(page_type)?.0.header.id)
     }
 
+    pub fn delete_page(&mut self, id: PageId) -> Result<(), StorageError> {
+        self.buffer_pool.delete_page(id)
+    }
+
     /// Write data to a page at the specified offset
     pub fn write_data(
         &mut self,

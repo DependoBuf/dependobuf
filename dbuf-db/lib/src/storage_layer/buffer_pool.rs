@@ -45,6 +45,10 @@ impl BufferPool {
         &self.storage.marble
     }
 
+    pub fn storage(&self) -> &Storage {
+        &self.storage
+    }
+
     fn pop_page(&self) -> Result<(), StorageError> {
         let mut pages = self.pages.borrow_mut();
 
@@ -85,6 +89,12 @@ impl BufferPool {
         pages.insert(id, (page, false));
 
         Ok(RefMut::map(pages, |p| p.get_mut(&id).unwrap()))
+    }
+
+    pub fn delete_page(&mut self, id: PageId) -> Result<(), StorageError> {
+        self.pages.borrow_mut().remove(&id);
+        self.storage.delete_page(id)?;
+        Ok(())
     }
 
     //place page into cache
