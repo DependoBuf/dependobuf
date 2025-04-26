@@ -53,8 +53,15 @@ pub struct Expression<Loc, Str> {
 pub enum ExpressionNode<Str, Expr> {
     /// Operator call.
     OpCall(OpCall<Str, Rec<Expr>>),
-    /// Call to dependent type, its constructor, or just a variable.
+    /// Call to dependent type.
     FunCall { fun: Str, args: Rec<[Expr]> },
+    /// Constructor call.
+    ConstructorCall {
+        name: Str,
+        fields: Rec<[(Str, Expr)]>,
+    },
+    /// Variable.
+    Variable { name: Str },
     /// Typed hole which should report expected type of a missing expression.
     TypedHole,
 }
@@ -71,8 +78,13 @@ pub struct Pattern<Loc, Str> {
 /// Possible pattern node types.
 #[derive(Clone, Debug)]
 pub enum PatternNode<Str, Pattern> {
-    /// Constructor call, or just a variable.
-    Call { name: Str, fields: Rec<[Pattern]> },
+    /// Constructor call.
+    ConstructorCall {
+        name: Str,
+        fields: Rec<[(Str, Pattern)]>,
+    },
+    /// Variable.
+    Variable { name: Str },
     /// Literal.
     Literal(Literal),
     /// A catch-all pattern.
