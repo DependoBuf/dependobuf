@@ -10,7 +10,5 @@ pub mod handler;
 pub mod navigator;
 pub mod pretty_printer;
 
-pub mod better_printer;
-
 // might be deleted in future
 pub mod default_ast;
