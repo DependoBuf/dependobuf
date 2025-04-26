@@ -45,12 +45,12 @@ pub struct Expression<Loc, Str> {
     /// Location of a subexpression.
     pub loc: Loc,
     /// Subexpression itself.
-    pub node: ExpressionNode<Str, Expression<Loc, Str>>,
+    pub node: ExpressionNode<Loc, Str, Expression<Loc, Str>>,
 }
 
 /// Possible expression node types.
 #[derive(Clone, Debug)]
-pub enum ExpressionNode<Str, Expr> {
+pub enum ExpressionNode<Loc, Str, Expr> {
     /// Operator call.
     OpCall(OpCall<Str, Rec<Expr>>),
     /// Call to dependent type.
@@ -58,7 +58,7 @@ pub enum ExpressionNode<Str, Expr> {
     /// Constructor call.
     ConstructorCall {
         name: Str,
-        fields: Rec<[(Str, Expr)]>,
+        fields: Definitions<Loc, Str, Expr>,
     },
     /// Variable.
     Variable { name: Str },
@@ -72,16 +72,16 @@ pub struct Pattern<Loc, Str> {
     /// Location of a subpattern.
     pub loc: Loc,
     /// Subpattern itself.
-    pub node: PatternNode<Str, Pattern<Loc, Str>>,
+    pub node: PatternNode<Loc, Str, Pattern<Loc, Str>>,
 }
 
 /// Possible pattern node types.
 #[derive(Clone, Debug)]
-pub enum PatternNode<Str, Pattern> {
+pub enum PatternNode<Loc, Str, Pattern> {
     /// Constructor call.
     ConstructorCall {
         name: Str,
-        fields: Rec<[(Str, Pattern)]>,
+        fields: Definitions<Loc, Str, Pattern>,
     },
     /// Variable.
     Variable { name: Str },
