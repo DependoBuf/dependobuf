@@ -24,13 +24,156 @@ fn parser_type_declaration<'src, I>() -> impl Parser<
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
 {
-    end().map(|_| {
-        (Definition {
-            loc: todo!(),
-            name: todo!(),
-            data: todo!(),
+    let message_def = parser_message_def();
+    let enum_def = parser_enum_def();
+
+    choice((message_def, enum_def))
+}
+
+pub fn parser_message_def<'src, I>() -> impl Parser<
+    'src,
+    I,
+    Definition<Span, String, TypeDeclaration<Span, String>>,
+    extra::Err<Rich<'src, Token>>,
+> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    let dependencies = parser_depencies(0);
+    let constructor_body = parser_constructor_body();
+
+    just(Token::Message)
+        .ignore_then(parser_type_identifier())
+        .then(dependencies)
+        .then(constructor_body)
+        .map_with(|((name, deps), body), extra| {
+            let span: SimpleSpan = extra.span();
+            Definition {
+                loc: span.into(),
+                name,
+                data: TypeDeclaration {
+                    dependencies: deps,
+                    body: TypeDefinition::Message(body),
+                },
+            }
         })
-    })
+}
+
+pub fn parser_enum_def<'src, I>() -> impl Parser<
+    'src,
+    I,
+    Definition<Span, String, TypeDeclaration<Span, String>>,
+    extra::Err<Rich<'src, Token>>,
+> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    let dependent = parser_dependent_enum_def();
+    let independent = parser_independent_enum_def();
+
+    choice((dependent, independent))
+}
+
+pub fn parser_dependent_enum_def<'src, I>() -> impl Parser<
+    'src,
+    I,
+    Definition<Span, String, TypeDeclaration<Span, String>>,
+    extra::Err<Rich<'src, Token>>,
+> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    let mapping_rule = parser_enum_branch();
+    let rules = mapping_rule
+        .repeated()
+        .at_least(1)
+        .collect::<Vec<_>>()
+        .delimited_by(just(Token::LBrace), just(Token::RBrace));
+
+    let dependencies = parser_depencies(1);
+    just(Token::Enum)
+        .ignore_then(parser_type_identifier())
+        .then(dependencies)
+        .then(rules)
+        .map_with(|((name, deps), branches), extra| {
+            let span: SimpleSpan = extra.span();
+            Definition {
+                loc: span.into(),
+                name,
+                data: TypeDeclaration {
+                    dependencies: deps,
+                    body: TypeDefinition::Enum(branches),
+                },
+            }
+        })
+}
+
+pub fn parser_independent_enum_def<'src, I>() -> impl Parser<
+    'src,
+    I,
+    Definition<Span, String, TypeDeclaration<Span, String>>,
+    extra::Err<Rich<'src, Token>>,
+> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    let constructors_block = parser_constructors_block();
+    just(Token::Enum)
+        .ignore_then(parser_type_identifier())
+        .then(constructors_block)
+        .map_with(|(name, vec), extra| {
+            let span: SimpleSpan = extra.span();
+            Definition {
+                loc: span.into(),
+                name,
+                data: TypeDeclaration {
+                    dependencies: vec![],
+                    body: TypeDefinition::Enum(vec![EnumBranch {
+                        patterns: vec![],
+                        constructors: vec,
+                    }]),
+                },
+            }
+        })
+}
+
+pub fn parser_depencies<'src, I>(
+    at_least: usize,
+) -> impl Parser<
+    'src,
+    I,
+    Definitions<Span, String, TypeExpression<Span, String>>,
+    extra::Err<Rich<'src, Token>>,
+> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    let typed_variable = parser_typed_variable();
+    let dependency = typed_variable.delimited_by(just(Token::LParen), just(Token::RParen));
+
+    dependency.repeated().at_least(at_least).collect::<Vec<_>>()
+}
+
+pub fn parser_enum_branch<'src, I>(
+) -> impl Parser<'src, I, EnumBranch<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    let pattern = parser_pattern();
+    let input_patterns = pattern
+        .separated_by(just(Token::Comma))
+        .at_least(1)
+        .collect::<Vec<_>>();
+
+    let constructor_block = parser_constructors_block();
+
+    input_patterns
+        .then_ignore(just(Token::Arrow))
+        .then(constructor_block)
+        .map(|(patterns, constructors)| EnumBranch {
+            patterns,
+            constructors,
+        })
 }
 
 pub fn parser_constructors_block<'src, I>() -> impl Parser<
@@ -43,18 +186,16 @@ where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
 {
     let constructor_body = parser_constructor_body();
-    let constructor_declaration = select! {
-        Token::UCIdentifier(s) => s,
-    }
-    .then(constructor_body.or_not())
-    .map_with(|(name, body), extra| {
-        let span: SimpleSpan = extra.span();
-        Definition {
-            loc: span.into(),
-            name,
-            data: body.unwrap_or_default(),
-        }
-    });
+    let constructor_declaration = parser_constructor_identifier()
+        .then(constructor_body.or_not())
+        .map_with(|(name, body), extra| {
+            let span: SimpleSpan = extra.span();
+            Definition {
+                loc: span.into(),
+                name,
+                data: body.unwrap_or_default(),
+            }
+        });
 
     constructor_declaration
         .repeated()
@@ -83,18 +224,16 @@ where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
 {
     let type_expr = parser_type_expression();
-    select! {
-        Token::LCIdentifier(s) => s,
-    }
-    .then(type_expr)
-    .map_with(|(name, expr), extra| {
-        let span: SimpleSpan = extra.span();
-        Definition {
-            loc: span.into(),
-            name,
-            data: expr,
-        }
-    })
+    parser_var_identifier()
+        .then(type_expr)
+        .map_with(|(name, expr), extra| {
+            let span: SimpleSpan = extra.span();
+            Definition {
+                loc: span.into(),
+                name,
+                data: expr,
+            }
+        })
 }
 
 pub fn parser_pattern<'src, I>(
@@ -103,32 +242,28 @@ where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
 {
     recursive(|pattern| {
-        let field_init = select! {
-            Token::LCIdentifier(s) => s,
-        }
-        .then_ignore(just(Token::Colon))
-        .then(pattern.clone());
+        let field_init = parser_var_identifier()
+            .then_ignore(just(Token::Colon))
+            .then(pattern.clone());
 
         let field_init_list = field_init
             .separated_by(just(Token::Comma))
             .allow_trailing()
             .collect::<Vec<_>>();
 
-        let constructed_value = select! {
-            Token::UCIdentifier(s) => s,
-        }
-        .then(field_init_list.delimited_by(just(Token::LBrace), just(Token::RBrace)))
-        .map_with(|(name, fields), extra| {
-            let span: SimpleSpan = extra.span();
-            Pattern {
-                loc: span.into(),
-                node: PatternNode::ConstructorCall {
-                    name,
-                    fields: fields.into_boxed_slice().into(),
-                },
-            }
-        })
-        .labelled("constructed value");
+        let constructed_value = parser_constructor_identifier()
+            .then(field_init_list.delimited_by(just(Token::LBrace), just(Token::RBrace)))
+            .map_with(|(name, fields), extra| {
+                let span: SimpleSpan = extra.span();
+                Pattern {
+                    loc: span.into(),
+                    node: PatternNode::ConstructorCall {
+                        name,
+                        fields: fields.into_boxed_slice().into(),
+                    },
+                }
+            })
+            .labelled("constructed value");
 
         let literal = parser_literal().map_with(|l, extra| {
             let span: SimpleSpan = extra.span();
@@ -148,17 +283,15 @@ where
                 }
             })
             .labelled("underscore");
-        let var_identifier = select! {
-            Token::LCIdentifier(s) => s,
-        }
-        .map_with(|name, extra| {
-            let span: SimpleSpan = extra.span();
-            Pattern {
-                loc: span.into(),
-                node: PatternNode::Variable { name },
-            }
-        })
-        .labelled("var identifier");
+        let var_identifier = parser_var_identifier()
+            .map_with(|name, extra| {
+                let span: SimpleSpan = extra.span();
+                Pattern {
+                    loc: span.into(),
+                    node: PatternNode::Variable { name },
+                }
+            })
+            .labelled("var identifier");
         choice((literal, underscore, var_identifier, constructed_value))
     })
 }
@@ -284,21 +417,19 @@ fn parser_type_expression_with_primary<'src, I>(
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
 {
-    select! {
-        Token::UCIdentifier(s) => s,
-    }
-    .then(primary.clone().repeated().collect::<Vec<_>>())
-    .map_with(|(fun, args), extra| {
-        let span: SimpleSpan = extra.span();
-        Expression {
-            loc: span.into(),
-            node: ExpressionNode::FunCall {
-                fun,
-                args: args.into_boxed_slice().into(),
-            },
-        }
-    })
-    .labelled("type expression")
+    parser_type_identifier()
+        .then(primary.clone().repeated().collect::<Vec<_>>())
+        .map_with(|(fun, args), extra| {
+            let span: SimpleSpan = extra.span();
+            Expression {
+                loc: span.into(),
+                node: ExpressionNode::FunCall {
+                    fun,
+                    args: args.into_boxed_slice().into(),
+                },
+            }
+        })
+        .labelled("type expression")
 }
 
 fn parser_primary_with_expression<'src, I>(
@@ -307,32 +438,28 @@ fn parser_primary_with_expression<'src, I>(
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
 {
-    let field_init = select! {
-        Token::LCIdentifier(s) => s,
-    }
-    .then_ignore(just(Token::Colon))
-    .then(expr.clone());
+    let field_init = parser_var_identifier()
+        .then_ignore(just(Token::Colon))
+        .then(expr.clone());
 
     let field_init_list = field_init
         .separated_by(just(Token::Comma))
         .allow_trailing()
         .collect::<Vec<_>>();
 
-    let constructed_value = select! {
-        Token::UCIdentifier(s) => s,
-    }
-    .then(field_init_list.delimited_by(just(Token::LBrace), just(Token::RBrace)))
-    .map_with(|(name, fields), extra| {
-        let span: SimpleSpan = extra.span();
-        Expression {
-            loc: span.into(),
-            node: ExpressionNode::ConstructorCall {
-                name,
-                fields: fields.into_boxed_slice().into(),
-            },
-        }
-    })
-    .labelled("constructed value");
+    let constructed_value = parser_constructor_identifier()
+        .then(field_init_list.delimited_by(just(Token::LBrace), just(Token::RBrace)))
+        .map_with(|(name, fields), extra| {
+            let span: SimpleSpan = extra.span();
+            Expression {
+                loc: span.into(),
+                node: ExpressionNode::ConstructorCall {
+                    name,
+                    fields: fields.into_boxed_slice().into(),
+                },
+            }
+        })
+        .labelled("constructed value");
 
     let value = parser_literal().map_with(|l, extra| {
         let span: SimpleSpan = extra.span();
@@ -352,6 +479,71 @@ where
     choice((paren, value, var_access, constructed_value))
 }
 
+fn parser_var_access<'src, I>(
+) -> impl Parser<'src, I, Expression<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    parser_var_identifier()
+        .map_with(|name, extra| (name, extra.span()))
+        .separated_by(just(Token::Dot))
+        .at_least(1)
+        .collect::<Vec<_>>()
+        .map(|vec: Vec<(String, SimpleSpan)>| {
+            let start: Expression<Span, String> = {
+                let (name, first_span) = &vec[0];
+                Expression {
+                    loc: (*first_span).into(),
+                    node: ExpressionNode::Variable { name: name.clone() },
+                }
+            };
+
+            vec.iter()
+                .skip(1)
+                .fold(start, |prev_expr, (name, cur_span)| Expression {
+                    loc: (*cur_span).into(),
+                    node: ExpressionNode::OpCall(OpCall::Unary(
+                        UnaryOp::Access(name.clone()),
+                        Rec::new(prev_expr),
+                    )),
+                })
+        })
+        .labelled("var access")
+}
+
+fn parser_type_identifier<'src, I>(
+) -> impl Parser<'src, I, String, extra::Err<Rich<'src, Token>>> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    select! {
+        Token::UCIdentifier(s) => s,
+    }
+    .labelled("type identifier")
+}
+
+fn parser_constructor_identifier<'src, I>(
+) -> impl Parser<'src, I, String, extra::Err<Rich<'src, Token>>> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    select! {
+        Token::UCIdentifier(s) => s,
+    }
+    .labelled("constructor identifier")
+}
+
+fn parser_var_identifier<'src, I>(
+) -> impl Parser<'src, I, String, extra::Err<Rich<'src, Token>>> + Clone
+where
+    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
+{
+    select! {
+        Token::LCIdentifier(s) => s,
+    }
+    .labelled("var identifier")
+}
+
 fn parser_literal<'src, I>() -> impl Parser<'src, I, Literal, extra::Err<Rich<'src, Token>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
@@ -364,38 +556,4 @@ where
         Token::StringLiteral(s) => Literal::Str(s),
     }
     .labelled("literal")
-}
-
-fn parser_var_access<'src, I>(
-) -> impl Parser<'src, I, Expression<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
-where
-    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
-{
-    select! {
-        Token::LCIdentifier(s) => s,
-    }
-    .map_with(|name, extra| (name, extra.span()))
-    .separated_by(just(Token::Dot))
-    .at_least(1)
-    .collect::<Vec<_>>()
-    .map(|vec: Vec<(String, SimpleSpan)>| {
-        let start: Expression<Span, String> = {
-            let (name, first_span) = &vec[0];
-            Expression {
-                loc: (*first_span).into(),
-                node: ExpressionNode::Variable { name: name.clone() },
-            }
-        };
-
-        vec.iter()
-            .skip(1)
-            .fold(start, |prev_expr, (name, cur_span)| Expression {
-                loc: (*cur_span).into(),
-                node: ExpressionNode::OpCall(OpCall::Unary(
-                    UnaryOp::Access(name.clone()),
-                    Rec::new(prev_expr),
-                )),
-            })
-    })
-    .labelled("var access")
 }
