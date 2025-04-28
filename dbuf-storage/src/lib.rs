@@ -1,10 +1,10 @@
-use rand::{thread_rng, Rng};
 use rand::distributions::Alphanumeric;
-use serde::{Serialize, de::DeserializeOwned};
-use std::error::Error;
-use std::fmt;
+use rand::{thread_rng, Rng};
+use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
 use sled;
+use std::error::Error;
+use std::fmt;
 
 mod helper;
 use helper::get_json_hash;
@@ -45,7 +45,7 @@ pub struct Database {
 impl Database {
     pub fn new(path: &str) -> Result<Self, DbError> {
         let db = sled::open(path).map_err(|e| DbError::DatabaseError(e.to_string()))?;
-        
+
         Ok(Database { db })
     }
 
@@ -55,34 +55,38 @@ impl Database {
             .take(16)
             .map(char::from)
             .collect();
-        
+
         format!("{}_{}", dependencies_hash, rand_string)
     }
 
     fn extract_dependencies_hash(&self, id: &str) -> Result<String, DbError> {
         let parts: Vec<&str> = id.split('_').collect();
         if parts.is_empty() {
-            return Err(DbError::DeserializationError("Invalid ID format".to_string()));
+            return Err(DbError::DeserializationError(
+                "Invalid ID format".to_string(),
+            ));
         }
         Ok(parts[0].to_string())
     }
-    
+
     pub fn insert<T: Serialize>(&self, value: &T) -> Result<String, DbError> {
-        let json = serde_json::to_string(value)
-            .map_err(|e| DbError::SerializationError(e.to_string()))?;
-        
+        let json =
+            serde_json::to_string(value).map_err(|e| DbError::SerializationError(e.to_string()))?;
+
         self.insert_json(json)
     }
 
-    fn insert_json(&self, json: String) -> Result<String, DbError> {   
+    fn insert_json(&self, json: String) -> Result<String, DbError> {
         let value: Value = serde_json::from_str(&json)
             .map_err(|e| DbError::DeserializationError(format!("JSON parsing error: {}", e)))?;
 
         let obj = match value.as_object() {
             Some(obj) => obj,
-            None => return Err(DbError::DeserializationError(
-                "Invalid JSON structure: Not an object".to_string()
-            )),
+            None => {
+                return Err(DbError::DeserializationError(
+                    "Invalid JSON structure: Not an object".to_string(),
+                ))
+            }
         };
 
         if obj.len() != 2 || !obj.contains_key("body") || !obj.contains_key("dependencies") {
@@ -96,29 +100,33 @@ impl Database {
 
         let body_json = serde_json::to_string(body)
             .map_err(|e| DbError::SerializationError(format!("Failed to serialize body: {}", e)))?;
-        let dependencies_json = serde_json::to_string(dependencies)
-            .map_err(|e| DbError::SerializationError(format!("Failed to serialize dependencies: {}", e)))?;
+        let dependencies_json = serde_json::to_string(dependencies).map_err(|e| {
+            DbError::SerializationError(format!("Failed to serialize dependencies: {}", e))
+        })?;
 
         let deps_hash = get_json_hash(&dependencies_json);
         let id = self.generate_id(&deps_hash);
 
         if self.db.contains_key(id.as_bytes())? {
-            return Err(DbError::AlreadyExists(format!("Item with ID {} already exists", id)));
+            return Err(DbError::AlreadyExists(format!(
+                "Item with ID {} already exists",
+                id
+            )));
         }
-        
+
         // TODO: make parallel
-        self.db.insert(deps_hash.as_bytes(), dependencies_json.as_bytes())?;
+        self.db
+            .insert(deps_hash.as_bytes(), dependencies_json.as_bytes())?;
         self.db.insert(id.as_bytes(), body_json.as_bytes())?;
         self.db.flush()?;
 
         Ok(id)
     }
-    
+
     pub fn get<T: DeserializeOwned>(&self, id: &str) -> Result<T, DbError> {
         let json = self.get_json(id)?;
-        
-        serde_json::from_str(&json)
-            .map_err(|e| DbError::DeserializationError(e.to_string()))
+
+        serde_json::from_str(&json).map_err(|e| DbError::DeserializationError(e.to_string()))
     }
 
     fn get_json(&self, id: &str) -> Result<String, DbError> {
@@ -128,9 +136,8 @@ impl Database {
         let deps_json = self.get_by_key(&deps_hash)?;
 
         let complete_json = format!(
-            "{{ \"body\": {}, \"dependencies\": {} }}", 
-            body_json,
-            deps_json
+            "{{ \"body\": {}, \"dependencies\": {} }}",
+            body_json, deps_json
         );
 
         Ok(complete_json)
@@ -146,13 +153,13 @@ impl Database {
             None => Err(DbError::NotFound),
         }
     }
-    
+
     pub fn update<T: Serialize>(&self, id: &str, value: &T) -> Result<(), DbError> {
-        let json = serde_json::to_string(value)
-            .map_err(|e| DbError::SerializationError(e.to_string()))?;
-        
+        let json =
+            serde_json::to_string(value).map_err(|e| DbError::SerializationError(e.to_string()))?;
+
         self.update_json(id, json)?;
-        
+
         Ok(())
     }
 
@@ -166,9 +173,11 @@ impl Database {
 
         let obj = match value.as_object() {
             Some(obj) => obj,
-            None => return Err(DbError::DeserializationError(
-                "Invalid JSON structure: Not an object".to_string()
-            )),
+            None => {
+                return Err(DbError::DeserializationError(
+                    "Invalid JSON structure: Not an object".to_string(),
+                ))
+            }
         };
 
         if obj.len() != 2 || !obj.contains_key("body") || !obj.contains_key("dependencies") {
@@ -182,8 +191,9 @@ impl Database {
 
         let new_body_json = serde_json::to_string(new_body)
             .map_err(|e| DbError::SerializationError(format!("Failed to serialize body: {}", e)))?;
-        let new_dependencies_json = serde_json::to_string(new_dependencies)
-            .map_err(|e| DbError::SerializationError(format!("Failed to serialize dependencies: {}", e)))?;
+        let new_dependencies_json = serde_json::to_string(new_dependencies).map_err(|e| {
+            DbError::SerializationError(format!("Failed to serialize dependencies: {}", e))
+        })?;
 
         let body_changed = current_body_json != new_body_json;
         let deps_changed = current_deps_json != new_dependencies_json;
@@ -197,13 +207,14 @@ impl Database {
         }
 
         if deps_changed {
-            self.db.insert(deps_hash.as_bytes(), new_dependencies_json.as_bytes())?;
+            self.db
+                .insert(deps_hash.as_bytes(), new_dependencies_json.as_bytes())?;
         }
 
         self.db.flush()?;
         Ok(())
     }
-    
+
     pub fn delete(&self, id: &str) -> Result<(), DbError> {
         self.delete_json(id)
     }
@@ -211,7 +222,6 @@ impl Database {
     pub fn delete_json(&self, id: &str) -> Result<(), DbError> {
         if !self.db.contains_key(id.as_bytes())? {
             return Err(DbError::NotFound);
-
         }
 
         self.db.remove(id.as_bytes())?;
