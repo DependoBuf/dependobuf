@@ -7,3 +7,6 @@ version = "0.1.0"
 
 [workspace.dependencies]
 dbuf-core = { path = "./dbuf-core" }
+chumsky = { version = "0.10.1", features = ["pratt"] }
+logos = "0.15.0"
+unescape = "0.1.0"

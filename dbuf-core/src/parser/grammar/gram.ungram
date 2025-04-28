@@ -1,0 +1,63 @@
+// Синтаксис Ungrammar:
+// = определение
+// | или
+// a? 0 или 1 раз 'a'
+// a* 0 или больше раз 'a'
+
+// все строчки с '_token' в конце это те токены которые или надо отдельно распарсить в токенайзере
+// в целом все строчки будут отдельно разбираться в токенайзере, но такое обозначение я ввел
+// чтобы не париться над расписыванием грамматики мелких кирпичиков, которые просто токенизируются
+
+Module = TypeDefinition*
+
+TypeDefinition = MessageDef | EnumDef
+MessageDef = 'message' TypeIdentifier Dependencies FieldsBlock
+EnumDef = DependentEnumDef | IndependentEnumDef
+DependentEnumDef = 'enum' TypeIdentifier Dependencies '{' MappingRule* '}'
+IndependentEnumDef = 'enum' TypeIdentifier ConstructorsBlock
+
+Dependencies = '(' TypedVariable ')' ('(' TypedVariable ')')*
+
+MappingRule = InputPatterns '=>' ConstructorsBlock
+InputPatterns = Pattern (',' Pattern)*
+
+Pattern = '*' | VarIdentifier | Value | ConstructedValue_pattern
+ConstructedValue_pattern = ConstructorIdentifier '{' FieldInitList? '}'
+FieldInitList_pattern = FieldInit_pattern (',' FieldInit_pattern)*
+FieldInit_pattern = VarIdentifier ':' Pattern
+
+ConstructorsBlock = '{' ConstructorDeclaration* '}'
+ConstructorDeclaration = ConstructorIdentifier FieldsBlock?
+FieldsBlock = '{' FieldDeclaration* '}'
+FieldDeclaration = TypedVariable ';'
+
+TypedVariable = VarIdentifier TypeExpr
+TypeExpr = TypeIdentifier Primary*
+
+Expression = Expression BinaryOperation Expression | UnaryOperation Expression | Primary | TypeExpr // ????
+BinaryOperation = '+' | '-' | '*' | '/' | '&' | '|'
+UnaryOperation = '-' | '!'
+
+Primary = Value | VarAccess | ConstructedValue | '(' Expression ')' | UnaryOperation Primary
+
+ConstructedValue = ConstructorIdentifier '{' FieldInitList? '}'
+FieldInitList = FieldInit (',' FieldInit)*
+FieldInit = VarIdentifier ':' Expression
+
+VarAccess = VarIdentifier ('.' VarIdentifier)*
+Value =
+    BooleanLiteral
+  | FloatLiteral
+  | IntLiteral
+  | UintLiteral
+  | StringLiteral
+
+BooleanLiteral = 'true' | 'false'
+IntLiteral = 'int_literal_token'
+UintLiteral = 'uint_literal_token'
+FloatLiteral = 'float_literal_token'
+StringLiteral = 'string_literal_token'
+
+TypeIdentifier = 'UC_IDENTIFIER_token'
+ConstructorIdentifier = 'UC_IDENTIFIER_token'
+VarIdentifier = 'LC_IDENTIFIER_token'

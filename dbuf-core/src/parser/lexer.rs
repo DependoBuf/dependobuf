@@ -72,7 +72,7 @@ fn parse_string(s: &str) -> Option<String> {
 }
 
 fn parse_uint(s: &str) -> Option<u64> {
-    s[..s.len() - 1].parse().ok()
+    s[..s.len() - 1].parse().ok() // remove 'u' suffix
 }
 
 #[derive(Clone, Copy, Debug)]
