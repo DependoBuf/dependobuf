@@ -244,7 +244,15 @@ where
     recursive(|pattern| {
         let field_init = parser_var_identifier()
             .then_ignore(just(Token::Colon))
-            .then(pattern.clone());
+            .then(pattern.clone())
+            .map_with(|(name, data), extra| {
+                let span: SimpleSpan = extra.span();
+                Definition {
+                    loc: span.into(),
+                    name,
+                    data,
+                }
+            });
 
         let field_init_list = field_init
             .separated_by(just(Token::Comma))
@@ -257,10 +265,7 @@ where
                 let span: SimpleSpan = extra.span();
                 Pattern {
                     loc: span.into(),
-                    node: PatternNode::ConstructorCall {
-                        name,
-                        fields: fields.into_boxed_slice().into(),
-                    },
+                    node: PatternNode::ConstructorCall { name, fields },
                 }
             })
             .labelled("constructed value");
@@ -440,7 +445,15 @@ where
 {
     let field_init = parser_var_identifier()
         .then_ignore(just(Token::Colon))
-        .then(expr.clone());
+        .then(expr.clone())
+        .map_with(|(name, data), extra| {
+            let span: SimpleSpan = extra.span();
+            Definition {
+                loc: span.into(),
+                name,
+                data,
+            }
+        });
 
     let field_init_list = field_init
         .separated_by(just(Token::Comma))
@@ -453,10 +466,7 @@ where
             let span: SimpleSpan = extra.span();
             Expression {
                 loc: span.into(),
-                node: ExpressionNode::ConstructorCall {
-                    name,
-                    fields: fields.into_boxed_slice().into(),
-                },
+                node: ExpressionNode::ConstructorCall { name, fields },
             }
         })
         .labelled("constructed value");
