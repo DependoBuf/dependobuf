@@ -1,5 +1,4 @@
 //! Module exports:
-//! * PositionHelpers, helpers for Position type.
 //! * LocationHelpers, helpers for Location type.
 //!
 
@@ -40,10 +39,20 @@ use tower_lsp::lsp_types;
 use tower_lsp::lsp_types::Range;
 
 /// Helpers for dbuf-core::Position type.
-pub trait PositionHelpers {
+trait PositionHelpers {
     /// Convers Position to lsp_types::Position;
     fn to_lsp(&self) -> lsp_types::Position;
 }
+
+impl PositionHelpers for Position {
+    fn to_lsp(&self) -> lsp_types::Position {
+        lsp_types::Position {
+            line: self.line,
+            character: self.character,
+        }
+    }
+}
+
 /// Helpers for dbuf-core::Location type.
 pub trait LocationHelpers {
     /// Returns empty location. Typically ((0, 0), (0, 0))
@@ -55,15 +64,6 @@ pub trait LocationHelpers {
     /// If `p == self.end`, returns true, corresponding
     /// to lsp_type::Range specification.
     fn contains(&self, p: &lsp_types::Position) -> bool;
-}
-
-impl PositionHelpers for Position {
-    fn to_lsp(&self) -> lsp_types::Position {
-        lsp_types::Position {
-            line: self.line,
-            character: self.character,
-        }
-    }
 }
 
 impl LocationHelpers for Location {

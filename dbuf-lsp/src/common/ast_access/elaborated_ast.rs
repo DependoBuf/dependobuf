@@ -40,15 +40,14 @@ pub trait ElaboratedHelper {
 impl ElaboratedHelper for ElaboratedAst {
     fn get_constructor_type(&self, constructor_name: &str) -> Option<&str> {
         if let Some(ctr) = self.constructors.get(constructor_name) {
-            if let Expression::Type {
+            let TypeExpression::TypeExpression {
                 name,
                 dependencies: _,
-            } = &ctr.result_type
-            {
-                return Some(name);
-            }
+            } = &ctr.result_type;
+            Some(name)
+        } else {
+            None
         }
-        None
     }
 
     fn get_type(&self, name: &str) -> Option<&Type<Str>> {

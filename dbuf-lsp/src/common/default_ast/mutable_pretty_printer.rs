@@ -186,17 +186,25 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         pattern.loc.start = self.cursor;
 
         match &mut pattern.node {
-            PatternNode::Call { name, fields } => {
-                if fields.is_empty() {
-                    // Assuming: variable
-                    self.write_str(name)?;
-                } else {
-                    // Assuming: constructor
-                    self.write_str(name)?;
-                    self.write("{")?;
-                    // TODO: parse constructor
-                    self.write("}")?;
+            PatternNode::ConstructorCall { name, fields } => {
+                self.write_str(name)?;
+                self.write("{")?;
+
+                let mut first = true;
+                for f in fields.iter_mut() {
+                    if !first {
+                        self.write(", ")?;
+                    }
+                    self.write_str(&mut f.name)?;
+                    self.write(": ")?;
+                    self.parse_pattern(&mut f.data)?;
+                    first = false;
                 }
+
+                self.write("}")?;
+            }
+            PatternNode::Variable { name } => {
+                self.write_str(name)?;
             }
             PatternNode::Literal(literal) => {
                 self.parse_literal(literal)?;
@@ -286,17 +294,28 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         expression.loc.start = self.cursor;
 
         match &mut expression.node {
-            ExpressionNode::FunCall { fun, args } => {
-                if args.is_empty() {
-                    // Assuming: variable cal
-                    self.write_str(fun)?;
-                } else {
-                    // Assuming: constructor
-                    self.write_str(fun)?;
-                    self.write("{")?;
-                    // TODO: parse constructor
-                    self.write("}")?;
+            ExpressionNode::ConstructorCall { name, fields } => {
+                self.write_str(name)?;
+                self.write("{")?;
+
+                let mut first = true;
+                for f in fields.iter_mut() {
+                    if !first {
+                        self.write(", ")?;
+                    }
+                    self.write_str(&mut f.name)?;
+                    self.write(": ")?;
+                    self.parse_expression(&mut f.data)?;
+                    first = false;
                 }
+
+                self.write("}")?;
+            }
+            ExpressionNode::Variable { name } => {
+                self.write_str(name)?;
+            }
+            ExpressionNode::FunCall { fun: _, args: _ } => {
+                panic!("unexpected fun call");
             }
             ExpressionNode::OpCall(op) => {
                 self.parse_opcall(op)?;

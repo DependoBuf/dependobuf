@@ -68,9 +68,13 @@ impl WorkspaceAccess {
         let parsed: ParsedAst = get_parsed(text);
         let elaborated: ElaboratedAst = get_elaborated(text);
 
-        let mut file = self.files.get_mut(url).expect("file should be opened");
+        let file = File::new(version, parsed, elaborated);
 
-        file.set_ast(version, parsed, elaborated);
+        let old = self
+            .files
+            .insert(url.to_owned(), file)
+            .expect("file should be opened");
+        assert!(old.get_version() < version, "versions shoud be monotonic");
     }
 
     /// Returns File by `url`. Panics File was not opened.
@@ -80,10 +84,9 @@ impl WorkspaceAccess {
 
     /// Removes File from opened files.
     pub fn close(&self, url: &Url) {
-        self.files.remove(url);
+        self.files.remove(url).expect("file should be opened");
     }
 }
-
 
 /// Safety: WorkspaceAccess has only
 /// one field of type DashMap, which

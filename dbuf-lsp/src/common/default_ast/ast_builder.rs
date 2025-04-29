@@ -162,7 +162,7 @@ impl EnumBranchBuilder {
             names: vec![],
         }
     }
-    pub fn with_pattern(&mut self, pattern: PatternNode<Str, Pattern<Loc, Str>>) -> &mut Self {
+    pub fn with_pattern(&mut self, pattern: PatternNode<Loc, Str, Pattern<Loc, Str>>) -> &mut Self {
         self.patterns.push(Pattern {
             loc: Location::default(),
             node: pattern,

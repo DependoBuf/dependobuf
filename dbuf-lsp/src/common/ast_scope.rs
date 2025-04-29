@@ -133,11 +133,11 @@ impl<'a> AstScope<'a> {
     fn try_switch_to(
         &mut self,
         variable: &str,
-        variants: &'a [(String, Expression<String>)],
+        variants: &'a [(String, TypeExpression<String>)],
     ) -> Option<&'a str> {
         if let Some((
             _,
-            TypeExpression::Type {
+            TypeExpression::TypeExpression {
                 name,
                 dependencies: _,
             },

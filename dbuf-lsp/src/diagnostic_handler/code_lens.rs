@@ -34,7 +34,6 @@ impl CodeLensProvider<'_> {
         let navigator = Navigator::new(self.file);
 
         let symbol = navigator::Symbol::Type(type_name.to_string());
-        eprintln!("symbols: \n{:#?}", navigator.find_symbols(&symbol));
         (navigator.find_symbols(&symbol).len() - 1) as u32
     }
 

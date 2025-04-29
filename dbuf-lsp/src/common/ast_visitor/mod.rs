@@ -12,7 +12,11 @@
 
 pub mod scope_visitor;
 
+#[cfg(test)]
+mod tests;
+
 use dbuf_core::ast::operators::*;
+use dbuf_core::ast::parsed::definition::Definitions;
 use dbuf_core::ast::parsed::*;
 
 use super::ast_access::{Loc, Str};
@@ -22,7 +26,6 @@ use super::ast_access::ElaboratedHelper;
 use super::ast_access::LocStringHelper;
 use super::ast_access::ParsedAst;
 use super::ast_access::Position;
-use super::dbuf_language::is_correct_type_name;
 
 /// Constructor characteristic. Do not confuse with constructor calls.
 ///
@@ -98,10 +101,7 @@ pub enum Visit<'a> {
     ///
     /// Currently, always None
     /// due to incomplete parsed ast.
-    ///
-    /// TODO:
-    /// * return not none.
-    PatternCallArgument(Option<&'a Str>),
+    PatternCallArgument(&'a Str),
     /// Call end.
     ///
     /// No skip allowed.
@@ -193,13 +193,7 @@ pub enum Visit<'a> {
     /// Can be skipped (to next argument).
     ///
     /// 0: constructor field name.
-    ///
-    /// Currently, always None
-    /// due to incomplete parsed ast.
-    ///
-    /// TODO:
-    /// * return not none.
-    ConstructorExprArgument(Option<&'a Str>),
+    ConstructorExprArgument(&'a Str),
     /// Constructor call end.
     ///
     /// No skip allowed.
@@ -394,23 +388,20 @@ fn visit_type_declaration<'a, V: Visitor<'a>>(
 
 fn visit_pattern<'a, V: Visitor<'a>>(p: &'a Pattern<Loc, Str>, visitor: &mut V) -> Stop {
     match &p.node {
-        PatternNode::Call { name, fields } => {
-            if is_correct_type_name(name.as_ref()) {
-                let res = visitor.visit(Visit::PatternCall(name, &p.loc));
-                match res {
-                    VisitResult::Continue => visit_pattern_call_arguments(fields, visitor)?,
-                    VisitResult::Skip => return CONTINUE,
-                    VisitResult::Stop => return STOP,
-                }
-            } else {
-                assert!(fields.is_empty());
-
-                let res = visitor.visit(Visit::PatternAlias(name));
-                match res {
-                    VisitResult::Continue => return CONTINUE,
-                    VisitResult::Skip => panic!("pattern alias can't be skipped"),
-                    VisitResult::Stop => return STOP,
-                }
+        PatternNode::ConstructorCall { name, fields } => {
+            let res = visitor.visit(Visit::PatternCall(name, &p.loc));
+            match res {
+                VisitResult::Continue => visit_pattern_call_arguments(fields, visitor)?,
+                VisitResult::Skip => return CONTINUE,
+                VisitResult::Stop => return STOP,
+            }
+        }
+        PatternNode::Variable { name } => {
+            let res = visitor.visit(Visit::PatternAlias(name));
+            match res {
+                VisitResult::Continue => return CONTINUE,
+                VisitResult::Skip => panic!("pattern alias can't be skipped"),
+                VisitResult::Stop => return STOP,
             }
         }
         PatternNode::Literal(l) => visit_pattern_literal(l, &p.loc, visitor)?,
@@ -428,18 +419,16 @@ fn visit_pattern<'a, V: Visitor<'a>>(p: &'a Pattern<Loc, Str>, visitor: &mut V) 
 }
 
 fn visit_pattern_call_arguments<'a, V: Visitor<'a>>(
-    p: &'a [Pattern<Loc, Str>],
+    p: &'a Definitions<Loc, Str, Pattern<Loc, Str>>,
     visitor: &mut V,
 ) -> Stop {
     for p in p.iter() {
-        let res = visitor.visit(Visit::PatternCallArgument(None)); // TODO
+        let res = visitor.visit(Visit::PatternCallArgument(&p.name));
         match res {
-            VisitResult::Continue => {}
+            VisitResult::Continue => visit_pattern(&p.data, visitor)?,
             VisitResult::Skip => continue,
             VisitResult::Stop => return STOP,
         }
-
-        visit_pattern(p, visitor)?;
     }
 
     let res = visitor.visit(Visit::PatternCallStop);
@@ -557,42 +546,42 @@ fn visit_expression<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: &m
                 VisitResult::Stop => return STOP,
             }
         }
-        ExpressionNode::FunCall { fun, args } => {
-            if fun.as_ref().chars().next().unwrap().is_uppercase() {
-                let res = visitor.visit(Visit::ConstructorExpr(fun));
+        ExpressionNode::Variable { name } => {
+            let res = visitor.visit(Visit::VarAccess(name));
+            match res {
+                VisitResult::Continue => return CONTINUE,
+                VisitResult::Skip => panic!("variable access can't be skipped"),
+                VisitResult::Stop => return STOP,
+            }
+        }
+        ExpressionNode::ConstructorCall { name, fields } => {
+            let res = visitor.visit(Visit::ConstructorExpr(name));
+            match res {
+                VisitResult::Continue => {}
+                VisitResult::Skip => return CONTINUE,
+                VisitResult::Stop => return STOP,
+            }
+
+            for expr in fields.iter() {
+                let res = visitor.visit(Visit::ConstructorExprArgument(&expr.name)); // TOOD
                 match res {
                     VisitResult::Continue => {}
-                    VisitResult::Skip => return CONTINUE,
+                    VisitResult::Skip => continue,
                     VisitResult::Stop => return STOP,
                 }
 
-                for expr in args.iter() {
-                    let res = visitor.visit(Visit::ConstructorExprArgument(None)); // TOOD
-                    match res {
-                        VisitResult::Continue => {}
-                        VisitResult::Skip => continue,
-                        VisitResult::Stop => return STOP,
-                    }
-
-                    visit_expression(expr, visitor)?;
-                }
-
-                let res = visitor.visit(Visit::ConstructorExprStop);
-                match res {
-                    VisitResult::Continue => return CONTINUE,
-                    VisitResult::Skip => panic!("constructor expression stop can't be skipped"),
-                    VisitResult::Stop => return STOP,
-                }
-            } else {
-                assert!(fun.as_ref().chars().next().unwrap().is_lowercase());
-                assert!(args.is_empty());
-                let res = visitor.visit(Visit::VarAccess(fun));
-                match res {
-                    VisitResult::Continue => return CONTINUE,
-                    VisitResult::Skip => panic!("variable access can't be skipped"),
-                    VisitResult::Stop => return STOP,
-                }
+                visit_expression(&expr.data, visitor)?;
             }
+
+            let res = visitor.visit(Visit::ConstructorExprStop);
+            match res {
+                VisitResult::Continue => return CONTINUE,
+                VisitResult::Skip => panic!("constructor expression stop can't be skipped"),
+                VisitResult::Stop => return STOP,
+            }
+        }
+        ExpressionNode::FunCall { fun: _, args: _ } => {
+            panic!("fun call is not supported in expressions");
         }
         ExpressionNode::TypedHole => panic!("bad expression: type hole"),
     }
@@ -612,11 +601,8 @@ fn visit_access_chain<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: 
                 VisitResult::Stop => return STOP,
             }
         }
-        ExpressionNode::FunCall { fun, args } => {
-            assert!(fun.as_ref().chars().next().unwrap().is_lowercase());
-            assert!(args.is_empty());
-
-            let res = visitor.visit(Visit::AccessChain(fun));
+        ExpressionNode::Variable { name } => {
+            let res = visitor.visit(Visit::AccessChain(name));
             match res {
                 VisitResult::Continue => {}
                 VisitResult::Skip => panic!("acess chain can't be skiped"),

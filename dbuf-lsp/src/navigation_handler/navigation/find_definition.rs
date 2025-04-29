@@ -2,6 +2,7 @@
 //!
 
 use dbuf_core::ast::parsed::Pattern;
+use dbuf_core::ast::parsed::PatternNode;
 use dbuf_core::ast::parsed::TypeDefinition;
 use tower_lsp::lsp_types::Range;
 
@@ -10,7 +11,6 @@ use crate::common::ast_access::LocStringHelper;
 use crate::common::ast_access::LocationHelpers;
 use crate::common::ast_access::{Loc, Str};
 use crate::common::dbuf_language::get_bultin_types;
-use crate::common::dbuf_language::is_correct_type_name;
 
 use crate::common::navigator::Navigator;
 use crate::common::navigator::Symbol;
@@ -155,18 +155,16 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
 
 fn find_alias_in_pattern(p: &Pattern<Loc, Str>, alias: &String) -> Option<Range> {
     match &p.node {
-        dbuf_core::ast::parsed::PatternNode::Call { name, fields } => {
-            if is_correct_type_name(name.as_ref()) {
-                for f in fields.iter().rev() {
-                    let ans = find_alias_in_pattern(f, alias);
-                    if ans.is_some() {
-                        return ans;
-                    }
+        PatternNode::ConstructorCall { name: _, fields } => {
+            for f in fields.iter().rev() {
+                let ans = find_alias_in_pattern(&f.data, alias);
+                if ans.is_some() {
+                    return ans;
                 }
-                return None;
             }
-            assert!(fields.is_empty());
-
+            None
+        }
+        PatternNode::Variable { name } => {
             if name.as_ref() == alias {
                 name.get_location().to_lsp().into()
             } else {

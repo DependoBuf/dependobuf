@@ -1,6 +1,6 @@
 /// Find type of symbol.
 ///
-use dbuf_core::ast::elaborated::Expression;
+use dbuf_core::ast::elaborated::TypeExpression;
 
 use dbuf_core::ast::parsed::TypeDefinition;
 
@@ -9,16 +9,12 @@ use crate::common::ast_access::ElaboratedHelper;
 use crate::common::navigator::Navigator;
 use crate::common::navigator::Symbol;
 
-fn get_type(te: &Expression<String>) -> Symbol {
-    if let Expression::Type {
+fn get_type(te: &TypeExpression<String>) -> Symbol {
+    let TypeExpression::TypeExpression {
         name,
         dependencies: _,
-    } = te
-    {
-        Symbol::Type(name.to_string())
-    } else {
-        panic!("bad type expression");
-    }
+    } = te;
+    Symbol::Type(name.to_string())
 }
 
 pub fn find_type_impl(navigator: &Navigator, symbol: Symbol) -> Symbol {

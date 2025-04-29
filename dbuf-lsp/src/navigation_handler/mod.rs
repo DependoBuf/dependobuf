@@ -5,10 +5,12 @@
 //! * (✓) `textDocument/definition`
 //! * (✓) `textDocument/typeDefinition`
 //! * (✓) `textDocument/hover
+//! * (✗!!) `textDocument/inlayHint` // for constructors type
 //!  
 //! Also it might be good idea to handle such requests:
 //!
 //! Perhaps, next time:
+//! * `inlayHint/resolve`
 //! * `textDocument/selectionRange`
 //! * `textDocument/moniker`
 //! * `textDocument/linkedEditingRange`
@@ -27,6 +29,7 @@
 //!
 
 mod hover;
+mod inlay_hint;
 mod navigation;
 
 use hover::get_hover;

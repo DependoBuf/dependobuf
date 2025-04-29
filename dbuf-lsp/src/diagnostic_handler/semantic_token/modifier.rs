@@ -10,7 +10,7 @@ pub enum Modifier {
 }
 
 impl Modifier {
-    const COUNT: u32 = 1;
+    pub const COUNT: u32 = 1;
 
     pub fn to_index(&self) -> u32 {
         match &self {

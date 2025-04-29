@@ -17,10 +17,7 @@ fn literal_expr(l: Literal) -> Expression<Loc, Str> {
 fn var_expr(var: &str) -> Expression<Loc, Str> {
     Expression {
         loc: Loc::default(),
-        node: ExpressionNode::FunCall {
-            fun: Str::new(var),
-            args: Rc::new([]),
-        },
+        node: ExpressionNode::Variable { name: Str::new(var) }
     }
 }
 

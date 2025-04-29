@@ -19,7 +19,7 @@ pub enum Token {
 }
 
 impl Token {
-    const COUNT: u32 = 10;
+    pub const COUNT: u32 = 10;
 
     pub fn to_index(&self) -> u32 {
         match &self {

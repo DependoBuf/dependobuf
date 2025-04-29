@@ -7,14 +7,12 @@
 //! * (✓) `textDocument/documentHighlight`
 //! * (✓) `textDocument/references`
 //! * (✓) `textDocument/codeLens`
-//! * (✗) `textDocument/inlayHint` // for constructors type
 //!
 //! Also it might be good idea to handle such requests:
 //! ---
 //!
 //! Perhaps, next time:
 //! * `codeLens/resolve`
-//! * `inlayHint/resolve`
 //! * `textDocument/semanticTokens/full/delta`
 //! * `textDocument/semanticTokens/range`
 //! * `textDocument/diagnostic`
@@ -28,7 +26,6 @@
 
 mod code_lens;
 mod document_symbol;
-mod inlay_hint;
 mod semantic_token;
 
 use code_lens::CodeLensProvider;

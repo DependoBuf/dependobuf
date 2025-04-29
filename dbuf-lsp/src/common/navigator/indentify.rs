@@ -137,11 +137,8 @@ impl<'a> Visitor<'a> for GetImpl<'a> {
                     return Stop;
                 }
             }
-            Visit::PatternCallArgument(loc_string) => {
-                assert!(
-                    loc_string.is_none(),
-                    "constructor call argument name is not implemented"
-                );
+            Visit::PatternCallArgument(_loc_string) => {
+                panic!("constructor call argument name is not implemented");
             }
             Visit::PatternCallStop => {}
             Visit::PatternLiteral(_, _) => {}
@@ -198,11 +195,8 @@ impl<'a> Visitor<'a> for GetImpl<'a> {
                     return Stop;
                 }
             }
-            Visit::ConstructorExprArgument(loc_string) => {
-                assert!(
-                    loc_string.is_none(),
-                    "constructor call argument name is not implemented"
-                );
+            Visit::ConstructorExprArgument(_loc_string) => {
+                panic!("constructor call argument name is not implemented");
             }
             Visit::ConstructorExprStop => {}
             Visit::VarAccess(access) => {

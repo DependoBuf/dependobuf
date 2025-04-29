@@ -11,7 +11,6 @@ use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 
 use super::ast_access::{Loc, ParsedAst, Position, Str};
-use super::dbuf_language::is_correct_type_name;
 
 /// A configurable AST pretty-printer.
 ///
@@ -309,18 +308,23 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
     fn print_pattern(&mut self, pattern: &Pattern<Loc, Str>) {
         match &pattern.node {
-            PatternNode::Call { name, fields } => {
-                if !is_correct_type_name(name.as_ref()) {
-                    assert!(fields.is_empty());
-                    // Assuming: variable
-                    self.write(name);
-                } else {
-                    // Assuming: constructor
-                    self.write(name);
-                    self.write("{");
-                    // TODO: parse constructor
-                    self.write("}");
+            PatternNode::ConstructorCall { name, fields } => {
+                self.write(name);
+                self.write("{");
+                let mut first = true;
+                for f in fields.iter() {
+                    if !first {
+                        self.write(", ");
+                    }
+                    self.write(&f.name);
+                    self.write(": ");
+                    self.print_pattern(&f.data);
+                    first = false;
                 }
+                self.write("}");
+            }
+            PatternNode::Variable { name } => {
+                self.write(name);
             }
             PatternNode::Literal(literal) => {
                 self.print_literal(literal);
@@ -384,18 +388,26 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
     fn print_expression(&mut self, expression: &Expression<Loc, Str>) {
         match &expression.node {
-            ExpressionNode::FunCall { fun, args } => {
-                if !is_correct_type_name(fun.as_ref()) {
-                    assert!(args.is_empty());
-                    // Assuming: variable cal
-                    self.write(fun);
-                } else {
-                    // Assuming: constructor
-                    self.write(fun);
-                    self.write("{");
-                    // TODO: parse constructor
-                    self.write("}");
+            ExpressionNode::ConstructorCall { name, fields } => {
+                self.write(name);
+                self.write("{");
+                let mut first = true;
+                for f in fields.iter() {
+                    if !first {
+                        self.write(", ");
+                    }
+                    self.write(&f.name);
+                    self.write(": ");
+                    self.print_expression(&f.data);
+                    first = false;
                 }
+                self.write("}");
+            }
+            ExpressionNode::Variable { name } => {
+                self.write(name);
+            }
+            ExpressionNode::FunCall { fun: _, args: _ } => {
+                panic!("unexpected TypeExpression: no FunCalls in expression supported");
             }
             ExpressionNode::OpCall(op) => {
                 self.print_opcall(op);

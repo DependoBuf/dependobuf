@@ -4,6 +4,9 @@
 mod modifier;
 mod token;
 
+#[cfg(test)]
+mod tests;
+
 use dbuf_core::ast::operators::Literal;
 use modifier::Modifier;
 use token::Token;
@@ -226,11 +229,8 @@ impl<'a> Visitor<'a> for SemanticTokenProvider<'a> {
                 let token = self.get_constructor_token(call_name);
                 self.push_string(call_name, token, false);
             }
-            Visit::PatternCallArgument(arg_name) => {
-                assert!(
-                    arg_name.is_none(),
-                    "constructor call argument name is not implemented"
-                );
+            Visit::PatternCallArgument(_arg_name) => {
+                panic!("constructor call argument name is not implemented");
             }
             Visit::PatternCallStop => {}
             Visit::PatternLiteral(literal, location) => self.push_literal(literal, location),
@@ -260,11 +260,8 @@ impl<'a> Visitor<'a> for SemanticTokenProvider<'a> {
                 let token = self.get_constructor_token(cons_name);
                 self.push_string(cons_name, token, false);
             }
-            Visit::ConstructorExprArgument(arg_name) => {
-                assert!(
-                    arg_name.is_none(),
-                    "constructor call argument name is not implemented"
-                )
+            Visit::ConstructorExprArgument(_arg_name) => {
+                panic!("constructor call argument name is not implemented")
             }
             Visit::ConstructorExprStop => {}
             Visit::VarAccess(access) => {

@@ -95,8 +95,8 @@ impl<'a> Visitor<'a> for FindImpl<'a> {
             Visit::Branch => {}
             Visit::PatternAlias(alias) => self.check_add(alias),
             Visit::PatternCall(cons, _) => self.check_add(cons),
-            Visit::PatternCallArgument(name) => {
-                assert!(name.is_none(), "naming not supported");
+            Visit::PatternCallArgument(_name) => {
+                panic!("naming not supported");
             }
             Visit::PatternCallStop => {}
             Visit::PatternLiteral(_, _) => {}
@@ -114,8 +114,8 @@ impl<'a> Visitor<'a> for FindImpl<'a> {
             Visit::AccessDot(_) => {}
             Visit::AccessChainLast(access) => self.check_add(access),
             Visit::ConstructorExpr(cons) => self.check_add(cons),
-            Visit::ConstructorExprArgument(name) => {
-                assert!(name.is_none(), "naming not supported");
+            Visit::ConstructorExprArgument(_name) => {
+                panic!("naming not supported");
             }
             Visit::ConstructorExprStop => {}
             Visit::VarAccess(access) => self.check_add(access),
