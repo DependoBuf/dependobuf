@@ -15,19 +15,16 @@
 //!
 
 use tower_lsp::lsp_types::*;
-use tower_lsp::Client;
 
-use crate::common::handler::Handler;
+use crate::handler::Handler;
 
-pub struct CompletitionHandler {
-    _client: Client,
-}
+pub struct CompletitionHandler {}
 
 impl CompletitionHandler {}
 
 impl Handler for CompletitionHandler {
-    fn new(client: Client) -> Self {
-        CompletitionHandler { _client: client }
+    fn new() -> Self {
+        CompletitionHandler {}
     }
 
     fn init(&self, _init: &InitializeParams, _capabilites: &mut ServerCapabilities) {}

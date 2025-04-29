@@ -24,8 +24,6 @@ pub trait ConvertibleToString {
 pub trait LocStringHelper {
     /// Constructs LocString with empty locations by &str.
     fn new(string: &str) -> Self;
-    /// Checks if string is empty.
-    fn is_empty(&self) -> bool;
     /// Returns string's len.
     fn len(&self) -> usize;
     /// Returns string's location.
@@ -44,9 +42,6 @@ impl LocStringHelper for LocString {
             string: string.to_string(),
             location: Location::new_empty(),
         }
-    }
-    fn is_empty(&self) -> bool {
-        self.string.is_empty()
     }
     fn len(&self) -> usize {
         self.string.len()

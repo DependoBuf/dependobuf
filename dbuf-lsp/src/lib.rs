@@ -1,6 +1,5 @@
 //! TODO:
 //! * `textDocument/InlayHint`
-//! * remove async/await -- clients log are useless (eprintln! is enough for debug, no need in other logs)
 //! * common utils tests
 //! * e2e server tests
 //! * overview
@@ -8,7 +7,12 @@
 //! * add literals to navigator symbol.
 //! * rewrite pretty printer.
 //!
-pub mod common;
+
+pub(crate) mod core;
+
+pub use core::ast_access::WorkspaceAccess;
+
+pub mod handler;
 
 pub mod action_handler;
 pub mod completion_handler;

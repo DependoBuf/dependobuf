@@ -2,10 +2,10 @@
 ///
 use tower_lsp::lsp_types::{LanguageString, MarkedString};
 
-use crate::common::ast_access::{ElaboratedHelper, File};
-use crate::common::dbuf_language::get_bultin_types;
-use crate::common::navigator::Symbol;
-use crate::common::pretty_printer::PrettyPrinter;
+use crate::core::ast_access::{ElaboratedHelper, File};
+use crate::core::dbuf_language::get_bultin_types;
+use crate::core::navigator::Symbol;
+use crate::core::pretty_printer::PrettyPrinter;
 
 pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
     let elaborated = file.get_elaborated();

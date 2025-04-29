@@ -4,10 +4,10 @@ use dbuf_core::ast::elaborated::TypeExpression;
 
 use dbuf_core::ast::parsed::TypeDefinition;
 
-use crate::common::ast_access::ElaboratedHelper;
+use crate::core::ast_access::ElaboratedHelper;
 
-use crate::common::navigator::Navigator;
-use crate::common::navigator::Symbol;
+use crate::core::navigator::Navigator;
+use crate::core::navigator::Symbol;
 
 fn get_type(te: &TypeExpression<String>) -> Symbol {
     let TypeExpression::TypeExpression {

@@ -10,9 +10,9 @@ use std::rc::Rc;
 use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 
-use crate::common::ast_access::Location;
+use crate::core::ast_access::Location;
 
-use crate::common::ast_access::{ConvertibleToString, Loc, Str};
+use crate::core::ast_access::{ConvertibleToString, Loc, Str};
 
 use super::ast_fix_locations::fix_locations;
 

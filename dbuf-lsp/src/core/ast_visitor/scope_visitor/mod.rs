@@ -2,9 +2,13 @@
 //! scopes in parsed ast.
 //!
 
-use crate::common::ast_access::ElaboratedAst;
-use crate::common::ast_constructors_stack::AstConstructorsStack;
-use crate::common::ast_scope::AstScope;
+use crate::core::ast_access::ElaboratedAst;
+
+mod ast_constructors_stack;
+mod ast_scope;
+
+use ast_constructors_stack::AstConstructorsStack;
+use ast_scope::AstScope;
 
 use super::*;
 

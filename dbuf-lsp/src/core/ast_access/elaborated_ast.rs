@@ -5,7 +5,7 @@
 
 use dbuf_core::ast::elaborated::*;
 
-use crate::common::dbuf_language::get_bultin_types;
+use crate::core::dbuf_language::get_bultin_types;
 
 pub type Str = String;
 

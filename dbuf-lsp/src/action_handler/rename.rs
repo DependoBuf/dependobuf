@@ -4,10 +4,10 @@
 use dbuf_core::ast::elaborated::{Constructor, ConstructorNames};
 use tower_lsp::jsonrpc::Result;
 
-use crate::common::ast_access::{ElaboratedAst, ElaboratedHelper};
-use crate::common::dbuf_language;
-use crate::common::errors::rename_errors;
-use crate::common::navigator::Symbol;
+use crate::core::ast_access::{ElaboratedAst, ElaboratedHelper};
+use crate::core::dbuf_language;
+use crate::core::errors::rename_errors;
+use crate::core::navigator::Symbol;
 
 /// Check if symbol can be renamed.
 ///

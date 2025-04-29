@@ -3,8 +3,8 @@ mod find_type;
 
 use tower_lsp::lsp_types::Range;
 
-use crate::common::navigator::Navigator;
-use crate::common::navigator::Symbol;
+use crate::core::navigator::Navigator;
+use crate::core::navigator::Symbol;
 
 use find_definition::find_definition_impl;
 use find_type::find_type_impl;

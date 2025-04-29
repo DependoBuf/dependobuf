@@ -1,9 +1,9 @@
 use tower_lsp::lsp_types::*;
 
-use crate::common::ast_access::{
+use crate::core::ast_access::{
     ElaboratedAst, ElaboratedHelper, File, Loc, LocStringHelper, LocationHelpers, ParsedAst, Str,
 };
-use crate::common::ast_visitor::*;
+use crate::core::ast_visitor::*;
 
 pub struct DocumentSymbolProvider<'a> {
     parsed: &'a ParsedAst,

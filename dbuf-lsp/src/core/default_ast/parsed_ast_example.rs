@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use super::ast_builder::AstBuilder;
-use crate::common::ast_access::LocStringHelper;
-use crate::common::ast_access::{Loc, ParsedAst, Str};
+use crate::core::ast_access::LocStringHelper;
+use crate::core::ast_access::{Loc, ParsedAst, Str};
 
 use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::*;
@@ -17,7 +17,9 @@ fn literal_expr(l: Literal) -> Expression<Loc, Str> {
 fn var_expr(var: &str) -> Expression<Loc, Str> {
     Expression {
         loc: Loc::default(),
-        node: ExpressionNode::Variable { name: Str::new(var) }
+        node: ExpressionNode::Variable {
+            name: Str::new(var),
+        },
     }
 }
 

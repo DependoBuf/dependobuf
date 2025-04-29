@@ -6,14 +6,14 @@ use dbuf_core::ast::parsed::PatternNode;
 use dbuf_core::ast::parsed::TypeDefinition;
 use tower_lsp::lsp_types::Range;
 
-use crate::common::ast_access::ElaboratedHelper;
-use crate::common::ast_access::LocStringHelper;
-use crate::common::ast_access::LocationHelpers;
-use crate::common::ast_access::{Loc, Str};
-use crate::common::dbuf_language::get_bultin_types;
+use crate::core::ast_access::ElaboratedHelper;
+use crate::core::ast_access::LocStringHelper;
+use crate::core::ast_access::LocationHelpers;
+use crate::core::ast_access::{Loc, Str};
+use crate::core::dbuf_language::get_bultin_types;
 
-use crate::common::navigator::Navigator;
-use crate::common::navigator::Symbol;
+use crate::core::navigator::Navigator;
+use crate::core::navigator::Symbol;
 
 pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Range> {
     match symbol {

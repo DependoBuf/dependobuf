@@ -13,7 +13,7 @@ use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 
-use crate::common::ast_access::{Loc, LocStringHelper, Position, Str};
+use crate::core::ast_access::{Loc, LocStringHelper, Position, Str};
 
 // TODO:
 //   * find a way to easily clone from crate::common::pretty_printer

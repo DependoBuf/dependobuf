@@ -4,9 +4,8 @@
 
 use dbuf_core::ast::elaborated::*;
 
-use crate::common::ast_access::ElaboratedHelper;
-
-use super::ast_access::ElaboratedAst;
+use crate::core::ast_access::ElaboratedAst;
+use crate::core::ast_access::ElaboratedHelper;
 
 struct Cache<'a> {
     type_name: &'a str,
@@ -100,17 +99,6 @@ impl<'a> AstScope<'a> {
         );
 
         self.constructor_name = constructor_name;
-    }
-
-    /// Exits type.
-    pub fn exit_type(&mut self) {
-        self.type_name = "";
-        self.constructor_name = "";
-    }
-
-    /// Exits constructor.
-    pub fn exit_constructor(&mut self) {
-        self.constructor_name = "";
     }
 
     /// Enters in message:

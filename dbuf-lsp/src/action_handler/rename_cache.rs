@@ -2,7 +2,7 @@ use std::sync::Mutex;
 
 use tower_lsp::lsp_types::{Position, Url};
 
-use crate::common::navigator::Symbol;
+use crate::core::navigator::Symbol;
 
 #[derive(Default)]
 struct Inner {

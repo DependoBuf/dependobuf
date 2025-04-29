@@ -40,33 +40,27 @@ use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::request::*;
 use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
-use tower_lsp::Client;
 
-use crate::common::ast_access::WorkspaceAccess;
-use crate::common::handler::Handler;
-use crate::common::navigator::Navigator;
+use crate::core::ast_access::WorkspaceAccess;
+use crate::core::navigator::Navigator;
+use crate::handler::Handler;
 
-pub struct NavigationHandler {
-    _client: Client,
-}
+pub struct NavigationHandler {}
 
 impl NavigationHandler {
     /// `textDocument/definition` implementation.
     ///
-    pub async fn goto_definition(
+    pub fn goto_definition(
         &self,
         access: &WorkspaceAccess,
         pos: Position,
         document: &Url,
     ) -> Result<Option<GotoDefinitionResponse>> {
-        let range;
-        {
-            let file = access.read(document);
-            let navigator = Navigator::new(&file);
+        let file = access.read(document);
+        let navigator = Navigator::new(&file);
 
-            let symbol = navigator.get_symbol(pos);
-            range = find_definition(&navigator, &symbol);
-        }
+        let symbol = navigator.get_symbol(pos);
+        let range = find_definition(&navigator, &symbol);
 
         match range {
             Some(range) => Ok(Some(GotoDefinitionResponse::Scalar(Location {
@@ -79,23 +73,19 @@ impl NavigationHandler {
 
     /// `textDocument/typeDefintion` implementation.
     ///
-    pub async fn goto_type_definition(
+    pub fn goto_type_definition(
         &self,
         access: &WorkspaceAccess,
         pos: Position,
         document: &Url,
     ) -> Result<Option<GotoTypeDefinitionResponse>> {
-        let range;
-        {
-            let file = access.read(document);
-            let navigator = Navigator::new(&file);
+        let file = access.read(document);
+        let navigator = Navigator::new(&file);
 
-            let symbol = navigator.get_symbol(pos);
-            let t = find_type(&navigator, symbol);
+        let symbol = navigator.get_symbol(pos);
+        let t = find_type(&navigator, symbol);
 
-            range = find_definition(&navigator, &t);
-        }
-
+        let range = find_definition(&navigator, &t);
         match range {
             Some(range) => Ok(Some(GotoTypeDefinitionResponse::Scalar(Location {
                 uri: document.to_owned(),
@@ -114,7 +104,7 @@ impl NavigationHandler {
     /// * For constructors: Type name ('enum Enum'), Constructor declaration without pattern
     /// * For aliases: Type name ('enum Enum') with dependencies, enum branch
     ///
-    pub async fn hover(
+    pub fn hover(
         &self,
         access: &WorkspaceAccess,
         pos: Position,
@@ -138,8 +128,8 @@ impl NavigationHandler {
 }
 
 impl Handler for NavigationHandler {
-    fn new(client: Client) -> Self {
-        NavigationHandler { _client: client }
+    fn new() -> Self {
+        NavigationHandler {}
     }
 
     fn init(&self, _init: &InitializeParams, capabilites: &mut ServerCapabilities) {

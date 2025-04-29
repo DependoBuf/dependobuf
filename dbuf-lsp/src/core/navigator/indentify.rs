@@ -3,13 +3,13 @@
 
 use tower_lsp::lsp_types::Position;
 
-use crate::common::ast_access::{
+use crate::core::ast_access::{
     ElaboratedAst, ElaboratedHelper, LocStringHelper, LocationHelpers, Str,
 };
 
-use crate::common::ast_visitor::scope_visitor::ScopeVisitor;
-use crate::common::ast_visitor::VisitResult::*;
-use crate::common::ast_visitor::*;
+use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
+use crate::core::ast_visitor::VisitResult::*;
+use crate::core::ast_visitor::*;
 
 use super::Navigator;
 use super::Symbol;

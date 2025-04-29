@@ -16,12 +16,12 @@ use tower_lsp::lsp_types::SemanticTokenModifier;
 use tower_lsp::lsp_types::SemanticTokenType;
 use tower_lsp::lsp_types::SemanticTokens;
 
-use crate::common::ast_access::{
+use crate::core::ast_access::{
     ElaboratedAst, ElaboratedHelper, File, Loc, LocStringHelper, ParsedAst, Str,
 };
 
-use crate::common::ast_visitor::scope_visitor::ScopeVisitor;
-use crate::common::ast_visitor::*;
+use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
+use crate::core::ast_visitor::*;
 
 struct TokenBuilder {
     location: Loc,

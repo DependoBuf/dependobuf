@@ -6,8 +6,8 @@
 use super::ElaboratedAst;
 use super::ParsedAst;
 
-use crate::common::default_ast::default_elaborated_ast;
-use crate::common::default_ast::default_parsed_ast;
+use crate::core::default_ast::default_elaborated_ast;
+use crate::core::default_ast::default_parsed_ast;
 
 /// Builds ParsedAst based on `text`.
 pub fn get_parsed(_text: &str) -> ParsedAst {

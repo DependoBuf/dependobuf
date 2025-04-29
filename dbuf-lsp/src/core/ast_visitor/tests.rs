@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
-use crate::common::ast_access::ElaboratedAst;
-use crate::common::ast_access::ParsedAst;
-use crate::common::default_ast::default_parsed_ast;
+use crate::core::ast_access::ElaboratedAst;
+use crate::core::ast_access::ParsedAst;
+use crate::core::default_ast::default_parsed_ast;
 
 use super::visit_ast;
 use super::Visit;
@@ -16,18 +16,18 @@ fn get_ast() -> ParsedAst {
 fn correct_skip(visit: &Visit<'_>) -> VisitResult {
     match visit {
         Visit::Keyword(_, _location) => VisitResult::Skip,
-        Visit::Type(_loc_string,_locationn) => VisitResult::Skip,
+        Visit::Type(_loc_string, _locationn) => VisitResult::Skip,
         Visit::Dependency(_loc_string, _location) => VisitResult::Skip,
         Visit::Branch => VisitResult::Skip,
         Visit::PatternAlias(_loc_string) => VisitResult::Continue,
         Visit::PatternCall(_loc_string, _location) => VisitResult::Skip,
         Visit::PatternCallArgument(_loc_string) => VisitResult::Skip,
         Visit::PatternCallStop => VisitResult::Continue,
-        Visit::PatternLiteral(_literal,_locationn) => VisitResult::Continue,
+        Visit::PatternLiteral(_literal, _locationn) => VisitResult::Continue,
         Visit::PatternUnderscore(_location) => VisitResult::Continue,
         Visit::Constructor(_constructor) => VisitResult::Skip,
-        Visit::Filed(_loc_string,_locationn) => VisitResult::Skip,
-        Visit::TypeExpression(_loc_string,_locationn) => VisitResult::Skip,
+        Visit::Filed(_loc_string, _locationn) => VisitResult::Skip,
+        Visit::TypeExpression(_loc_string, _locationn) => VisitResult::Skip,
         Visit::Expression(_location) => VisitResult::Skip,
         Visit::AccessChainStart => VisitResult::Skip,
         Visit::AccessChain(_loc_string) => VisitResult::Continue,
@@ -38,12 +38,12 @@ fn correct_skip(visit: &Visit<'_>) -> VisitResult {
         Visit::ConstructorExprStop => VisitResult::Continue,
         Visit::VarAccess(_loc_string) => VisitResult::Continue,
         Visit::Operator(_, _location) => VisitResult::Continue,
-        Visit::Literal(_literal,_locationn) => VisitResult::Continue,
+        Visit::Literal(_literal, _locationn) => VisitResult::Continue,
     }
 }
 
 #[derive(Clone, Copy)]
-struct SkipMask{
+struct SkipMask {
     mask: u32,
     size: u32,
 }
@@ -57,10 +57,7 @@ struct TestVisitor {
 
 impl SkipMask {
     fn new(size: u32) -> SkipMask {
-        SkipMask{
-            mask: 0,
-            size,
-        }
+        SkipMask { mask: 0, size }
     }
     fn set(&mut self, mask: u32) {
         assert!(mask < (1 << self.size));
@@ -71,8 +68,7 @@ impl SkipMask {
         if self.mask >= (1 << self.size) {
             self.mask = 0;
             false
-        }
-        else {
+        } else {
             true
         }
     }
@@ -114,24 +110,32 @@ impl<'a> Visitor<'a> for TestVisitor {
     }
 }
 
-
-fn check_skip_mask(mask: u32, skip_at: &[u32]) { 
+fn check_skip_mask(mask: u32, skip_at: &[u32]) {
     let mut skip_mask = SkipMask::new(3);
     skip_mask.set(mask);
-    let mut visitor =  TestVisitor::new(skip_mask, 3);
+    let mut visitor = TestVisitor::new(skip_mask, 3);
 
     let mut step = 0;
     while step < 3 {
         let result = visitor.visit(Visit::Branch);
         match result {
-            VisitResult::Continue => assert!(!skip_at.contains(&step), "bad continue at step {}, mask {}", step, mask),
-            VisitResult::Skip => assert!(skip_at.contains(&step), "bad skip at step {}, mask {}", step, mask),
-            VisitResult::Stop => panic!("unexpected stop signal at mask {}", mask)
+            VisitResult::Continue => assert!(
+                !skip_at.contains(&step),
+                "bad continue at step {}, mask {}",
+                step,
+                mask
+            ),
+            VisitResult::Skip => assert!(
+                skip_at.contains(&step),
+                "bad skip at step {}, mask {}",
+                step,
+                mask
+            ),
+            VisitResult::Stop => panic!("unexpected stop signal at mask {}", mask),
         }
         step += 1;
     }
     assert!(!visitor.stopped);
-
 }
 
 #[test]
@@ -152,8 +156,11 @@ fn test_skip_mask() {
 #[test]
 fn test_stop_after_signal() {
     let ast = get_ast();
-    let tempo_elaborated = ElaboratedAst{types: vec![], constructors: BTreeMap::new() };
-    
+    let tempo_elaborated = ElaboratedAst {
+        types: vec![],
+        constructors: BTreeMap::new(),
+    };
+
     for stop_after in 0.. {
         let skip_mask = SkipMask::new(0);
         let mut visitor = TestVisitor::new(skip_mask, stop_after);
@@ -167,7 +174,10 @@ fn test_stop_after_signal() {
 #[test]
 fn test_skip_correctness() {
     let ast = get_ast();
-    let tempo_elaborated = ElaboratedAst{types: vec![], constructors: BTreeMap::new() };
+    let tempo_elaborated = ElaboratedAst {
+        types: vec![],
+        constructors: BTreeMap::new(),
+    };
 
     let mut skip_mask = SkipMask::new(18);
     loop {
@@ -180,12 +190,13 @@ fn test_skip_correctness() {
     }
 }
 
-
-
 #[test]
 fn test_skip_stop_correctness() {
     let ast = get_ast();
-    let tempo_elaborated = ElaboratedAst{types: vec![], constructors: BTreeMap::new() };
+    let tempo_elaborated = ElaboratedAst {
+        types: vec![],
+        constructors: BTreeMap::new(),
+    };
 
     let mut skip_mask = SkipMask::new(13);
     loop {
@@ -201,4 +212,3 @@ fn test_skip_stop_correctness() {
         }
     }
 }
-

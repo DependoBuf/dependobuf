@@ -1,14 +1,14 @@
-use dbuf_lsp::completion_handler::CompletitionHandler;
-use dbuf_lsp::diagnostic_handler::DiagnosticHandler;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::request::*;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
-use dbuf_lsp::common::ast_access::WorkspaceAccess;
+use dbuf_lsp::handler::Handler;
+use dbuf_lsp::WorkspaceAccess;
 
 use dbuf_lsp::action_handler::ActionHandler;
-use dbuf_lsp::common::handler::Handler;
+use dbuf_lsp::completion_handler::CompletitionHandler;
+use dbuf_lsp::diagnostic_handler::DiagnosticHandler;
 use dbuf_lsp::navigation_handler::NavigationHandler;
 
 struct Backend {
@@ -23,12 +23,12 @@ struct Backend {
 impl Backend {
     fn new(client: Client) -> Backend {
         Backend {
-            client: client.clone(),
+            client,
             workspace: WorkspaceAccess::new(),
-            action_handler: ActionHandler::new(client.clone()),
-            completition_handler: CompletitionHandler::new(client.clone()),
-            diagnostic_handler: DiagnosticHandler::new(client.clone()),
-            navigation_handler: NavigationHandler::new(client),
+            action_handler: ActionHandler::new(),
+            completition_handler: CompletitionHandler::new(),
+            diagnostic_handler: DiagnosticHandler::new(),
+            navigation_handler: NavigationHandler::new(),
         }
     }
 }
@@ -113,7 +113,6 @@ impl LanguageServer for Backend {
 
         self.diagnostic_handler
             .document_symbol(&self.workspace, &doc)
-            .await
     }
 
     async fn semantic_tokens_full(
@@ -124,15 +123,12 @@ impl LanguageServer for Backend {
 
         self.diagnostic_handler
             .semantic_tokens_full(&self.workspace, &doc)
-            .await
     }
 
     async fn code_lens(&self, params: CodeLensParams) -> Result<Option<Vec<CodeLens>>> {
         let doc = params.text_document.uri;
 
-        self.diagnostic_handler
-            .code_lens(&self.workspace, &doc)
-            .await
+        self.diagnostic_handler.code_lens(&self.workspace, &doc)
     }
 
     async fn goto_definition(
@@ -145,7 +141,6 @@ impl LanguageServer for Backend {
 
         self.navigation_handler
             .goto_definition(&self.workspace, pos, &uri)
-            .await
     }
 
     async fn goto_type_definition(
@@ -158,7 +153,6 @@ impl LanguageServer for Backend {
 
         self.navigation_handler
             .goto_type_definition(&self.workspace, pos, &uri)
-            .await
     }
 
     async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
@@ -168,7 +162,6 @@ impl LanguageServer for Backend {
 
         self.diagnostic_handler
             .references(&self.workspace, pos, &uri)
-            .await
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
@@ -176,9 +169,7 @@ impl LanguageServer for Backend {
         let pos = doc_pos.position;
         let uri = doc_pos.text_document.uri;
 
-        self.navigation_handler
-            .hover(&self.workspace, pos, &uri)
-            .await
+        self.navigation_handler.hover(&self.workspace, pos, &uri)
     }
 
     async fn document_highlight(
@@ -191,14 +182,12 @@ impl LanguageServer for Backend {
 
         self.diagnostic_handler
             .document_highlight(&self.workspace, pos, &uri)
-            .await
     }
 
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
         let uri = params.text_document.uri;
         self.action_handler
             .formatting(&self.workspace, params.options, &uri)
-            .await
     }
 
     async fn prepare_rename(
@@ -210,7 +199,6 @@ impl LanguageServer for Backend {
 
         self.action_handler
             .prepare_rename(&self.workspace, pos, &uri)
-            .await
     }
 
     async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>> {
@@ -220,7 +208,6 @@ impl LanguageServer for Backend {
 
         self.action_handler
             .rename(&self.workspace, params.new_name, pos, &uri)
-            .await
     }
 }
 

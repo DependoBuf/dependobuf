@@ -7,7 +7,7 @@ use super::mutable_pretty_printer::PrettyPrinter;
 
 use dbuf_core::ast::parsed::Module;
 
-use crate::common::ast_access::{Loc, Str};
+use crate::core::ast_access::{Loc, Str};
 
 struct Sink;
 

@@ -5,10 +5,10 @@
 
 use tower_lsp::lsp_types::Range;
 
-use crate::common::ast_access::{LocStringHelper, LocationHelpers, Str};
+use crate::core::ast_access::{LocStringHelper, LocationHelpers, Str};
 
-use crate::common::ast_visitor::scope_visitor::ScopeVisitor;
-use crate::common::ast_visitor::*;
+use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
+use crate::core::ast_visitor::*;
 
 use super::Navigator;
 use super::Symbol;

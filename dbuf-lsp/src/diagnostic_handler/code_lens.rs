@@ -1,10 +1,10 @@
 use tower_lsp::lsp_types::*;
 
-use crate::common::ast_access::{
+use crate::core::ast_access::{
     ElaboratedAst, File, Loc, LocStringHelper, LocationHelpers, ParsedAst, Str,
 };
-use crate::common::navigator::Navigator;
-use crate::common::{ast_visitor::*, navigator};
+use crate::core::navigator::Navigator;
+use crate::core::{ast_visitor::*, navigator};
 
 pub struct CodeLensProvider<'a> {
     file: &'a File,

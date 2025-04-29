@@ -36,20 +36,17 @@ use semantic_token::SemanticTokenProvider;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
-use tower_lsp::Client;
 
-use crate::common::ast_access::WorkspaceAccess;
-use crate::common::handler::Handler;
-use crate::common::navigator::Navigator;
+use crate::core::ast_access::WorkspaceAccess;
+use crate::core::navigator::Navigator;
+use crate::handler::Handler;
 
-pub struct DiagnosticHandler {
-    _client: Client,
-}
+pub struct DiagnosticHandler {}
 
 impl DiagnosticHandler {
     /// `textDocument/documentSymbol` implementation.
     ///
-    pub async fn document_symbol(
+    pub fn document_symbol(
         &self,
         access: &WorkspaceAccess,
         document: &Url,
@@ -62,7 +59,7 @@ impl DiagnosticHandler {
     }
 
     /// `textDocument/semanticTokens/full` implementation.
-    pub async fn semantic_tokens_full(
+    pub fn semantic_tokens_full(
         &self,
         access: &WorkspaceAccess,
         document: &Url,
@@ -76,21 +73,17 @@ impl DiagnosticHandler {
 
     /// `textDocument/references` implementation.
     ///
-    pub async fn references(
+    pub fn references(
         &self,
         access: &WorkspaceAccess,
         pos: Position,
         document: &Url,
     ) -> Result<Option<Vec<Location>>> {
-        let ranges;
-        {
-            let file = access.read(document);
-            let navigator = Navigator::new(&file);
+        let file = access.read(document);
+        let navigator = Navigator::new(&file);
 
-            let symbol = navigator.get_symbol(pos);
-            ranges = navigator.find_symbols(&symbol);
-        }
-
+        let symbol = navigator.get_symbol(pos);
+        let ranges = navigator.find_symbols(&symbol);
         let ans = ranges
             .into_iter()
             .map(|r| Location {
@@ -104,20 +97,17 @@ impl DiagnosticHandler {
 
     /// `textDocument/documentHighlight` implementation.
     ///
-    pub async fn document_highlight(
+    pub fn document_highlight(
         &self,
         access: &WorkspaceAccess,
         pos: Position,
         document: &Url,
     ) -> Result<Option<Vec<DocumentHighlight>>> {
-        let ranges;
-        {
-            let file = access.read(document);
-            let navigator = Navigator::new(&file);
+        let file = access.read(document);
+        let navigator = Navigator::new(&file);
 
-            let symbol = navigator.get_symbol(pos);
-            ranges = navigator.find_symbols(&symbol);
-        }
+        let symbol = navigator.get_symbol(pos);
+        let ranges = navigator.find_symbols(&symbol);
 
         let mut ans = Vec::with_capacity(ranges.len());
         for r in ranges.iter() {
@@ -134,7 +124,7 @@ impl DiagnosticHandler {
     ///
     /// Currently shows only reference count.
     ///
-    pub async fn code_lens(
+    pub fn code_lens(
         &self,
         access: &WorkspaceAccess,
         document: &Url,
@@ -148,8 +138,8 @@ impl DiagnosticHandler {
 }
 
 impl Handler for DiagnosticHandler {
-    fn new(client: Client) -> Self {
-        DiagnosticHandler { _client: client }
+    fn new() -> Self {
+        DiagnosticHandler {}
     }
 
     fn init(&self, _init: &InitializeParams, capabilites: &mut ServerCapabilities) {

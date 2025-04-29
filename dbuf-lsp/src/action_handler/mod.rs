@@ -23,17 +23,14 @@ use rename_cache::RenameCache;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
-use tower_lsp::Client;
 
-use crate::common::ast_access::WorkspaceAccess;
-use crate::common::errors::format_errors;
-use crate::common::handler::Handler;
-use crate::common::navigator::Navigator;
-use crate::common::pretty_printer::PrettyPrinter;
+use crate::core::ast_access::WorkspaceAccess;
+use crate::core::errors::format_errors;
+use crate::core::navigator::Navigator;
+use crate::core::pretty_printer::PrettyPrinter;
+use crate::handler::Handler;
 
 pub struct ActionHandler {
-    _client: Client,
-
     rename_cache: RenameCache,
 }
 
@@ -43,16 +40,12 @@ impl ActionHandler {
     /// Currently implementation is simple: just rewrite whole file, using pretty printer.
     /// Thats why function returns error on non default option.
     ///
-    pub async fn formatting(
+    pub fn formatting(
         &self,
         access: &WorkspaceAccess,
         options: FormattingOptions,
         document: &Url,
     ) -> Result<Option<Vec<TextEdit>>> {
-        self._client
-            .log_message(MessageType::LOG, format!("{:#?}", options))
-            .await;
-
         if !options.insert_spaces {
             return format_errors::bad_insert_spaces();
         }
@@ -88,7 +81,7 @@ impl ActionHandler {
     /// Currently checks if symbol can be renamed and,
     /// if so, caches it.
     ///
-    pub async fn prepare_rename(
+    pub fn prepare_rename(
         &self,
         access: &WorkspaceAccess,
         pos: Position,
@@ -121,36 +114,26 @@ impl ActionHandler {
     /// Renames symbol if possible. Checks that
     /// there is no conflicts after rename.
     ///
-    pub async fn rename(
+    pub fn rename(
         &self,
         access: &WorkspaceAccess,
         new_name: String,
         pos: Position,
         document: &Url,
     ) -> Result<Option<WorkspaceEdit>> {
-        let symbol;
-        let ranges;
-        let text_document;
+        let file = access.read(document);
+        let navigator = Navigator::new(&file);
+
+        let symbol = if let Some(cached) = self.rename_cache.get(document, file.get_version(), pos)
         {
-            let file = access.read(document);
+            cached
+        } else {
+            navigator.get_symbol(pos)
+        };
 
-            text_document = OptionalVersionedTextDocumentIdentifier {
-                uri: document.to_owned(),
-                version: Some(file.get_version()),
-            };
+        rename::renameable_to_symbol(&symbol, &new_name, file.get_elaborated())?;
 
-            let navigator = Navigator::new(&file);
-
-            if let Some(cached) = self.rename_cache.get(document, file.get_version(), pos) {
-                symbol = cached
-            } else {
-                symbol = navigator.get_symbol(pos);
-            }
-
-            rename::renameable_to_symbol(&symbol, &new_name, file.get_elaborated())?;
-
-            ranges = navigator.find_symbols(&symbol);
-        }
+        let ranges = navigator.find_symbols(&symbol);
 
         let edits = ranges
             .into_iter()
@@ -161,6 +144,11 @@ impl ActionHandler {
                 })
             })
             .collect();
+
+        let text_document = OptionalVersionedTextDocumentIdentifier {
+            uri: document.to_owned(),
+            version: Some(file.get_version()),
+        };
 
         let text_document_edits = TextDocumentEdit {
             text_document,
@@ -178,9 +166,8 @@ impl ActionHandler {
 }
 
 impl Handler for ActionHandler {
-    fn new(client: Client) -> ActionHandler {
+    fn new() -> ActionHandler {
         ActionHandler {
-            _client: client,
             rename_cache: RenameCache::default(),
         }
     }

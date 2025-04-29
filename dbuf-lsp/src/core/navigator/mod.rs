@@ -6,7 +6,7 @@ mod indentify;
 
 use tower_lsp::lsp_types::{Position, Range};
 
-use crate::common::ast_access::{ElaboratedAst, File, ParsedAst};
+use crate::core::ast_access::{ElaboratedAst, File, ParsedAst};
 
 use find_symbols::find_symbols_impl;
 use indentify::get_symbol_impl;
