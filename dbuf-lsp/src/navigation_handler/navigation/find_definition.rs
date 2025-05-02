@@ -171,7 +171,7 @@ fn find_alias_in_pattern(p: &Pattern<Loc, Str>, alias: &String) -> Option<Range>
                 None
             }
         }
-        dbuf_core::ast::parsed::PatternNode::Literal(_) => None,
-        dbuf_core::ast::parsed::PatternNode::Underscore => None,
+        PatternNode::Literal(_) => None,
+        PatternNode::Underscore => None,
     }
 }

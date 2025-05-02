@@ -70,18 +70,20 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
 }
 
 fn get_explicit_type(type_name: String, file: &File) -> LanguageString {
-    let mut code = String::new();
-
     if get_bultin_types().contains(&type_name) {
-        code = type_name;
+        LanguageString {
+            language: "dbuf".to_owned(),
+            value: type_name,
+        }
     } else {
+        let mut code = String::new();
         let mut printer = PrettyPrinter::new(&mut code);
         printer.print_type(file.get_parsed(), type_name.as_ref());
-    }
 
-    LanguageString {
-        language: "dbuf".to_owned(),
-        value: code,
+        LanguageString {
+            language: "dbuf".to_owned(),
+            value: code,
+        }
     }
 }
 

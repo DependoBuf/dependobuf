@@ -86,13 +86,12 @@ impl NavigationHandler {
         let t = find_type(&navigator, symbol);
 
         let range = find_definition(&navigator, &t);
-        match range {
-            Some(range) => Ok(Some(GotoTypeDefinitionResponse::Scalar(Location {
+        range.map_or(Ok(None), |range| {
+            Ok(Some(GotoTypeDefinitionResponse::Scalar(Location {
                 uri: document.to_owned(),
                 range,
-            }))),
-            None => Ok(None),
-        }
+            })))
+        })
     }
 
     /// `textDocument/hover` implementation.
@@ -129,7 +128,7 @@ impl NavigationHandler {
 
 impl Handler for NavigationHandler {
     fn new() -> Self {
-        NavigationHandler {}
+        Self {}
     }
 
     fn init(&self, _init: &InitializeParams, capabilites: &mut ServerCapabilities) {

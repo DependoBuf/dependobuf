@@ -87,7 +87,7 @@ fn message_type(name: &str, dependencies: Vec<(Str, TypeExpression<Str>)>) -> Ty
     }
 }
 
-#[allow(dead_code)]
+#[allow(dead_code, reason = "simple example")]
 fn enum_type(dependencies: Vec<(Str, TypeExpression<Str>)>, constructors: &[&str]) -> Type<Str> {
     let mut ctrs = BTreeSet::new();
     for c in constructors.iter() {

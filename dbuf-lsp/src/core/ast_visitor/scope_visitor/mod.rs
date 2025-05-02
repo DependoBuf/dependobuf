@@ -66,6 +66,7 @@ impl<'a> ScopeVisitor<'a> {
     /// Returns last constructor in constructors calls.
     ///
     /// Panics if there is no constructor calls.
+    #[allow(dead_code, reason = "not using yet")]
     pub fn get_constructor_expr(&self) -> &'a str {
         self.cons_stack.get_last()
     }

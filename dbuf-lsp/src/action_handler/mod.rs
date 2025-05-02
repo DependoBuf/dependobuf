@@ -124,12 +124,10 @@ impl ActionHandler {
         let file = access.read(document);
         let navigator = Navigator::new(&file);
 
-        let symbol = if let Some(cached) = self.rename_cache.get(document, file.get_version(), pos)
-        {
-            cached
-        } else {
-            navigator.get_symbol(pos)
-        };
+        let symbol = self
+            .rename_cache
+            .get(document, file.get_version(), pos)
+            .map_or_else(|| navigator.get_symbol(pos), |cached| cached);
 
         rename::renameable_to_symbol(&symbol, &new_name, file.get_elaborated())?;
 

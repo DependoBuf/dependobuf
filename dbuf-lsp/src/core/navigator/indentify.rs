@@ -80,7 +80,7 @@ impl GetImpl<'_> {
     }
 
     fn return_access(&mut self, access: &Str) {
-        assert!(access.get_location().contains(&self.target));
+        assert!(access.get_location().contains(self.target));
 
         // Variable should be either dependency or field
         if self
@@ -104,35 +104,35 @@ impl<'a> Visitor<'a> for GetImpl<'a> {
         match &visit {
             Visit::Keyword(_, _) => {}
             Visit::Type(type_name, type_location) => {
-                if !type_location.contains(&self.target) {
+                if !type_location.contains(self.target) {
                     return Skip;
                 }
-                if type_name.get_location().contains(&self.target) {
+                if type_name.get_location().contains(self.target) {
                     self.return_type(type_name);
                     return Stop;
                 }
             }
             Visit::Dependency(dep_name, dependency_location) => {
-                if !dependency_location.contains(&self.target) {
+                if !dependency_location.contains(self.target) {
                     return Skip;
                 }
-                if dep_name.get_location().contains(&self.target) {
+                if dep_name.get_location().contains(self.target) {
                     self.return_dependency(dep_name);
                     return Stop;
                 }
             }
             Visit::Branch => {}
             Visit::PatternAlias(alias) => {
-                if alias.get_location().contains(&self.target) {
+                if alias.get_location().contains(self.target) {
                     self.return_alias(alias);
                     return Stop;
                 }
             }
             Visit::PatternCall(constructor, loc) => {
-                if !loc.contains(&self.target) {
+                if !loc.contains(self.target) {
                     return Skip;
                 }
-                if constructor.get_location().contains(&self.target) {
+                if constructor.get_location().contains(self.target) {
                     self.return_constructor(constructor);
                     return Stop;
                 }
@@ -144,53 +144,53 @@ impl<'a> Visitor<'a> for GetImpl<'a> {
             Visit::PatternLiteral(_, _) => {}
             Visit::PatternUnderscore(_) => {}
             Visit::Constructor(constructor) => {
-                if !constructor.loc.contains(&self.target) {
+                if !constructor.loc.contains(self.target) {
                     return Skip;
                 }
-                if constructor.name.get_location().contains(&self.target) {
+                if constructor.name.get_location().contains(self.target) {
                     self.return_constructor(constructor.name);
                     return Stop;
                 }
             }
             Visit::Filed(field, loc) => {
-                if !loc.contains(&self.target) {
+                if !loc.contains(self.target) {
                     return Skip;
                 }
-                if field.get_location().contains(&self.target) {
+                if field.get_location().contains(self.target) {
                     self.return_field(field);
                     return Stop;
                 }
             }
             Visit::TypeExpression(type_name, loc) => {
-                if !loc.contains(&self.target) {
+                if !loc.contains(self.target) {
                     return Skip;
                 }
-                if type_name.get_location().contains(&self.target) {
+                if type_name.get_location().contains(self.target) {
                     self.return_type(type_name);
                     return Stop;
                 }
             }
             Visit::Expression(loc) => {
-                if !loc.contains(&self.target) {
+                if !loc.contains(self.target) {
                     return Skip;
                 }
             }
             Visit::AccessChainStart => {}
             Visit::AccessChain(access) => {
-                if access.get_location().contains(&self.target) {
+                if access.get_location().contains(self.target) {
                     self.return_access(access);
                     return Stop;
                 }
             }
             Visit::AccessDot(_) => {}
             Visit::AccessChainLast(access) => {
-                if access.get_location().contains(&self.target) {
+                if access.get_location().contains(self.target) {
                     self.return_access(access);
                     return Stop;
                 }
             }
             Visit::ConstructorExpr(constructor) => {
-                if constructor.get_location().contains(&self.target) {
+                if constructor.get_location().contains(self.target) {
                     self.return_constructor(constructor);
                     return Stop;
                 }
@@ -200,7 +200,7 @@ impl<'a> Visitor<'a> for GetImpl<'a> {
             }
             Visit::ConstructorExprStop => {}
             Visit::VarAccess(access) => {
-                if access.get_location().contains(&self.target) {
+                if access.get_location().contains(self.target) {
                     self.return_access(access);
                     return Stop;
                 }

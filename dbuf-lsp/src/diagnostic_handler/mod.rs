@@ -139,7 +139,7 @@ impl DiagnosticHandler {
 
 impl Handler for DiagnosticHandler {
     fn new() -> Self {
-        DiagnosticHandler {}
+        Self {}
     }
 
     fn init(&self, _init: &InitializeParams, capabilites: &mut ServerCapabilities) {

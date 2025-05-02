@@ -34,8 +34,8 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     const ENUM_TEXT: &'a str = "enum ";
 
     /// Creates new printer for `writer` with default parameters.
-    pub fn new(writer: &'a mut W) -> PrettyPrinter<'a, W> {
-        PrettyPrinter {
+    pub fn new(writer: &'a mut W) -> Self {
+        Self {
             cursor: Position::new(0, 0),
             writer,
             tab_size: 4,
@@ -47,18 +47,6 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     /// Sets tab size for printer.
     pub fn with_tab_size(mut self, tab_size: u32) -> Self {
         self.tab_size = tab_size;
-        self
-    }
-
-    /// Sets header only for printer.
-    pub fn with_header_only(mut self) -> Self {
-        self.header_only = true;
-        self
-    }
-
-    /// Sets no dependencies for printer.
-    pub fn without_dependencies(mut self) -> Self {
-        self.with_dependencies = false;
         self
     }
 

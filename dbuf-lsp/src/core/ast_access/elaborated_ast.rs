@@ -39,15 +39,13 @@ pub trait ElaboratedHelper {
 
 impl ElaboratedHelper for ElaboratedAst {
     fn get_constructor_type(&self, constructor_name: &str) -> Option<&str> {
-        if let Some(ctr) = self.constructors.get(constructor_name) {
+        self.constructors.get(constructor_name).map(|ctr| {
             let TypeExpression::TypeExpression {
                 name,
                 dependencies: _,
             } = &ctr.result_type;
-            Some(name)
-        } else {
-            None
-        }
+            name.as_ref()
+        })
     }
 
     fn get_type(&self, name: &str) -> Option<&Type<Str>> {
@@ -78,38 +76,28 @@ impl ElaboratedHelper for ElaboratedAst {
     }
 
     fn is_message(&self, type_name: &str) -> bool {
-        if let Some(t) = self.get_type(type_name) {
-            if let ConstructorNames::OfMessage(_) = t.constructor_names {
-                return true;
-            }
-        }
-        false
+        self.get_type(type_name)
+            .map_or(false, |t| match &t.constructor_names {
+                ConstructorNames::OfMessage(_) => true,
+                ConstructorNames::OfEnum(_) => false,
+            })
     }
 
     fn is_type_dependency(&self, type_name: &str, name: &str) -> bool {
-        if let Some(t) = self.get_type(type_name) {
-            t.dependencies.iter().any(|d| d.0 == name)
-        } else {
-            false
-        }
+        self.get_type(type_name)
+            .map_or(false, |t| t.dependencies.iter().any(|d| d.0 == name))
     }
 
     fn is_type_constructor(&self, type_name: &str, name: &str) -> bool {
-        if let Some(t) = self.get_type(type_name) {
-            match &t.constructor_names {
+        self.get_type(type_name)
+            .map_or(false, |t| match &t.constructor_names {
                 ConstructorNames::OfMessage(ctr) => ctr == name,
                 ConstructorNames::OfEnum(btree_set) => btree_set.contains(name),
-            }
-        } else {
-            false
-        }
+            })
     }
 
     fn is_constructor_field(&self, constructor_name: &str, name: &str) -> bool {
-        if let Some(c) = self.get_constructor(constructor_name) {
-            c.fields.iter().any(|f| f.0 == name)
-        } else {
-            false
-        }
+        self.get_constructor(constructor_name)
+            .map_or(false, |c| c.fields.iter().any(|f| f.0 == name))
     }
 }

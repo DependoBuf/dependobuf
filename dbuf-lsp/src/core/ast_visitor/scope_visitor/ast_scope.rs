@@ -119,7 +119,7 @@ impl<'a> AstScope<'a> {
     }
 
     fn try_switch_to(
-        &mut self,
+        &self,
         variable: &str,
         variants: &'a [(String, TypeExpression<String>)],
     ) -> Option<&'a str> {

@@ -39,7 +39,7 @@ impl CodeLensProvider<'_> {
 
     fn push_type(&mut self, type_name: &Str, _: &Loc) {
         let ref_count = self.calc_reference_count(type_name);
-        let title = format!("{} references", ref_count).to_string();
+        let title = format!("{} references", ref_count);
         let command = Command {
             title,
             command: "".to_owned(),

@@ -3,7 +3,7 @@
 //! Currently allows only one module
 //!
 
-#![allow(dead_code)]
+#![allow(dead_code, reason = "simple example")]
 
 use std::rc::Rc;
 
@@ -91,7 +91,6 @@ pub struct MessageBuilder {
     fields: ConstructorBuilder,
 }
 
-#[allow(dead_code)] // Samples are too easy. There will be harder soon.
 impl MessageBuilder {
     pub fn new(name: &str) -> MessageBuilder {
         MessageBuilder {
@@ -206,7 +205,6 @@ pub struct EnumBuilder {
     branches: Vec<EnumBranchBuilder>,
 }
 
-#[allow(dead_code)] // Samples are too easy. There will be harder soon.
 impl EnumBuilder {
     pub fn new(name: &str) -> EnumBuilder {
         EnumBuilder {

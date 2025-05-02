@@ -15,6 +15,7 @@ mod parsed_ast;
 mod parsers;
 mod string;
 
+use dashmap::mapref::one::Ref;
 use dashmap::DashMap;
 use tower_lsp::lsp_types::Url;
 
@@ -77,7 +78,7 @@ impl WorkspaceAccess {
     }
 
     /// Returns File by `url`. Panics File was not opened.
-    pub fn read(&self, url: &Url) -> dashmap::mapref::one::Ref<'_, Url, file::File> {
+    pub fn read(&self, url: &Url) -> Ref<'_, Url, file::File> {
         self.files.get(url).expect("file should be opened")
     }
 

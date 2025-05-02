@@ -35,10 +35,10 @@ impl<'a> AstConstructorsStack<'a> {
     /// Returns last constructor call.
     ///
     /// Panics if there is no constructor calls.
+    #[allow(dead_code, reason = "not using yet")]
     pub fn get_last(&self) -> &'a str {
-        match self.stack.last() {
-            Some(ctr) => ctr,
-            None => panic!("get last on empty constructors stack"),
-        }
+        self.stack
+            .last()
+            .map_or_else(|| panic!("get last on empty constructor stack"), |ctr| ctr)
     }
 }

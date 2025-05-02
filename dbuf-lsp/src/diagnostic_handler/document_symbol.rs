@@ -13,7 +13,10 @@ pub struct DocumentSymbolProvider<'a> {
     last_enum: bool,
 }
 
-#[allow(deprecated)] // Init DocumentSymbol field deprecated
+#[allow(
+    deprecated,
+    reason = "Field `deprecated` is deprecated, but need to init"
+)]
 impl DocumentSymbolProvider<'_> {
     pub fn new(file: &File) -> DocumentSymbolProvider<'_> {
         DocumentSymbolProvider {

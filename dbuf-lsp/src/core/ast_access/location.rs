@@ -63,7 +63,7 @@ pub trait LocationHelpers {
     ///
     /// If `p == self.end`, returns true, corresponding
     /// to lsp_type::Range specification.
-    fn contains(&self, p: &lsp_types::Position) -> bool;
+    fn contains(&self, p: lsp_types::Position) -> bool;
 }
 
 impl LocationHelpers for Location {
@@ -78,7 +78,7 @@ impl LocationHelpers for Location {
         }
     }
 
-    fn contains(&self, p: &lsp_types::Position) -> bool {
+    fn contains(&self, p: lsp_types::Position) -> bool {
         if self.start.line > p.line {
             return false;
         }

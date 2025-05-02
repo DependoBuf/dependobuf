@@ -21,8 +21,8 @@ struct Backend {
 }
 
 impl Backend {
-    fn new(client: Client) -> Backend {
-        Backend {
+    fn new(client: Client) -> Self {
+        Self {
             client,
             workspace: WorkspaceAccess::new(),
             action_handler: ActionHandler::new(),

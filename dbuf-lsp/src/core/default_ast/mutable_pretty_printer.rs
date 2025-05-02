@@ -425,7 +425,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
-    fn parse_binary(&mut self, op: &mut BinaryOp) -> Result {
+    fn parse_binary(&mut self, op: &BinaryOp) -> Result {
         match op {
             BinaryOp::And => {
                 self.write("&&")?;
