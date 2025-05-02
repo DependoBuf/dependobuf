@@ -75,6 +75,5 @@ pub enum TypeExpression<Str> {
 /// Shared list of value subexpressions. There are no type subexpressions for now.
 pub type ValueExprs<S> = Rec<[ValueExpression<S>]>;
 
-/// Expression uses Rc for recursion.
-/// Consider migrating to Arc when going multicore.
-pub type Rec<T> = std::rc::Rc<T>;
+/// Expression uses Arc for recursion.
+pub type Rec<T> = std::sync::Arc<T>;

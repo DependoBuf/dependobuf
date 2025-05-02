@@ -91,6 +91,5 @@ pub enum PatternNode<Loc, Str, Pattern> {
     Underscore,
 }
 
-/// Parsed expressions and patterns use Rc for recursion.
-/// Consider switching to Arc when going multicore.
-pub type Rec<T> = std::rc::Rc<T>;
+/// Parsed expressions and patterns use Arc for recursion.
+pub type Rec<T> = std::sync::Arc<T>;
