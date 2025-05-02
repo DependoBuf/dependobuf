@@ -74,22 +74,17 @@ impl WorkspaceAccess {
             .files
             .insert(url.to_owned(), file)
             .expect("file should be opened");
+
         assert!(old.get_version() < version, "versions shoud be monotonic");
     }
 
-    /// Returns File by `url`. Panics File was not opened.
-    pub fn read(&self, url: &Url) -> Ref<'_, Url, file::File> {
+    /// Returns File by `url`. Panics if file was not opened.
+    pub fn read(&self, url: &Url) -> Ref<'_, Url, File> {
         self.files.get(url).expect("file should be opened")
     }
 
-    /// Removes File from opened files.
+    /// Removes File from opened files. Panics if file was not opened.
     pub fn close(&self, url: &Url) {
         self.files.remove(url).expect("file should be opened");
     }
 }
-
-/// Safety: WorkspaceAccess has only
-/// one field of type DashMap, which
-/// is thread safe.
-unsafe impl Send for WorkspaceAccess {}
-unsafe impl Sync for WorkspaceAccess {}

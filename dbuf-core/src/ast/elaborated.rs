@@ -77,4 +77,4 @@ pub type ValueExprs<S> = Rec<[ValueExpression<S>]>;
 
 /// Expression uses Rc for recursion.
 /// Consider migrating to Arc when going multicore.
-pub type Rec<T> = std::rc::Rc<T>;
+pub type Rec<T> = std::sync::Arc<T>;

@@ -5,8 +5,6 @@
 
 #![allow(dead_code, reason = "simple example")]
 
-use std::rc::Rc;
-
 use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 
@@ -47,7 +45,7 @@ impl DependencyBuilder {
         self
     }
     pub fn with_dependency(&mut self, name: &str, dep_type: &str) -> &mut Self {
-        self.with_huge_dependency(name, dep_type, Rc::new([]))
+        self.with_huge_dependency(name, dep_type, Rec::new([]))
     }
 }
 
@@ -80,7 +78,7 @@ impl ConstructorBuilder {
         self
     }
     pub fn with_field(&mut self, name: &str, field_type: &str) -> &mut Self {
-        self.with_huge_field(name, field_type, Rc::new([]))
+        self.with_huge_field(name, field_type, Rec::new([]))
     }
 }
 

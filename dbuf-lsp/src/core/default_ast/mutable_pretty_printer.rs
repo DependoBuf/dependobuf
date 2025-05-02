@@ -7,8 +7,6 @@
 
 use std::fmt::{Result, Write};
 
-use std::rc::Rc;
-
 use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
@@ -275,7 +273,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                     self.parse_expression(&mut copy)?;
                     modified.push(copy);
                 }
-                *args = Rc::from(modified);
+                *args = Rec::from(modified);
             }
             _ => {
                 panic!(
@@ -345,7 +343,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
                 let mut left = (expr_left.as_ref()).clone();
                 self.parse_expression(&mut left)?;
-                *expr_left = Rc::new(left);
+                *expr_left = Rec::new(left);
 
                 self.write(" ")?;
                 self.parse_binary(op)?;
@@ -353,7 +351,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
                 let mut right = (expr_right.as_ref()).clone();
                 self.parse_expression(&mut right)?;
-                *expr_right = Rc::new(right);
+                *expr_right = Rec::new(right);
 
                 self.write(")")?;
             }
@@ -398,7 +396,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             UnaryOp::Access(field) => {
                 let mut copy = (expr.as_ref()).clone();
                 self.parse_expression(&mut copy)?;
-                *expr = Rc::new(copy);
+                *expr = Rec::new(copy);
 
                 self.write(".")?;
                 self.write_str(field)?;
@@ -408,7 +406,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
                 let mut copy = (expr.as_ref()).clone();
                 self.parse_expression(&mut copy)?;
-                *expr = Rc::new(copy);
+                *expr = Rec::new(copy);
 
                 self.write(")")?;
             }
@@ -417,7 +415,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
                 let mut copy = (expr.as_ref()).clone();
                 self.parse_expression(&mut copy)?;
-                *expr = Rc::new(copy);
+                *expr = Rec::new(copy);
 
                 self.write(")")?;
             }

@@ -3,7 +3,6 @@
 
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
-use std::rc::Rc;
 
 use crate::core::ast_access::ElaboratedAst;
 
@@ -15,14 +14,14 @@ type Str = String;
 fn empty_type() -> TypeExpression<Str> {
     TypeExpression::TypeExpression {
         name: "None".to_owned(),
-        dependencies: Rc::new([]),
+        dependencies: Rec::new([]),
     }
 }
 
 fn simple_type(name: &str) -> TypeExpression<Str> {
     TypeExpression::TypeExpression {
         name: name.to_owned(),
-        dependencies: Rc::new([]),
+        dependencies: Rec::new([]),
     }
 }
 
@@ -57,7 +56,7 @@ fn access_expr(acc: &[&str]) -> ValueExpression<Str> {
 
     for access in acc.iter().skip(1) {
         basic_expr = ValueExpression::OpCall {
-            op_call: OpCall::Unary(UnaryOp::Access(access.to_string()), Rc::new(basic_expr)),
+            op_call: OpCall::Unary(UnaryOp::Access(access.to_string()), Rec::new(basic_expr)),
             result_type: empty_type(),
         }
     }
@@ -68,7 +67,7 @@ fn access_expr(acc: &[&str]) -> ValueExpression<Str> {
 fn type_expr(name: &str, dependenices: &[ValueExpression<Str>]) -> TypeExpression<Str> {
     TypeExpression::TypeExpression {
         name: name.to_owned(),
-        dependencies: Rc::from(dependenices.to_owned()),
+        dependencies: Rec::from(dependenices.to_owned()),
     }
 }
 

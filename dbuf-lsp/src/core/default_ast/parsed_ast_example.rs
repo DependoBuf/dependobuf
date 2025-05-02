@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use super::ast_builder::AstBuilder;
 use crate::core::ast_access::LocStringHelper;
 use crate::core::ast_access::{Loc, ParsedAst, Str};
@@ -33,7 +31,7 @@ fn access_expr(acc: &[&str]) -> Expression<Loc, Str> {
             loc: Loc::default(),
             node: ExpressionNode::OpCall(OpCall::Unary(
                 UnaryOp::Access(Str::new(access)),
-                Rc::new(basic_expr),
+                Rec::new(basic_expr),
             )),
         };
     }
@@ -58,15 +56,15 @@ pub fn rename_parsed_ast() -> ParsedAst {
         .with_huge_dependency(
             "d2",
             "M1",
-            Rc::new([var_expr("d1"), literal_expr(Literal::Str("kek".to_owned()))]),
+            Rec::new([var_expr("d1"), literal_expr(Literal::Str("kek".to_owned()))]),
         )
         .with_field("f1", "Int")
         .with_field("f2", "String")
-        .with_huge_field("f3", "M1", Rc::new([var_expr("d1"), var_expr("f2")]))
+        .with_huge_field("f3", "M1", Rec::new([var_expr("d1"), var_expr("f2")]))
         .with_huge_field(
             "f4",
             "M1",
-            Rc::new([
+            Rec::new([
                 access_expr(&["f3", "f1"]),
                 literal_expr(Literal::Str("funny".to_owned())),
             ]),
@@ -80,13 +78,13 @@ pub fn rename_parsed_ast() -> ParsedAst {
         .with_huge_field(
             "f3",
             "M1",
-            Rc::new([var_expr("f1"), literal_expr(Literal::Str("kek".to_owned()))]),
+            Rec::new([var_expr("f1"), literal_expr(Literal::Str("kek".to_owned()))]),
         )
-        .with_huge_field("f4", "M2", Rc::new([var_expr("f1"), var_expr("f3")]))
+        .with_huge_field("f4", "M2", Rec::new([var_expr("f1"), var_expr("f3")]))
         .with_huge_field(
             "f5",
             "M1",
-            Rc::new([
+            Rec::new([
                 access_expr(&["f4", "f4", "f2"]),
                 access_expr(&["f4", "f3", "f3"]),
             ]),

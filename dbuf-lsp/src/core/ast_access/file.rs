@@ -15,7 +15,7 @@ pub struct File {
 }
 
 impl File {
-    pub fn new(version: i32, parsed: ParsedAst, elaborated: ElaboratedAst) -> File {
+    pub(super) fn new(version: i32, parsed: ParsedAst, elaborated: ElaboratedAst) -> File {
         File {
             version,
             parsed_ast: parsed,
@@ -34,17 +34,5 @@ impl File {
     pub fn get_version(&self) -> i32 {
         assert!(self.version != -1);
         self.version
-    }
-
-    pub fn set_ast(
-        &mut self,
-        new_version: i32,
-        new_parsed: ParsedAst,
-        new_elaborated: ElaboratedAst,
-    ) {
-        assert!(self.version < new_version);
-        self.version = new_version;
-        self.parsed_ast = new_parsed;
-        self.elaborated_ast = new_elaborated;
     }
 }
