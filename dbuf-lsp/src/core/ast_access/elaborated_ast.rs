@@ -77,7 +77,7 @@ impl ElaboratedHelper for ElaboratedAst {
 
     fn is_message(&self, type_name: &str) -> bool {
         self.get_type(type_name)
-            .map_or(false, |t| match &t.constructor_names {
+            .is_some_and(|t| match &t.constructor_names {
                 ConstructorNames::OfMessage(_) => true,
                 ConstructorNames::OfEnum(_) => false,
             })
@@ -85,12 +85,12 @@ impl ElaboratedHelper for ElaboratedAst {
 
     fn is_type_dependency(&self, type_name: &str, name: &str) -> bool {
         self.get_type(type_name)
-            .map_or(false, |t| t.dependencies.iter().any(|d| d.0 == name))
+            .is_some_and(|t| t.dependencies.iter().any(|d| d.0 == name))
     }
 
     fn is_type_constructor(&self, type_name: &str, name: &str) -> bool {
         self.get_type(type_name)
-            .map_or(false, |t| match &t.constructor_names {
+            .is_some_and(|t| match &t.constructor_names {
                 ConstructorNames::OfMessage(ctr) => ctr == name,
                 ConstructorNames::OfEnum(btree_set) => btree_set.contains(name),
             })
@@ -98,6 +98,6 @@ impl ElaboratedHelper for ElaboratedAst {
 
     fn is_constructor_field(&self, constructor_name: &str, name: &str) -> bool {
         self.get_constructor(constructor_name)
-            .map_or(false, |c| c.fields.iter().any(|f| f.0 == name))
+            .is_some_and(|c| c.fields.iter().any(|f| f.0 == name))
     }
 }
