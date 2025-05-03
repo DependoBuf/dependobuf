@@ -70,7 +70,7 @@ impl ActionHandler {
         let file = access.read(document);
         let ast = file.get_parsed();
 
-        let mut writer = PrettyPrinter::new(&mut edit.new_text).with_tab_size(options.tab_size);
+        let mut writer = PrettyPrinter::new(&mut edit.new_text).with_tab_size(options.tab_size as usize);
         writer.print_ast(ast);
 
         Ok(Some(vec![edit]))

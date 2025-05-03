@@ -53,10 +53,10 @@ impl LocStringHelper for LocString {
         self.location = location;
     }
     fn set_location_start(&mut self, start: Position) {
-        self.location.start = start;
+        self.location.set_start(start);
     }
     fn set_location_end(&mut self, end: Position) {
-        self.location.end = end;
+        self.location.set_end(end);
     }
 }
 

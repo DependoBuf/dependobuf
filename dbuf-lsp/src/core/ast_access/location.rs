@@ -2,53 +2,46 @@
 //! * LocationHelpers, helpers for Location type.
 //!
 
-/// Poosition in a document.
-#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Default)]
-pub struct Position {
-    /// Zero-based line position in a document.
-    pub line: u32,
-    /// Zero-based character position in a line.
-    pub character: u32,
-}
-
-impl Position {
-    pub fn new(line: u32, character: u32) -> Position {
-        Position { line, character }
-    }
-}
-
-/// Location in a document.
-#[derive(Debug, Eq, PartialEq, Copy, Clone, Default)]
-pub struct Location {
-    /// Zero-based start of location.
-    pub start: Position,
-    /// Zero-based end of location, which is not included in the location.
-    /// For example, the location `((0, 0), (0, 2))` includes only two characters at positions `(0, 0)` and `(0, 1)`
-    ///
-    /// If a location has more than one line, the end position must be on the same `line` as the last character in the location.
-    pub end: Position,
-}
-
-impl Location {
-    pub fn new(start: Position, end: Position) -> Location {
-        Location { start, end }
-    }
-}
-
 use tower_lsp::lsp_types;
 use tower_lsp::lsp_types::Range;
 
+use dbuf_core::ast::parsed::location::{self, Offset};
+
+
+pub type Position = location::Offset;
+pub type Location = location::Location<Position>;
+
 /// Helpers for dbuf-core::Position type.
-trait PositionHelpers {
+pub trait PositionHelpers {
+    /// Creates new position. 
+    fn new(lines: u32, columns: u32) -> Self;
+    /// Get line of position.
+    fn get_line(&self) -> u32;
+    /// Get column of position.
+    fn get_column(&self) -> u32;
+    /// Get column as mutable.
+    fn get_column_mut(&mut self) -> &mut usize;
     /// Convers Position to lsp_types::Position;
     fn to_lsp(&self) -> lsp_types::Position;
 }
 
 impl PositionHelpers for Position {
+    fn new(lines: u32, columns: u32) -> Self {
+        Position{lines: lines as usize, columns: columns as usize}
+    }
+    fn get_line(&self) -> u32 {
+        self.lines as u32
+    }
+    fn get_column(&self) -> u32 {
+        self.columns as u32
+    }
+    fn get_column_mut(&mut self) -> &mut usize {
+        &mut self.columns
+    }
     fn to_lsp(&self) -> lsp_types::Position {
         lsp_types::Position {
-            line: self.line,
-            character: self.character,
+            line: self.lines as u32,
+            character: self.columns as u32,
         }
     }
 }
@@ -57,6 +50,8 @@ impl PositionHelpers for Position {
 pub trait LocationHelpers {
     /// Returns empty location. Typically ((0, 0), (0, 0))
     fn new_empty() -> Self;
+    /// Returns location with start and end.
+    fn new(start: Position, end: Position) -> Self;
     /// Convers Location to lsp_types::Range;
     fn to_lsp(&self) -> Range;
     /// Check if cursor position in location.
@@ -64,33 +59,78 @@ pub trait LocationHelpers {
     /// If `p == self.end`, returns true, corresponding
     /// to lsp_type::Range specification.
     fn contains(&self, p: lsp_types::Position) -> bool;
+    /// Get start of location.
+    fn get_start(&self) -> Position;
+    /// Get end of location.
+    fn get_end(&self) -> Position;
+    /// Sets start of location.
+    fn set_start(&mut self, start: Position);
+    /// Sets end of location.
+    fn set_end(&mut self, end: Position);
 }
 
 impl LocationHelpers for Location {
-    fn new_empty() -> Location {
-        Location::new(Position::new(0, 0), Position::new(0, 0))
+    fn new_empty() -> Self {
+        Self{
+            start: Position { lines: 0, columns: 0 },
+            length: Position { lines: 0, columns: 0 }
+        }
+    }
+
+    fn new(start: Position, end: Position) -> Self {
+        let mut ans = Self::new_empty();
+        ans.set_start(start);
+        ans.set_end(end);
+        ans
     }
 
     fn to_lsp(&self) -> Range {
         Range {
             start: self.start.to_lsp(),
-            end: self.end.to_lsp(),
+            end: self.end().to_lsp(),
         }
     }
 
     fn contains(&self, p: lsp_types::Position) -> bool {
-        if self.start.line > p.line {
+        let line = p.line as usize;
+        let char = p.character as usize;
+
+        if self.start.lines > line {
             return false;
         }
-        if self.start.line == p.line && self.start.character > p.character {
+        if self.start.lines == line && self.start.columns > char {
             return false;
         }
-        if self.end.line < p.line {
+        if self.end().lines < line {
             return false;
         }
-        if self.end.line > p.line {
+        if self.end().lines > line {
             return true;
         }
-        p.character <= self.end.character
+        char <= self.end().columns
+    }
+
+    fn get_start(&self) -> Position {
+        self.start
+    }
+
+    fn get_end(&self) -> Position {
+        self.end()
+    }
+    
+    fn set_start(&mut self, start: Position) {
+        self.start = start;
+        self.length = Offset{lines: 0, columns: 0};
+    }
+
+    fn set_end(&mut self, end: Position) {
+        if end.lines == self.start.lines {
+            self.length.lines = 0;
+            self.length.columns = end.columns - self.start.columns;
+        }
+        else {
+            self.length.lines = end.lines - self.start.lines;
+            self.length.columns = end.columns
+        }
     }
 }

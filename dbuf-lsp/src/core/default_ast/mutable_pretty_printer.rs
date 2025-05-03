@@ -11,7 +11,25 @@ use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 
-use crate::core::ast_access::{Loc, LocStringHelper, Position, Str};
+use crate::core::ast_access::{Loc, LocStringHelper, LocationHelpers, Position, PositionHelpers, Str};
+
+#[derive(Debug, Copy, Clone)]
+struct Pos {
+    line: u32,
+    column: u32
+}
+
+impl Pos{
+    fn new(line: u32, column: u32) -> Pos {
+        Pos { line, column }
+    } 
+}
+
+impl From<Pos> for Position {
+    fn from(value: Pos) -> Self {
+        Position::new(value.line, value.column)
+    }
+} 
 
 // TODO:
 //   * find a way to easily clone from crate::common::pretty_printer
@@ -19,7 +37,7 @@ use crate::core::ast_access::{Loc, LocStringHelper, Position, Str};
 /// A configurable AST pretty-printer that preserves source location information.
 ///
 pub struct PrettyPrinter<'a, W: Write> {
-    cursor: Position,
+    cursor: Pos,
     writer: &'a mut W,
 }
 
@@ -29,14 +47,14 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
     pub fn new(writer: &'a mut W) -> PrettyPrinter<'a, W> {
         PrettyPrinter {
-            cursor: Position::new(0, 0),
+            cursor: Pos::new(0, 0),
             writer,
         }
     }
 
     fn new_line(&mut self) -> Result {
         self.cursor.line += 1;
-        self.cursor.character = 0;
+        self.cursor.column = 0;
         writeln!(self.writer)?;
         Ok(())
     }
@@ -49,28 +67,28 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     }
 
     fn write(&mut self, s: &str) -> Result {
-        self.cursor.character += s.len() as u32;
+        self.cursor.column += s.len() as u32;
         write!(self.writer, "{}", s)?;
         Ok(())
     }
 
     fn write_str(&mut self, s: &mut Str) -> Result {
-        s.set_location_start(self.cursor);
-        self.cursor.character += s.len() as u32;
+        s.set_location_start(self.cursor.into());
+        self.cursor.column += s.len() as u32;
         write!(self.writer, "{}", s)?;
-        s.set_location_end(self.cursor);
+        s.set_location_end(self.cursor.into());
         Ok(())
     }
 
     fn write_tab(&mut self, len: usize) -> Result {
-        self.cursor.character += len as u32;
+        self.cursor.column += len as u32;
         let to_write = " ".repeat(len);
         write!(self.writer, "{}", to_write)?;
         Ok(())
     }
 
     pub fn parse_module(&mut self, module: &mut Module<Loc, Str>) -> Result {
-        self.cursor = Position::new(0, 0);
+        self.cursor = Pos::new(0, 0);
         let mut first = true;
 
         for definition in module.iter_mut() {
@@ -89,7 +107,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         &mut self,
         definition: &mut Definition<Loc, Str, TypeDeclaration<Loc, Str>>,
     ) -> Result {
-        definition.loc.start = self.cursor;
+        definition.loc.set_start(self.cursor.into());
 
         match definition.data.body {
             TypeDefinition::Message(_) => {
@@ -106,7 +124,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
         self.parse_type_declaration(&mut definition.data)?;
 
-        definition.loc.end = self.cursor;
+        definition.loc.set_end(self.cursor.into());
         Ok(())
     }
 
@@ -143,7 +161,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         &mut self,
         dependency: &mut Definition<Loc, Str, TypeExpression<Loc, Str>>,
     ) -> Result {
-        dependency.loc.start = self.cursor;
+        dependency.loc.set_start(self.cursor.into());
 
         self.write("(")?;
         self.write_str(&mut dependency.name)?;
@@ -151,7 +169,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         self.parse_type_expression(&mut dependency.data)?;
         self.write(")")?;
 
-        dependency.loc.end = self.cursor;
+        dependency.loc.set_end(self.cursor.into());
         Ok(())
     }
 
@@ -181,7 +199,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     }
 
     fn parse_pattern(&mut self, pattern: &mut Pattern<Loc, Str>) -> Result {
-        pattern.loc.start = self.cursor;
+        pattern.loc.set_start(self.cursor.into());
 
         match &mut pattern.node {
             PatternNode::ConstructorCall { name, fields } => {
@@ -212,7 +230,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             }
         }
 
-        pattern.loc.end = self.cursor;
+        pattern.loc.set_end(self.cursor.into());
         Ok(())
     }
 
@@ -221,7 +239,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         constructor: &mut Definition<Loc, Str, ConstructorBody<Loc, Str>>,
     ) -> Result {
         self.write_tab(8)?;
-        constructor.loc.start = self.cursor;
+        constructor.loc.set_start(self.cursor.into());
 
         self.write_str(&mut constructor.name)?;
         self.write(" {")?;
@@ -231,7 +249,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         self.write_tab(8)?;
         self.write("}")?;
 
-        constructor.loc.end = self.cursor;
+        constructor.loc.set_end(self.cursor.into());
         Ok(())
     }
 
@@ -246,20 +264,20 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                 self.new_line()?;
             }
             self.write_tab(offset as usize)?;
-            definition.loc.start = self.cursor;
+            definition.loc.set_start(self.cursor.into());
             self.write_str(&mut definition.name)?;
             self.write(" ")?;
             self.parse_type_expression(&mut definition.data)?;
             self.write(";")?;
 
-            definition.loc.end = self.cursor;
+            definition.loc.set_end(self.cursor.into());
             first = false;
         }
         Ok(())
     }
 
     fn parse_type_expression(&mut self, type_expression: &mut TypeExpression<Loc, Str>) -> Result {
-        type_expression.loc.start = self.cursor;
+        type_expression.loc.set_start(self.cursor.into());
 
         match &mut type_expression.node {
             ExpressionNode::FunCall { fun, args } => {
@@ -278,18 +296,18 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             _ => {
                 panic!(
                     "bad type expression at (line {}, cell {})",
-                    self.cursor.line, self.cursor.character
+                    self.cursor.line, self.cursor.column
                 );
             }
         }
 
-        type_expression.loc.end = self.cursor;
+        type_expression.loc.set_end(self.cursor.into());
         Ok(())
     }
 
     // TODO: change logic: distinguish variable from empty constructor
     fn parse_expression(&mut self, expression: &mut Expression<Loc, Str>) -> Result {
-        expression.loc.start = self.cursor;
+        expression.loc.set_start(self.cursor.into());
 
         match &mut expression.node {
             ExpressionNode::ConstructorCall { name, fields } => {
@@ -321,12 +339,12 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             ExpressionNode::TypedHole => {
                 panic!(
                     "bad expression: Typed Hole at (line {}, cell {})",
-                    self.cursor.line, self.cursor.character
+                    self.cursor.line, self.cursor.column
                 )
             }
         }
 
-        expression.loc.end = self.cursor;
+        expression.loc.set_end(self.cursor.into());
         Ok(())
     }
 

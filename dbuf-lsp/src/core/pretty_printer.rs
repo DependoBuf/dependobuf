@@ -10,7 +10,18 @@ use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 
-use super::ast_access::{Loc, ParsedAst, Position, Str};
+use super::ast_access::{Loc, ParsedAst, Str};
+
+struct Position {
+    line: usize,
+    column: usize,
+}
+
+impl Position {
+    fn new(line: usize, column: usize) -> Position {
+        Position { line, column }   
+    }
+}
 
 /// A configurable AST pretty-printer.
 ///
@@ -24,7 +35,7 @@ use super::ast_access::{Loc, ParsedAst, Position, Str};
 pub struct PrettyPrinter<'a, W: Write> {
     cursor: Position,
     writer: &'a mut W,
-    tab_size: u32,
+    tab_size: usize,
     header_only: bool,
     with_dependencies: bool,
 }
@@ -45,14 +56,14 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     }
 
     /// Sets tab size for printer.
-    pub fn with_tab_size(mut self, tab_size: u32) -> Self {
+    pub fn with_tab_size(mut self, tab_size: usize) -> Self {
         self.tab_size = tab_size;
         self
     }
 
     fn new_line(&mut self) {
         self.cursor.line += 1;
-        self.cursor.character = 0;
+        self.cursor.column = 0;
         writeln!(self.writer).expect("writeln! considered to be infallible");
     }
 
@@ -64,7 +75,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
     fn write(&mut self, s: impl AsRef<str>) {
         let r = s.as_ref();
-        self.cursor.character += r.len() as u32;
+        self.cursor.column += r.len();
         write!(self.writer, "{}", r).expect("write! considered to be infallible");
     }
 
@@ -74,9 +85,9 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         }
     }
 
-    fn write_tabs(&mut self, tab_count: u32) {
+    fn write_tabs(&mut self, tab_count: usize) {
         let spaces = self.tab_size * tab_count;
-        self.cursor.character += spaces;
+        self.cursor.column += spaces;
         let to_write = " ".repeat(spaces as usize);
         write!(self.writer, "{}", to_write).expect("write! considered to be infallible");
     }
@@ -338,7 +349,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         self.write("}");
     }
 
-    fn print_constructor(&mut self, constructor: &ConstructorBody<Loc, Str>, offset: u32) {
+    fn print_constructor(&mut self, constructor: &ConstructorBody<Loc, Str>, offset: usize) {
         let mut first = true;
         for definition in constructor.iter() {
             if !first {
@@ -368,7 +379,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             _ => {
                 panic!(
                     "bad type expression at (line {}, cell {})",
-                    self.cursor.line, self.cursor.character
+                    self.cursor.line, self.cursor.column
                 );
             }
         }
@@ -403,7 +414,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             ExpressionNode::TypedHole => {
                 panic!(
                     "bad expression: Typed Hole at (line {}, cell {})",
-                    self.cursor.line, self.cursor.character
+                    self.cursor.line, self.cursor.column
                 )
             }
         };

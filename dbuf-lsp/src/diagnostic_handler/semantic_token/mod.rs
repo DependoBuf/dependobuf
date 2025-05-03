@@ -16,6 +16,8 @@ use tower_lsp::lsp_types::SemanticTokenModifier;
 use tower_lsp::lsp_types::SemanticTokenType;
 use tower_lsp::lsp_types::SemanticTokens;
 
+use crate::core::ast_access::LocationHelpers;
+use crate::core::ast_access::PositionHelpers;
 use crate::core::ast_access::{
     ElaboratedAst, ElaboratedHelper, File, Loc, LocStringHelper, ParsedAst, Str,
 };
@@ -47,9 +49,9 @@ impl TokenBuilder {
     }
     fn collect(self) -> SemanticToken {
         assert!(self.location != Loc::default());
-        assert!(self.location.start.line == self.location.end.line);
+        assert!(self.location.get_start().get_line() == self.location.end().get_line());
 
-        let len = self.location.end.character - self.location.start.character;
+        let len = self.location.end().get_column() - self.location.get_start().get_column();
         let mut modifier = 0;
 
         for modify in self.modifiers.iter() {
@@ -57,8 +59,8 @@ impl TokenBuilder {
         }
 
         SemanticToken {
-            delta_line: self.location.start.line,
-            delta_start: self.location.start.character,
+            delta_line: self.location.get_start().get_line(),
+            delta_start: self.location.get_start().get_column(),
             length: len,
             token_type: self.token.to_index(),
             token_modifiers_bitset: modifier,

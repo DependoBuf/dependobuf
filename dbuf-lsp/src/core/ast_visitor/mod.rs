@@ -19,7 +19,7 @@ use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::definition::Definitions;
 use dbuf_core::ast::parsed::*;
 
-use super::ast_access::{Loc, Str};
+use super::ast_access::{Loc, LocationHelpers, PositionHelpers, Str};
 
 use super::ast_access::ElaboratedAst;
 use super::ast_access::ElaboratedHelper;
@@ -287,9 +287,9 @@ pub fn visit_ast<'a, V: Visitor<'a>>(
 
     for td in ast.iter() {
         let keyword = if tempo_elaborated.is_message(td.name.as_ref()) {
-            get_keyword("message", td.name.get_location().start.line)
+            get_keyword("message", td.name.get_location().get_start().get_line())
         } else {
-            get_keyword("enum", td.name.get_location().start.line)
+            get_keyword("enum", td.name.get_location().get_start().get_line())
         };
 
         let res = visitor.visit(keyword);
@@ -325,7 +325,7 @@ const CONTINUE: Stop = Stop::Ok(());
 fn get_keyword<'a>(keyword: &'static str, line: u32) -> Visit<'a> {
     let start = Position::new(line, 0);
     let mut end = start;
-    end.character += keyword.len() as u32;
+    *end.get_column_mut() += keyword.len();
     let loc = Loc::new(start, end);
 
     Visit::Keyword(keyword, loc)
@@ -612,8 +612,10 @@ fn visit_access_chain<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: 
         _ => panic!("bad access chain"),
     };
 
-    let mut loc = Loc::new(e.loc.end, e.loc.end);
-    loc.end.character += 1;
+    let start = e.loc.get_end();
+    let mut end = e.loc.get_end();
+    *end.get_column_mut() += 1;
+    let loc = Loc::new(start, end);
 
     let res = visitor.visit(Visit::AccessDot(loc)); // TODO: better find location
     match res {
@@ -627,58 +629,58 @@ fn visit_access_chain<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: 
 fn get_operator(e: &Expression<Loc, Str>) -> (&'static str, Loc) {
     match &e.node {
         ExpressionNode::OpCall(OpCall::Binary(BinaryOp::Plus, lhs, _)) => {
-            let start = lhs.loc.end;
+            let start = lhs.loc.get_end();
             let mut end = start;
-            end.character += 1;
+            *end.get_column_mut() += 1;
             let loc = Loc::new(start, end);
             ("+", loc)
         }
         ExpressionNode::OpCall(OpCall::Binary(BinaryOp::Minus, lhs, _)) => {
-            let start = lhs.loc.end;
+            let start = lhs.loc.get_end();
             let mut end = start;
-            end.character += 1;
+            *end.get_column_mut() += 1;
             let loc = Loc::new(start, end);
             ("-", loc)
         }
         ExpressionNode::OpCall(OpCall::Binary(BinaryOp::Star, lhs, _)) => {
-            let start = lhs.loc.end;
+            let start = lhs.loc.get_end();
             let mut end = start;
-            end.character += 1;
+            *end.get_column_mut() += 1;
             let loc = Loc::new(start, end);
             ("*", loc)
         }
         ExpressionNode::OpCall(OpCall::Binary(BinaryOp::Slash, lhs, _)) => {
-            let start = lhs.loc.end;
+            let start = lhs.loc.get_end();
             let mut end = start;
-            end.character += 1;
+            *end.get_column_mut() += 1;
             let loc = Loc::new(start, end);
             ("/", loc)
         }
         ExpressionNode::OpCall(OpCall::Binary(BinaryOp::And, lhs, _)) => {
-            let start = lhs.loc.end;
+            let start = lhs.loc.get_end();
             let mut end = start;
-            end.character += 2;
+            *end.get_column_mut() += 2;
             let loc = Loc::new(start, end);
             ("&&", loc)
         }
         ExpressionNode::OpCall(OpCall::Binary(BinaryOp::Or, lhs, _)) => {
-            let start = lhs.loc.end;
+            let start = lhs.loc.get_end();
             let mut end = start;
-            end.character += 2;
+            *end.get_column_mut() += 2;
             let loc = Loc::new(start, end);
             ("||", loc)
         }
         ExpressionNode::OpCall(OpCall::Unary(UnaryOp::Bang, expr)) => {
-            let end = expr.loc.start;
+            let end = expr.loc.get_start();
             let mut start = end;
-            start.character -= 1;
+            *start.get_column_mut() -= 1;
             let loc = Loc::new(start, end);
             ("!", loc)
         }
         ExpressionNode::OpCall(OpCall::Unary(UnaryOp::Minus, expr)) => {
-            let end = expr.loc.start;
+            let end = expr.loc.get_start();
             let mut start = end;
-            start.character -= 1;
+            *start.get_column_mut() -= 1;
             let loc = Loc::new(start, end);
             ("-", loc)
         }
