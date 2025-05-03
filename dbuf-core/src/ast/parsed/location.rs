@@ -15,9 +15,16 @@ impl Add<Offset> for Offset {
     type Output = Self;
 
     fn add(self, rhs: Offset) -> Self::Output {
-        Self {
-            lines: self.lines + rhs.lines,
-            columns: self.columns + rhs.columns,
+        if rhs.lines == 0 {
+            Self {
+                lines: self.lines,
+                columns: self.columns + rhs.columns,
+            }
+        } else {
+            Self {
+                lines: self.lines + rhs.lines,
+                columns: rhs.columns,
+            }
         }
     }
 }
