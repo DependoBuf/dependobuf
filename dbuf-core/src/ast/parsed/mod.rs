@@ -1,4 +1,5 @@
 pub mod definition;
+pub mod location;
 
 use super::operators::{Literal, OpCall};
 use definition::Definitions;
