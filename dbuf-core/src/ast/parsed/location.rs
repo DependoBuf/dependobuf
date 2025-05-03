@@ -2,15 +2,6 @@
 
 use std::ops::Add;
 
-/// Position in a document.
-#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Default)]
-pub struct Position {
-    /// Zero-based line position in a document.
-    pub line: usize,
-    /// Zero-based column position in a line.
-    pub column: usize,
-}
-
 /// Offset in a file.
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Default)]
 pub struct Offset {
@@ -20,13 +11,13 @@ pub struct Offset {
     pub columns: usize,
 }
 
-impl Add<Offset> for Position {
+impl Add<Offset> for Offset {
     type Output = Self;
 
     fn add(self, rhs: Offset) -> Self::Output {
         Self {
-            line: self.line + rhs.lines,
-            column: self.column + rhs.columns,
+            lines: self.lines + rhs.lines,
+            columns: self.columns + rhs.columns,
         }
     }
 }
