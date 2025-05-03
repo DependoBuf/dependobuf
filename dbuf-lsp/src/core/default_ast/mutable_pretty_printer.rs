@@ -11,25 +11,27 @@ use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 
-use crate::core::ast_access::{Loc, LocStringHelper, LocationHelpers, Position, PositionHelpers, Str};
+use crate::core::ast_access::{
+    Loc, LocStringHelper, LocationHelpers, Position, PositionHelpers, Str,
+};
 
 #[derive(Debug, Copy, Clone)]
 struct Pos {
     line: u32,
-    column: u32
+    column: u32,
 }
 
-impl Pos{
+impl Pos {
     fn new(line: u32, column: u32) -> Pos {
         Pos { line, column }
-    } 
+    }
 }
 
 impl From<Pos> for Position {
     fn from(value: Pos) -> Self {
         Position::new(value.line, value.column)
     }
-} 
+}
 
 // TODO:
 //   * find a way to easily clone from crate::common::pretty_printer

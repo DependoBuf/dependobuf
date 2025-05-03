@@ -19,7 +19,7 @@ struct Position {
 
 impl Position {
     fn new(line: usize, column: usize) -> Position {
-        Position { line, column }   
+        Position { line, column }
     }
 }
 
@@ -88,7 +88,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     fn write_tabs(&mut self, tab_count: usize) {
         let spaces = self.tab_size * tab_count;
         self.cursor.column += spaces;
-        let to_write = " ".repeat(spaces as usize);
+        let to_write = " ".repeat(spaces);
         write!(self.writer, "{}", to_write).expect("write! considered to be infallible");
     }
 

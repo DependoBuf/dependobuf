@@ -7,13 +7,12 @@ use tower_lsp::lsp_types::Range;
 
 use dbuf_core::ast::parsed::location::{self, Offset};
 
-
 pub type Position = location::Offset;
 pub type Location = location::Location<Position>;
 
 /// Helpers for dbuf-core::Position type.
 pub trait PositionHelpers {
-    /// Creates new position. 
+    /// Creates new position.
     fn new(lines: u32, columns: u32) -> Self;
     /// Get line of position.
     fn get_line(&self) -> u32;
@@ -27,7 +26,10 @@ pub trait PositionHelpers {
 
 impl PositionHelpers for Position {
     fn new(lines: u32, columns: u32) -> Self {
-        Position{lines: lines as usize, columns: columns as usize}
+        Position {
+            lines: lines as usize,
+            columns: columns as usize,
+        }
     }
     fn get_line(&self) -> u32 {
         self.lines as u32
@@ -71,9 +73,15 @@ pub trait LocationHelpers {
 
 impl LocationHelpers for Location {
     fn new_empty() -> Self {
-        Self{
-            start: Position { lines: 0, columns: 0 },
-            length: Position { lines: 0, columns: 0 }
+        Self {
+            start: Position {
+                lines: 0,
+                columns: 0,
+            },
+            length: Position {
+                lines: 0,
+                columns: 0,
+            },
         }
     }
 
@@ -117,18 +125,20 @@ impl LocationHelpers for Location {
     fn get_end(&self) -> Position {
         self.end()
     }
-    
+
     fn set_start(&mut self, start: Position) {
         self.start = start;
-        self.length = Offset{lines: 0, columns: 0};
+        self.length = Offset {
+            lines: 0,
+            columns: 0,
+        };
     }
 
     fn set_end(&mut self, end: Position) {
         if end.lines == self.start.lines {
             self.length.lines = 0;
             self.length.columns = end.columns - self.start.columns;
-        }
-        else {
+        } else {
             self.length.lines = end.lines - self.start.lines;
             self.length.columns = end.columns
         }
