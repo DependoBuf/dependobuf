@@ -1,34 +1,51 @@
 //! Locations for parsed AST.
 
+use std::ops::Add;
+
 /// Position in a document.
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Default)]
 pub struct Position {
     /// Zero-based line position in a document.
-    pub line: u32,
-    /// Zero-based character position in a line.
-    pub character: u32,
+    pub line: usize,
+    /// Zero-based column position in a line.
+    pub column: usize,
 }
 
-impl Position {
-    pub fn new(line: u32, character: u32) -> Position {
-        Position { line, character }
+/// Offset in a file.
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Default)]
+pub struct Offset {
+    /// Number of offset newline symbols.
+    pub lines: usize,
+    /// Number of offset symbols after last newline.
+    pub columns: usize,
+}
+
+impl Add<Offset> for Position {
+    type Output = Self;
+
+    fn add(self, rhs: Offset) -> Self::Output {
+        Self {
+            line: self.line + rhs.lines,
+            column: self.column + rhs.columns,
+        }
     }
 }
 
-/// Location in a document. Represents as semi-interval on the axis of Positions.
-#[derive(Debug, Eq, PartialEq, Copy, Clone, Default)]
-pub struct Location {
-    /// Start of location.
-    pub start: Position,
-    /// End of location, which is not included in the location.
-    /// For example, the location `((0, 0), (0, 2))` includes only two characters at positions `(0, 0)` and `(0, 1)`
-    ///
-    /// If a location has more than one line, the end position must be on the same `line` as the last character in the location.
-    pub end: Position,
+/// Location of a text entity.
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Default)]
+pub struct Location<Pos> {
+    /// Starting position of an entity.
+    pub start: Pos,
+    /// Length of an entity.
+    pub length: Offset,
 }
 
-impl Location {
-    pub fn new(start: Position, end: Position) -> Location {
-        Location { start, end }
+impl<Pos> Location<Pos>
+where
+    Pos: Add<Offset, Output = Pos>,
+{
+    /// Ending position of an entity.
+    pub fn end(self) -> Pos {
+        self.start + self.length
     }
 }
