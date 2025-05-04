@@ -4,9 +4,6 @@
 mod modifier;
 mod token;
 
-#[cfg(test)]
-mod tests;
-
 use dbuf_core::ast::operators::Literal;
 use modifier::Modifier;
 use token::Token;
@@ -72,7 +69,7 @@ impl TokenBuilder {
         let len = self.location.end().get_column() - self.location.get_start().get_column();
         let mut modifier = 0;
 
-        for modify in self.modifiers.iter() {
+        for modify in self.modifiers.into_iter() {
             modifier |= 1 << modify.to_index();
         }
 

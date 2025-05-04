@@ -10,3 +10,5 @@ tower-lsp.workspace = true
 tokio.workspace = true
 dashmap.workspace = true
 pretty.workspace = true
+strum.workspace = true
+strum_macros.workspace = true
