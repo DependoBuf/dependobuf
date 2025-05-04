@@ -139,23 +139,17 @@ impl ActionHandler {
             })
             .collect();
 
-        let text_document = OptionalVersionedTextDocumentIdentifier {
-            uri: document.to_owned(),
-            version: Some(file.get_version()),
-        };
-
-        let text_document_edits = TextDocumentEdit {
-            text_document,
-            edits,
-        };
-
-        let workspace_edit = WorkspaceEdit {
+        Ok(Some(WorkspaceEdit {
             changes: None,
-            document_changes: Some(DocumentChanges::Edits(vec![text_document_edits])),
+            document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
+                text_document: OptionalVersionedTextDocumentIdentifier {
+                    uri: document.to_owned(),
+                    version: Some(file.get_version()),
+                },
+                edits,
+            }])),
             change_annotations: None,
-        };
-
-        Ok(Some(workspace_edit))
+        }))
     }
 }
 
