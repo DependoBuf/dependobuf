@@ -57,23 +57,29 @@ struct TestVisitor {
 
 impl SkipMask {
     fn new(size: u32) -> SkipMask {
+        assert!(size < 32);
         SkipMask { mask: 0, size }
     }
     fn set(&mut self, mask: u32) {
         assert!(mask < (1 << self.size));
         self.mask = mask
     }
-    fn next(&mut self) -> bool {
-        self.mask += 1;
-        if self.mask >= (1 << self.size) {
-            self.mask = 0;
-            false
-        } else {
-            true
-        }
-    }
     fn need_skip(&self, step: u32) -> bool {
         step < self.size && (self.mask & (1 << step)) != 0
+    }
+}
+impl Iterator for SkipMask {
+    type Item = SkipMask;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let ans = *self;
+
+        self.mask += 1;
+        if self.mask > (1 << self.size) {
+            None
+        } else {
+            Some(ans)
+        }
     }
 }
 
@@ -150,6 +156,18 @@ fn test_skip_mask() {
 }
 
 #[test]
+fn test_skip_mask_iterator() {
+    let skip_mask = SkipMask::new(2);
+
+    let mut expect = 0;
+    for mask in skip_mask {
+        assert!(mask.mask == expect, "bad skip mask iterator");
+        expect += 1;
+    }
+    assert!(expect == 4, "bad skip mask count")
+}
+
+#[test]
 fn test_stop_after_signal() {
     let ast = get_ast();
     let tempo_elaborated = ElaboratedAst {
@@ -175,14 +193,12 @@ fn test_skip_correctness() {
         constructors: BTreeMap::new(),
     };
 
-    let mut skip_mask = SkipMask::new(18);
-    loop {
-        let mut visitor = TestVisitor::new(skip_mask, 1e9 as u32);
+    let skip_mask = SkipMask::new(18);
+
+    for mask in skip_mask {
+        let mut visitor = TestVisitor::new(mask, 1e9 as u32);
         visit_ast(&ast, &mut visitor, &tempo_elaborated);
         assert!(!visitor.stopped, "all steps done");
-        if !skip_mask.next() {
-            break;
-        }
     }
 }
 
@@ -194,17 +210,14 @@ fn test_skip_stop_correctness() {
         constructors: BTreeMap::new(),
     };
 
-    let mut skip_mask = SkipMask::new(13);
-    loop {
+    let skip_mask = SkipMask::new(13);
+    for mask in skip_mask {
         for stop_after in 0.. {
-            let mut visitor = TestVisitor::new(skip_mask, stop_after);
+            let mut visitor = TestVisitor::new(mask, stop_after);
             visit_ast(&ast, &mut visitor, &tempo_elaborated);
             if !visitor.stopped {
                 break;
             }
-        }
-        if !skip_mask.next() {
-            break;
         }
     }
 }
