@@ -32,10 +32,6 @@ mod hover;
 mod inlay_hint;
 mod navigation;
 
-use hover::get_hover;
-use navigation::find_definition;
-use navigation::find_type;
-
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::request::*;
 use tower_lsp::lsp_types::OneOf::*;
@@ -60,7 +56,7 @@ impl NavigationHandler {
         let navigator = Navigator::new(&file);
 
         let symbol = navigator.get_symbol(pos);
-        let range = find_definition(&navigator, &symbol);
+        let range = navigation::find_definition(&navigator, &symbol);
 
         Ok(range.map(|range| {
             GotoDefinitionResponse::Scalar(Location {
@@ -82,9 +78,9 @@ impl NavigationHandler {
         let navigator = Navigator::new(&file);
 
         let symbol = navigator.get_symbol(pos);
-        let t = find_type(&navigator, symbol);
+        let t = navigation::find_type(&navigator, symbol);
 
-        let range = find_definition(&navigator, &t);
+        let range = navigation::find_definition(&navigator, &t);
 
         Ok(range.map(|range| {
             GotoTypeDefinitionResponse::Scalar(Location {
@@ -114,7 +110,7 @@ impl NavigationHandler {
 
         let symbol = navigator.get_symbol(pos);
 
-        let strings = get_hover(symbol, &file);
+        let strings = hover::get_hover(symbol, &file);
         if strings.is_empty() {
             Ok(None)
         } else {

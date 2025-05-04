@@ -23,28 +23,24 @@ use crate::core::ast_access::{ElaboratedAst, ElaboratedHelper, File, Loc, LocStr
 use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
 use crate::core::ast_visitor::*;
 
-pub struct SemanticTokenProvider {}
+/// Returns all semantic tokens of file
+pub fn provide_semantic_tokens(file: &File) -> SemanticTokens {
+    let mut visitor = SemanticTokenVisitor::new(file);
+    visit_ast(file.get_parsed(), &mut visitor, file.get_elaborated());
 
-impl SemanticTokenProvider {
-    /// Returns all semantic tokens of file
-    pub fn provide_semantic_tokens(file: &File) -> SemanticTokens {
-        let mut visitor = SemanticTokenVisitor::new(file);
-        visit_ast(file.get_parsed(), &mut visitor, file.get_elaborated());
+    SemanticTokens {
+        result_id: None,
+        data: visitor.result,
+    }
+}
 
-        SemanticTokens {
-            result_id: None,
-            data: visitor.result,
-        }
-    }
-
-    /// Returns all semantic tokens types in correct order.
-    pub fn get_token_types() -> Vec<SemanticTokenType> {
-        token::get_all_tokens()
-    }
-    /// Returns all semantic token modifiers in correct order.
-    pub fn get_token_modifiers() -> Vec<SemanticTokenModifier> {
-        modifier::get_all_modifiers()
-    }
+/// Returns all semantic tokens types in correct order.
+pub fn get_token_types() -> Vec<SemanticTokenType> {
+    token::get_all_tokens()
+}
+/// Returns all semantic token modifiers in correct order.
+pub fn get_token_modifiers() -> Vec<SemanticTokenModifier> {
+    modifier::get_all_modifiers()
 }
 
 struct TokenBuilder {

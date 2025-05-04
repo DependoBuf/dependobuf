@@ -28,10 +28,6 @@ mod code_lens;
 mod document_symbol;
 mod semantic_token;
 
-use code_lens::provide_code_lens;
-use document_symbol::provide_document_symbols;
-use semantic_token::SemanticTokenProvider;
-
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
@@ -51,18 +47,19 @@ impl DiagnosticHandler {
         document: &Url,
     ) -> Result<Option<DocumentSymbolResponse>> {
         let file = access.read(document);
-        let symbols = provide_document_symbols(&file);
+        let symbols = document_symbol::provide_document_symbols(&file);
         Ok(Some(DocumentSymbolResponse::Nested(symbols)))
     }
 
     /// `textDocument/semanticTokens/full` implementation.
+    ///
     pub fn semantic_tokens_full(
         &self,
         access: &WorkspaceAccess,
         document: &Url,
     ) -> Result<Option<SemanticTokensResult>> {
         let file = access.read(document);
-        let tokens = SemanticTokenProvider::provide_semantic_tokens(&file);
+        let tokens = semantic_token::provide_semantic_tokens(&file);
 
         Ok(Some(tokens.into()))
     }
@@ -105,13 +102,13 @@ impl DiagnosticHandler {
         let symbol = navigator.get_symbol(pos);
         let ranges = navigator.find_symbols(&symbol);
 
-        let mut ans = Vec::with_capacity(ranges.len());
-        for r in ranges.iter() {
-            ans.push(DocumentHighlight {
-                range: *r,
+        let ans = ranges
+            .into_iter()
+            .map(|r| DocumentHighlight {
+                range: r,
                 kind: Some(DocumentHighlightKind::TEXT),
-            });
-        }
+            })
+            .collect();
 
         Ok(Some(ans))
     }
@@ -126,7 +123,7 @@ impl DiagnosticHandler {
         document: &Url,
     ) -> Result<Option<Vec<CodeLens>>> {
         let file = access.read(document);
-        let lens = provide_code_lens(&file);
+        let lens = code_lens::provide_code_lens(&file);
 
         Ok(Some(lens))
     }
@@ -141,8 +138,8 @@ impl Handler for DiagnosticHandler {
         capabilites.document_symbol_provider = Some(Left(true));
 
         let legend = SemanticTokensLegend {
-            token_types: SemanticTokenProvider::get_token_types(),
-            token_modifiers: SemanticTokenProvider::get_token_modifiers(),
+            token_types: semantic_token::get_token_types(),
+            token_modifiers: semantic_token::get_token_modifiers(),
         };
 
         capabilites.semantic_tokens_provider = Some(

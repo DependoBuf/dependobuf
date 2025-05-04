@@ -129,16 +129,6 @@ impl ActionHandler {
 
         let ranges = navigator.find_symbols(&symbol);
 
-        let edits = ranges
-            .into_iter()
-            .map(|s| {
-                Left(TextEdit {
-                    range: s,
-                    new_text: new_name.to_owned(),
-                })
-            })
-            .collect();
-
         Ok(Some(WorkspaceEdit {
             changes: None,
             document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
@@ -146,7 +136,15 @@ impl ActionHandler {
                     uri: document.to_owned(),
                     version: Some(file.get_version()),
                 },
-                edits,
+                edits: ranges
+                    .into_iter()
+                    .map(|s| {
+                        Left(TextEdit {
+                            range: s,
+                            new_text: new_name.to_owned(),
+                        })
+                    })
+                    .collect(),
             }])),
             change_annotations: None,
         }))
