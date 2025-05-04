@@ -5,7 +5,7 @@
 
 use dbuf_core::ast::elaborated::*;
 
-use crate::core::dbuf_language::get_bultin_types;
+use crate::core::dbuf_language::get_builtin_types;
 
 pub type Str = String;
 
@@ -25,8 +25,8 @@ pub trait ElaboratedHelper {
     fn has_constructor(&self, name: &str) -> bool;
     /// returns if type or constructor with `name` exists.
     fn has_type_or_constructor(&self, name: &str) -> bool;
-    /// returns if `type_name` is buildin type.
-    fn is_buildin_type(&self, type_name: &str) -> bool;
+    /// returns if `type_name` is builtin type.
+    fn is_builtin_type(&self, type_name: &str) -> bool;
     /// returns if `type_name` is message.
     fn is_message(&self, type_name: &str) -> bool;
     /// returns if `name` is dependency of `type_name`.
@@ -71,8 +71,8 @@ impl ElaboratedHelper for ElaboratedAst {
         self.constructors.get(name)
     }
 
-    fn is_buildin_type(&self, type_name: &str) -> bool {
-        get_bultin_types().contains(type_name)
+    fn is_builtin_type(&self, type_name: &str) -> bool {
+        get_builtin_types().contains(type_name)
     }
 
     fn is_message(&self, type_name: &str) -> bool {

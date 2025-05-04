@@ -16,7 +16,7 @@ use crate::core::navigator::Symbol;
 /// * renameable alias.
 pub fn renameable_symbol(symbol: &Symbol) -> bool {
     match symbol {
-        Symbol::Type(t) => !dbuf_language::get_bultin_types().contains(t),
+        Symbol::Type(t) => !dbuf_language::get_builtin_types().contains(t),
         Symbol::Dependency {
             t: _,
             dependency: _,
@@ -40,7 +40,7 @@ pub fn renameable_to_symbol(symbol: &Symbol, new_name: &String, ast: &Elaborated
     if new_name.is_empty() {
         return rename_errors::rename_to_empty_error();
     }
-    if dbuf_language::get_bultin_types().contains(new_name) {
+    if dbuf_language::get_builtin_types().contains(new_name) {
         return rename_errors::rename_to_builtin_type_error();
     }
     if dbuf_language::get_keywords().contains(new_name) {
@@ -49,8 +49,8 @@ pub fn renameable_to_symbol(symbol: &Symbol, new_name: &String, ast: &Elaborated
 
     match symbol {
         Symbol::Type(t) => {
-            if dbuf_language::get_bultin_types().contains(t) {
-                return rename_errors::rename_of_buildin_type_error();
+            if dbuf_language::get_builtin_types().contains(t) {
+                return rename_errors::rename_of_builtin_type_error();
             }
             if !dbuf_language::is_correct_type_name(new_name) {
                 return rename_errors::rename_to_bad_type_error(new_name);

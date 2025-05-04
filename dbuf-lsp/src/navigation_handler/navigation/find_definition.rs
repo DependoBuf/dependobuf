@@ -10,7 +10,7 @@ use crate::core::ast_access::ElaboratedHelper;
 use crate::core::ast_access::LocStringHelper;
 use crate::core::ast_access::LocationHelpers;
 use crate::core::ast_access::{Loc, Str};
-use crate::core::dbuf_language::get_bultin_types;
+use crate::core::dbuf_language::get_builtin_types;
 
 use crate::core::navigator::Navigator;
 use crate::core::navigator::Symbol;
@@ -18,7 +18,7 @@ use crate::core::navigator::Symbol;
 pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Range> {
     match symbol {
         Symbol::Type(t) => {
-            if get_bultin_types().contains(t) {
+            if get_builtin_types().contains(t) {
                 return None;
             }
             navigator

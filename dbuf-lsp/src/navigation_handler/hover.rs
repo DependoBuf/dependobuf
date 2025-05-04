@@ -3,7 +3,7 @@
 use tower_lsp::lsp_types::{LanguageString, MarkedString};
 
 use crate::core::ast_access::{ElaboratedHelper, File};
-use crate::core::dbuf_language::get_bultin_types;
+use crate::core::dbuf_language::get_builtin_types;
 use crate::core::navigator::Symbol;
 use crate::core::pretty_printer::PrettyPrinter;
 
@@ -70,7 +70,7 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
 }
 
 fn get_explicit_type(type_name: String, file: &File) -> LanguageString {
-    if get_bultin_types().contains(&type_name) {
+    if get_builtin_types().contains(&type_name) {
         LanguageString {
             language: "dbuf".to_owned(),
             value: type_name,

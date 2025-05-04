@@ -35,8 +35,8 @@ pub fn rename_to_keyword_error<T>() -> Result<T> {
     Err(bad_rename_error("rename to keyword is forbidden", 2))
 }
 
-pub fn rename_of_buildin_type_error<T>() -> Result<T> {
-    Err(bad_rename_error("buildin type can't be renamed", 3))
+pub fn rename_of_builtin_type_error<T>() -> Result<T> {
+    Err(bad_rename_error("builtin type can't be renamed", 3))
 }
 
 pub fn rename_to_old_error<T>() -> Result<T> {

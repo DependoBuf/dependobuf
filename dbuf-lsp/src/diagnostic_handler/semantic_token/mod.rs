@@ -176,7 +176,7 @@ impl SemanticTokenProvider<'_> {
     }
 
     fn get_type_token(&self, type_name: &Str) -> Token {
-        if self.elaborated.is_buildin_type(type_name.as_ref()) {
+        if self.elaborated.is_builtin_type(type_name.as_ref()) {
             Token::Type
         } else if self.elaborated.is_message(type_name.as_ref()) {
             Token::Message

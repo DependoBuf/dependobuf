@@ -3,12 +3,12 @@
 
 use std::{collections::HashSet, sync::OnceLock};
 
-static BUILDIN_TYPES: OnceLock<HashSet<String>> = OnceLock::new();
+static BUILTIN_TYPES: OnceLock<HashSet<String>> = OnceLock::new();
 static KEYWORDS: OnceLock<HashSet<String>> = OnceLock::new();
 
-/// Returns buildint types set.
-pub fn get_bultin_types() -> &'static HashSet<String> {
-    BUILDIN_TYPES.get_or_init(|| {
+/// Returns builtint types set.
+pub fn get_builtin_types() -> &'static HashSet<String> {
+    BUILTIN_TYPES.get_or_init(|| {
         let mut m = HashSet::new();
         let types = ["Int", "String", "Bool", "Unsigned", "Float"];
         types.iter().for_each(|&s| {
