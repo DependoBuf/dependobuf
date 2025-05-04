@@ -1,144 +1,342 @@
 use tower_lsp::lsp_types::*;
 
 use crate::core::ast_access::{
-    ElaboratedAst, ElaboratedHelper, File, Loc, LocStringHelper, LocationHelpers, ParsedAst, Str,
+    ElaboratedAst, ElaboratedHelper, File, Loc, LocStringHelper, LocationHelpers, Str,
 };
 use crate::core::ast_visitor::*;
 
-pub struct DocumentSymbolProvider<'a> {
-    parsed: &'a ParsedAst,
-    elaborated: &'a ElaboratedAst,
-
-    result: Vec<DocumentSymbol>,
-    last_enum: bool,
+pub fn provide_document_symbols(file: &File) -> Vec<DocumentSymbol> {
+    let mut visitor = SymbolVisitor::new(file);
+    visit_ast(file.get_parsed(), &mut visitor, file.get_elaborated());
+    visitor.collect()
 }
 
 #[allow(
     deprecated,
-    reason = "Field `deprecated` is deprecated, but need to init"
+    reason = "Field `deprecated` of structure DocumentSymbol is deprecated, but need to init it with None"
 )]
-impl DocumentSymbolProvider<'_> {
-    pub fn new(file: &File) -> DocumentSymbolProvider<'_> {
-        DocumentSymbolProvider {
-            parsed: file.get_parsed(),
-            elaborated: file.get_elaborated(),
-            result: Vec::new(),
-            last_enum: false,
-        }
-    }
-
-    pub fn provide(&mut self) -> DocumentSymbolResponse {
-        visit_ast(self.parsed, self, self.elaborated);
-
-        std::mem::take(&mut self.result).into()
-    }
-
-    fn push_type_symbol(&mut self, type_name: &Str, loc: &Loc) {
-        let kind = if self.elaborated.is_message(type_name.as_ref()) {
-            self.last_enum = false;
-            SymbolKind::STRUCT
-        } else {
-            self.last_enum = true;
-            SymbolKind::ENUM
-        };
-
-        let s = DocumentSymbol {
-            name: type_name.to_string(),
-            detail: None,
-            kind,
-            tags: None,
-            deprecated: None,
-            range: loc.to_lsp(),
-            selection_range: type_name.get_location().to_lsp(),
-            children: Some(Vec::new()),
-        };
-        self.result.push(s);
-    }
-
-    fn push_dependency(&mut self, dep_name: &Str, loc: &Loc) {
-        let s = DocumentSymbol {
-            name: dep_name.to_string(),
-            detail: None,
-            kind: SymbolKind::VARIABLE,
-            tags: None,
-            deprecated: None,
-            range: loc.to_lsp(),
-            selection_range: dep_name.get_location().to_lsp(),
-            children: None,
-        };
-
-        self.result
-            .last_mut()
-            .unwrap()
-            .children
-            .as_mut()
-            .unwrap()
-            .push(s);
-    }
-
-    fn push_field(&mut self, field_name: &Str, loc: &Loc) {
-        let s = DocumentSymbol {
-            name: field_name.to_string(),
-            detail: None,
-            kind: SymbolKind::FIELD,
-            tags: None,
-            deprecated: None,
-            range: loc.to_lsp(),
-            selection_range: field_name.get_location().to_lsp(),
-            children: None,
-        };
-
-        if !self.last_enum {
-            self.result
-                .last_mut()
-                .unwrap()
-                .children
-                .as_mut()
-                .unwrap()
-                .push(s);
-        } else {
-            self.result
-                .last_mut()
-                .unwrap()
-                .children
-                .as_mut()
-                .unwrap()
-                .last_mut()
-                .unwrap()
-                .children
-                .as_mut()
-                .unwrap()
-                .push(s);
-        }
-    }
-
-    fn push_constructor(&mut self, cons_name: &Str, loc: &Loc) {
-        if !self.last_enum {
-            return;
-        }
-
-        let s = DocumentSymbol {
-            name: cons_name.to_string(),
-            detail: None,
-            kind: SymbolKind::CONSTRUCTOR,
-            tags: None,
-            deprecated: None,
-            range: loc.to_lsp(),
-            selection_range: cons_name.get_location().to_lsp(),
-            children: Some(Vec::new()),
-        };
-
-        self.result
-            .last_mut()
-            .unwrap()
-            .children
-            .as_mut()
-            .unwrap()
-            .push(s);
+fn get_symbol(
+    name: String,
+    kind: SymbolKind,
+    range: Range,
+    selection_range: Range,
+    children: Option<Vec<DocumentSymbol>>,
+) -> DocumentSymbol {
+    DocumentSymbol {
+        name,
+        detail: None,
+        kind,
+        tags: None,
+        deprecated: None,
+        range,
+        selection_range,
+        children,
     }
 }
 
-impl<'a> Visitor<'a> for DocumentSymbolProvider<'a> {
+trait BuilderState {}
+
+struct Empty {}
+struct Message {
+    type_symbol: DocumentSymbol,
+}
+struct Enum {
+    type_symbol: DocumentSymbol,
+}
+struct Constructor {
+    type_symbol: DocumentSymbol,
+    constructor_symbol: DocumentSymbol,
+}
+
+impl BuilderState for Empty {}
+impl BuilderState for Message {}
+impl BuilderState for Enum {}
+impl BuilderState for Constructor {}
+
+struct Builder<S: BuilderState> {
+    response: Vec<DocumentSymbol>,
+    extra: S,
+}
+
+impl Builder<Empty> {
+    fn push_message(self, type_name: &Str, loc: &Loc) -> Builder<Message> {
+        let s = get_symbol(
+            type_name.to_string(),
+            SymbolKind::STRUCT,
+            loc.to_lsp(),
+            type_name.get_location().to_lsp(),
+            Some(Vec::new()),
+        );
+        Builder {
+            response: self.response,
+            extra: Message { type_symbol: s },
+        }
+    }
+    fn push_enum(self, type_name: &Str, loc: &Loc) -> Builder<Enum> {
+        let s = get_symbol(
+            type_name.to_string(),
+            SymbolKind::ENUM,
+            loc.to_lsp(),
+            type_name.get_location().to_lsp(),
+            Some(Vec::new()),
+        );
+        Builder {
+            response: self.response,
+            extra: Enum { type_symbol: s },
+        }
+    }
+    fn collect(self) -> Vec<DocumentSymbol> {
+        self.response
+    }
+}
+impl Builder<Message> {
+    fn push_dependency(mut self, dep_name: &Str, loc: &Loc) -> Builder<Message> {
+        let s = get_symbol(
+            dep_name.to_string(),
+            SymbolKind::VARIABLE,
+            loc.to_lsp(),
+            dep_name.get_location().to_lsp(),
+            None,
+        );
+        self.extra
+            .type_symbol
+            .children
+            .as_mut()
+            .expect("message symbol have children")
+            .push(s);
+        self
+    }
+
+    fn push_field(mut self, field_name: &Str, loc: &Loc) -> Builder<Message> {
+        let s = get_symbol(
+            field_name.to_string(),
+            SymbolKind::FIELD,
+            loc.to_lsp(),
+            field_name.get_location().to_lsp(),
+            None,
+        );
+        self.extra
+            .type_symbol
+            .children
+            .as_mut()
+            .expect("message symbol have children")
+            .push(s);
+        self
+    }
+
+    fn stop(mut self) -> Builder<Empty> {
+        self.response.push(self.extra.type_symbol);
+        Builder {
+            response: self.response,
+            extra: Empty {},
+        }
+    }
+}
+
+impl Builder<Enum> {
+    fn push_dependency(mut self, dep_name: &Str, loc: &Loc) -> Builder<Enum> {
+        let s = get_symbol(
+            dep_name.to_string(),
+            SymbolKind::VARIABLE,
+            loc.to_lsp(),
+            dep_name.get_location().to_lsp(),
+            None,
+        );
+        self.extra
+            .type_symbol
+            .children
+            .as_mut()
+            .expect("enum symbol have children")
+            .push(s);
+        self
+    }
+
+    fn push_constructor(self, cons_name: &Str, loc: &Loc) -> Builder<Constructor> {
+        let s = get_symbol(
+            cons_name.to_string(),
+            SymbolKind::CONSTRUCTOR,
+            loc.to_lsp(),
+            cons_name.get_location().to_lsp(),
+            Some(Vec::new()),
+        );
+        Builder {
+            response: self.response,
+            extra: Constructor {
+                type_symbol: self.extra.type_symbol,
+                constructor_symbol: s,
+            },
+        }
+    }
+
+    fn stop(mut self) -> Builder<Empty> {
+        self.response.push(self.extra.type_symbol);
+        Builder {
+            response: self.response,
+            extra: Empty {},
+        }
+    }
+}
+
+impl Builder<Constructor> {
+    fn push_field(mut self, field_name: &Str, loc: &Loc) -> Builder<Constructor> {
+        let s = get_symbol(
+            field_name.to_string(),
+            SymbolKind::FIELD,
+            loc.to_lsp(),
+            field_name.get_location().to_lsp(),
+            None,
+        );
+        self.extra
+            .constructor_symbol
+            .children
+            .as_mut()
+            .expect("constructor symbol have children")
+            .push(s);
+        self
+    }
+
+    fn stop(mut self) -> Builder<Enum> {
+        self.extra
+            .type_symbol
+            .children
+            .as_mut()
+            .expect("enum symbol have children")
+            .push(self.extra.constructor_symbol);
+        Builder {
+            response: self.response,
+            extra: Enum {
+                type_symbol: self.extra.type_symbol,
+            },
+        }
+    }
+}
+enum SymbolBuilder {
+    EmptyBuilder(Builder<Empty>),
+    MessageBuilder(Builder<Message>),
+    EnumBuilder(Builder<Enum>),
+    ConstructorBuilder(Builder<Constructor>),
+    Invalid,
+}
+
+impl From<Builder<Empty>> for SymbolBuilder {
+    fn from(value: Builder<Empty>) -> Self {
+        SymbolBuilder::EmptyBuilder(value)
+    }
+}
+
+impl From<Builder<Message>> for SymbolBuilder {
+    fn from(value: Builder<Message>)-> Self {
+        SymbolBuilder::MessageBuilder(value)
+    }
+}
+
+impl From<Builder<Enum>> for SymbolBuilder {
+    fn from(value: Builder<Enum>) -> Self {
+        SymbolBuilder::EnumBuilder(value)
+    }
+}
+
+impl From<Builder<Constructor>> for SymbolBuilder {
+    fn from(value: Builder<Constructor>) -> Self {
+        SymbolBuilder::ConstructorBuilder(value)
+    }
+}
+
+impl SymbolBuilder {
+    fn new() -> SymbolBuilder {
+        Builder {
+            response: Vec::new(),
+            extra: Empty {},
+        }
+        .into()
+    }
+}
+
+impl Default for SymbolBuilder {
+    fn default() -> Self {
+        Self::Invalid
+    }
+}
+
+struct SymbolVisitor<'a> {
+    elaborated: &'a ElaboratedAst,
+
+    builder: SymbolBuilder,
+}
+
+impl SymbolVisitor<'_> {
+    fn new(file: &File) -> SymbolVisitor<'_> {
+        SymbolVisitor {
+            elaborated: file.get_elaborated(),
+            builder: SymbolBuilder::new(),
+        }
+    }
+    fn collect(self) -> Vec<DocumentSymbol> {
+        let empty_builder = match self.builder {
+            SymbolBuilder::EmptyBuilder(builder) => builder,
+            SymbolBuilder::MessageBuilder(builder) => builder.stop(),
+            SymbolBuilder::EnumBuilder(builder) => builder.stop(),
+            SymbolBuilder::ConstructorBuilder(builder) => builder.stop().stop(),
+            SymbolBuilder::Invalid => panic!("invalid state of Symbol builder"),
+        };
+
+        empty_builder.collect()
+    }
+
+    fn push_type_symbol(&mut self, type_name: &Str, loc: &Loc) {
+        let builder = std::mem::take(&mut self.builder);
+
+        let empty_builder = match builder {
+            SymbolBuilder::EmptyBuilder(builder) => builder,
+            SymbolBuilder::MessageBuilder(builder) => builder.stop(),
+            SymbolBuilder::EnumBuilder(builder) => builder.stop(),
+            SymbolBuilder::ConstructorBuilder(builder) => builder.stop().stop(),
+            SymbolBuilder::Invalid => panic!("invalid state of Symbol builder"),
+        };
+
+        if self.elaborated.is_message(type_name.as_ref()) {
+            self.builder = empty_builder.push_message(type_name, loc).into();
+        } else {
+            self.builder = empty_builder.push_enum(type_name, loc).into();
+        }
+    }
+
+    fn push_dependency(&mut self, dep_name: &Str, loc: &Loc) {
+        let builder = std::mem::take(&mut self.builder);
+
+        self.builder = match builder {
+            SymbolBuilder::MessageBuilder(builder) => builder.push_dependency(dep_name, loc).into(),
+            SymbolBuilder::EnumBuilder(builder) => builder.push_dependency(dep_name, loc).into(),
+            _ => panic!("bad builder state"),
+        };
+    }
+
+    fn push_field(&mut self, field_name: &Str, loc: &Loc) {
+        let builder = std::mem::take(&mut self.builder);
+
+        self.builder = match builder {
+            SymbolBuilder::MessageBuilder(builder) => builder.push_field(field_name, loc).into(),
+            SymbolBuilder::ConstructorBuilder(builder) => {
+                builder.push_field(field_name, loc).into()
+            }
+            _ => panic!("bad builder state"),
+        };
+    }
+
+    fn push_constructor(&mut self, cons_name: &Str, loc: &Loc) {
+        let builder = std::mem::take(&mut self.builder);
+
+        let enum_builder = match builder {
+            SymbolBuilder::EnumBuilder(builder) => builder,
+            SymbolBuilder::ConstructorBuilder(builder) => builder.stop(),
+            _ => panic!("bad builder state"),
+        };
+
+        self.builder = enum_builder.push_constructor(cons_name, loc).into()
+    }
+}
+
+impl<'a> Visitor<'a> for SymbolVisitor<'a> {
     fn visit(&mut self, visit: Visit<'a>) -> VisitResult {
         match &visit {
             Visit::Keyword(_, _) => {}
@@ -151,7 +349,11 @@ impl<'a> Visitor<'a> for DocumentSymbolProvider<'a> {
             Visit::PatternCallStop => {}
             Visit::PatternLiteral(_, _) => {}
             Visit::PatternUnderscore(_) => {}
-            Visit::Constructor(c) => self.push_constructor(c.name, c.loc),
+            Visit::Constructor(c) => {
+                if !c.of_message {
+                    self.push_constructor(c.name, c.loc)
+                }
+            },
             Visit::Filed(field_name, location) => self.push_field(field_name, location),
             Visit::TypeExpression(_, _) => return VisitResult::Skip,
             Visit::Expression(_) => return VisitResult::Skip,

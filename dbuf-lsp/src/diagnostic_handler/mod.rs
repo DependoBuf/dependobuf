@@ -30,7 +30,7 @@ mod semantic_token;
 
 use code_lens::CodeLensProvider;
 
-use document_symbol::DocumentSymbolProvider;
+use document_symbol::provide_document_symbols;
 use semantic_token::SemanticTokenProvider;
 
 use tower_lsp::jsonrpc::Result;
@@ -52,10 +52,8 @@ impl DiagnosticHandler {
         document: &Url,
     ) -> Result<Option<DocumentSymbolResponse>> {
         let file = access.read(document);
-        let mut provider = DocumentSymbolProvider::new(&file);
-        let symbols = provider.provide();
-
-        Ok(Some(symbols))
+        let symbols = provide_document_symbols(&file);
+        Ok(Some(DocumentSymbolResponse::Nested(symbols)))
     }
 
     /// `textDocument/semanticTokens/full` implementation.

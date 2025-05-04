@@ -30,6 +30,8 @@ use super::ast_access::Position;
 /// Constructor characteristic. Do not confuse with constructor calls.
 ///
 /// 'a is lifetime of parsed ast reference.
+#[derive(Debug)]
+
 pub struct Constructor<'a> {
     /// Name of constructor
     pub name: &'a Str,
@@ -42,6 +44,7 @@ pub struct Constructor<'a> {
 /// Contains parsed ast tokens.
 ///
 /// 'a is lifetime of parsed ast reference.
+#[derive(Debug)]
 pub enum Visit<'a> {
     /// Keyword. Currently one of:
     /// * `message`,
