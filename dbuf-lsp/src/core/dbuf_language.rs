@@ -18,19 +18,56 @@ pub fn get_keywords() -> &'static HashSet<String> {
     KEYWORDS.get_or_init(|| HashSet::from(["message", "enum"].map(|t| t.to_string())))
 }
 
-/// Checks if `type_name` is correct name for Type or Constructor.
-pub fn is_correct_type_name(type_name: &str) -> bool {
-    let mut iterator = type_name.chars();
-    iterator.next().map(char::is_uppercase).unwrap_or(false) && iterator.all(char::is_alphanumeric)
+/// Type, that contains correct `type name`.
+#[derive(Clone, Copy)]
+pub struct TypeName<'a> {
+    name: &'a str,
 }
 
-/// Checks if `field_name` is correct name for field.
-pub fn is_correct_field_name(field_name: &str) -> bool {
-    let mut iterator = field_name.chars();
-    iterator.next().map(char::is_lowercase).unwrap_or(false) && iterator.all(char::is_alphanumeric)
+impl TypeName<'_> {
+    pub fn get(&self) -> &str {
+        self.name
+    }
 }
 
-/// Checks if `dependency_name` is correct name for dependency.
-pub fn is_correct_dependency_name(dependency_name: &str) -> bool {
-    is_correct_field_name(dependency_name)
+impl<'a> TryFrom<&'a str> for TypeName<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        let mut iterator = value.chars();
+        if iterator.next().map(char::is_uppercase).unwrap_or(false)
+            && iterator.all(char::is_alphanumeric)
+        {
+            Ok(TypeName { name: value })
+        } else {
+            Err(())
+        }
+    }
+}
+
+/// Type, that contains correct `field name`.
+#[derive(Clone, Copy)]
+pub struct FieldName<'a> {
+    field: &'a str,
+}
+
+impl FieldName<'_> {
+    pub fn get(&self) -> &str {
+        self.field
+    }
+}
+
+impl<'a> TryFrom<&'a str> for FieldName<'a> {
+    type Error = ();
+
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        let mut iterator = value.chars();
+        if iterator.next().map(char::is_lowercase).unwrap_or(false)
+            && iterator.all(char::is_alphanumeric)
+        {
+            Ok(FieldName { field: value })
+        } else {
+            Err(())
+        }
+    }
 }

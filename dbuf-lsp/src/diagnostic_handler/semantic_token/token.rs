@@ -7,7 +7,7 @@ use tower_lsp::lsp_types::*;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
-#[derive(Debug, EnumIter, PartialEq, Eq)]
+#[derive(Debug, EnumIter, PartialEq, Eq, Clone, Copy)]
 pub enum Token {
     Type,
     Message,
@@ -25,8 +25,8 @@ impl Token {
     pub fn to_index(self) -> u32 {
         Token::iter().position(|t| t == self).unwrap() as u32
     }
-    pub fn to_lsp(&self) -> SemanticTokenType {
-        match &self {
+    pub fn to_lsp(self) -> SemanticTokenType {
+        match self {
             Token::Type => SemanticTokenType::TYPE,
             Token::Message => SemanticTokenType::STRUCT,
             Token::Enum => SemanticTokenType::ENUM,
