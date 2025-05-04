@@ -76,6 +76,7 @@ fn parse_uint(s: &str) -> Option<u64> {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[allow(dead_code)]
 pub struct Span {
     start: usize,
     end: usize,
