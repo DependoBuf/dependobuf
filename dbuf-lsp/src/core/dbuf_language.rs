@@ -9,49 +9,25 @@ static KEYWORDS: OnceLock<HashSet<String>> = OnceLock::new();
 /// Returns builtint types set.
 pub fn get_builtin_types() -> &'static HashSet<String> {
     BUILTIN_TYPES.get_or_init(|| {
-        let mut m = HashSet::new();
-        let types = ["Int", "String", "Bool", "Unsigned", "Float"];
-        types.iter().for_each(|&s| {
-            m.insert(s.to_string());
-        });
-        m
+        HashSet::from(["Int", "String", "Bool", "Unsigned", "Float"].map(|t| t.to_string()))
     })
 }
 
 /// Returns dbuf keywords set.
 pub fn get_keywords() -> &'static HashSet<String> {
-    KEYWORDS.get_or_init(|| {
-        let mut m = HashSet::new();
-        let types = ["message", "enum"];
-        types.iter().for_each(|&s| {
-            m.insert(s.to_string());
-        });
-        m
-    })
+    KEYWORDS.get_or_init(|| HashSet::from(["message", "enum"].map(|t| t.to_string())))
 }
 
 /// Checks if `type_name` is correct name for Type or Constructor.
 pub fn is_correct_type_name(type_name: &str) -> bool {
     let mut iterator = type_name.chars();
-    if iterator.next().map(|c| !c.is_uppercase()).unwrap_or(true) {
-        return false;
-    }
-    if !iterator.all(|c| c.is_alphanumeric()) {
-        return false;
-    }
-    true
+    iterator.next().map(char::is_uppercase).unwrap_or(false) && iterator.all(char::is_alphanumeric)
 }
 
 /// Checks if `field_name` is correct name for field.
 pub fn is_correct_field_name(field_name: &str) -> bool {
     let mut iterator = field_name.chars();
-    if iterator.next().map(|c| !c.is_lowercase()).unwrap_or(true) {
-        return false;
-    }
-    if !iterator.all(|c| c.is_alphanumeric()) {
-        return false;
-    }
-    true
+    iterator.next().map(char::is_lowercase).unwrap_or(false) && iterator.all(char::is_alphanumeric)
 }
 
 /// Checks if `dependency_name` is correct name for dependency.

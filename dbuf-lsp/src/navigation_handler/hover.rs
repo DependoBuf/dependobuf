@@ -10,21 +10,16 @@ use crate::core::pretty_printer::PrettyPrinter;
 pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
     let elaborated = file.get_elaborated();
 
-    let mut strings = Vec::new();
     match symbol {
-        Symbol::Type(t) => {
-            strings.push(MarkedString::LanguageString(get_explicit_type(t, file)));
-        }
-        Symbol::Dependency { t, dependency } => {
-            strings.push(MarkedString::LanguageString(get_type_header(&t, file)));
-            strings.push(MarkedString::LanguageString(get_dependency_declaration(
-                &t,
-                &dependency,
-                file,
-            )));
-            strings.push(MarkedString::String(format!("dependency of {}", t)));
-        }
+        Symbol::Type(t) => vec![MarkedString::LanguageString(get_explicit_type(t, file))],
+        Symbol::Dependency { t, dependency } => vec![
+            MarkedString::LanguageString(get_type_header(&t, file)),
+            MarkedString::LanguageString(get_dependency_declaration(&t, &dependency, file)),
+            MarkedString::String(format!("dependency of {}", t)),
+        ],
         Symbol::Field { constructor, field } => {
+            let mut strings = Vec::with_capacity(4);
+
             let t = elaborated
                 .get_constructor_type(&constructor)
                 .expect("valid ast");
@@ -42,31 +37,26 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
                 file,
             )));
             strings.push(MarkedString::String(format!("field of {}", constructor)));
+            strings
         }
-        Symbol::Alias { t, branch_id, name } => {
-            strings.push(MarkedString::LanguageString(get_type_header(&t, file)));
-            strings.push(MarkedString::LanguageString(get_explicit_branch(
-                &t, branch_id, file,
-            )));
-            strings.push(MarkedString::String(format!("alias of {}", name)));
-        }
+        Symbol::Alias { t, branch_id, name } => vec![
+            MarkedString::LanguageString(get_type_header(&t, file)),
+            MarkedString::LanguageString(get_explicit_branch(&t, branch_id, file)),
+            MarkedString::String(format!("alias {}", name)),
+        ],
         Symbol::Constructor(constructor) => {
             let t = elaborated
                 .get_constructor_type(&constructor)
                 .expect("valid ast");
 
-            strings.push(MarkedString::LanguageString(get_type_header(t, file)));
-            strings.push(MarkedString::LanguageString(get_explicit_constructor(
-                t,
-                &constructor,
-                file,
-            )));
-            strings.push(MarkedString::String(format!("constructor of {}", t)));
+            vec![
+                MarkedString::LanguageString(get_type_header(t, file)),
+                MarkedString::LanguageString(get_explicit_constructor(t, &constructor, file)),
+                MarkedString::String(format!("constructor of {}", t)),
+            ]
         }
-        Symbol::None => {}
-    };
-
-    strings
+        Symbol::None => Vec::new(),
+    }
 }
 
 fn get_explicit_type(type_name: String, file: &File) -> LanguageString {

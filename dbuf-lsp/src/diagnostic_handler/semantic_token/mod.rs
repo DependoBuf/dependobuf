@@ -18,12 +18,34 @@ use tower_lsp::lsp_types::SemanticTokens;
 
 use crate::core::ast_access::LocationHelpers;
 use crate::core::ast_access::PositionHelpers;
-use crate::core::ast_access::{
-    ElaboratedAst, ElaboratedHelper, File, Loc, LocStringHelper, ParsedAst, Str,
-};
+use crate::core::ast_access::{ElaboratedAst, ElaboratedHelper, File, Loc, LocStringHelper, Str};
 
 use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
 use crate::core::ast_visitor::*;
+
+pub struct SemanticTokenProvider {}
+
+impl SemanticTokenProvider {
+    /// Returns all semantic tokens of file
+    pub fn provide_semantic_tokens(file: &File) -> SemanticTokens {
+        let mut visitor = SemanticTokenVisitor::new(file);
+        visit_ast(file.get_parsed(), &mut visitor, file.get_elaborated());
+
+        SemanticTokens {
+            result_id: None,
+            data: visitor.result,
+        }
+    }
+
+    /// Returns all semantic tokens types in correct order.
+    pub fn get_token_types() -> Vec<SemanticTokenType> {
+        token::get_all_tokens()
+    }
+    /// Returns all semantic token modifiers in correct order.
+    pub fn get_token_modifiers() -> Vec<SemanticTokenModifier> {
+        modifier::get_all_modifiers()
+    }
+}
 
 struct TokenBuilder {
     location: Loc,
@@ -69,8 +91,7 @@ impl TokenBuilder {
 }
 
 /// Semantic token provider.
-pub struct SemanticTokenProvider<'a> {
-    parsed: &'a ParsedAst,
+struct SemanticTokenVisitor<'a> {
     elaborated: &'a ElaboratedAst,
 
     last_line: u32,
@@ -80,36 +101,14 @@ pub struct SemanticTokenProvider<'a> {
     scope: ScopeVisitor<'a>,
 }
 
-impl SemanticTokenProvider<'_> {
-    pub fn new(file: &File) -> SemanticTokenProvider {
-        SemanticTokenProvider {
-            parsed: file.get_parsed(),
+impl SemanticTokenVisitor<'_> {
+    fn new(file: &File) -> SemanticTokenVisitor {
+        SemanticTokenVisitor {
             elaborated: file.get_elaborated(),
             last_line: 0,
             last_char: 0,
             result: vec![],
             scope: ScopeVisitor::new(file.get_elaborated()),
-        }
-    }
-    /// Returns all semantic tokens types in correct order.
-    pub fn get_token_types() -> Vec<SemanticTokenType> {
-        token::get_all_tokens()
-    }
-    /// Returns all semantic token modifiers in correct order.
-    pub fn get_token_modifiers() -> Vec<SemanticTokenModifier> {
-        modifier::get_all_modifiers()
-    }
-    /// Returns all semantic tokens of file
-    pub fn provide(&mut self) -> SemanticTokens {
-        self.last_line = 0;
-        self.last_char = 0;
-        self.result = vec![];
-
-        visit_ast(self.parsed, self, self.elaborated);
-
-        SemanticTokens {
-            result_id: None,
-            data: std::mem::take(&mut self.result),
         }
     }
 
@@ -138,9 +137,7 @@ impl SemanticTokenProvider<'_> {
     }
 
     fn push_str(&mut self, text: &str, location: Loc, token: Token) {
-        let mut str = Str::new(text);
-        str.set_location(location);
-
+        let str = Str::new(text, location);
         self.push_string(&str, token, false);
     }
 
@@ -214,7 +211,7 @@ impl SemanticTokenProvider<'_> {
     }
 }
 
-impl<'a> Visitor<'a> for SemanticTokenProvider<'a> {
+impl<'a> Visitor<'a> for SemanticTokenVisitor<'a> {
     fn visit(&mut self, visit: Visit<'a>) -> VisitResult {
         match &visit {
             Visit::Keyword(keyword, location) => self.push_keyword(keyword, location),

@@ -1,33 +1,27 @@
 use tower_lsp::lsp_types::*;
 
-use crate::core::ast_access::{
-    ElaboratedAst, File, Loc, LocStringHelper, LocationHelpers, ParsedAst, Str,
-};
+use crate::core::ast_access::{File, Loc, LocStringHelper, LocationHelpers, Str};
 use crate::core::navigator::Navigator;
 use crate::core::{ast_visitor::*, navigator};
 
-pub struct CodeLensProvider<'a> {
-    file: &'a File,
-    parsed: &'a ParsedAst,
-    elaborated: &'a ElaboratedAst,
+/// Returns all code lens of file.
+pub fn provide_code_lens(file: &File) -> Vec<CodeLens> {
+    let mut visitor = CodeLensVisitor::new(file);
+    visit_ast(file.get_parsed(), &mut visitor, file.get_elaborated());
+    visitor.result
+}
 
+struct CodeLensVisitor<'a> {
+    file: &'a File,
     result: Vec<CodeLens>,
 }
 
-impl CodeLensProvider<'_> {
-    pub fn new(file: &File) -> CodeLensProvider {
-        CodeLensProvider {
+impl CodeLensVisitor<'_> {
+    fn new(file: &File) -> CodeLensVisitor {
+        CodeLensVisitor {
             file,
-            parsed: file.get_parsed(),
-            elaborated: file.get_elaborated(),
             result: Vec::new(),
         }
-    }
-
-    pub fn provide(&mut self) -> Vec<CodeLens> {
-        visit_ast(self.parsed, self, self.elaborated);
-
-        std::mem::take(&mut self.result)
     }
 
     fn calc_reference_count(&self, type_name: &Str) -> u32 {
@@ -56,7 +50,7 @@ impl CodeLensProvider<'_> {
     }
 }
 
-impl<'a> Visitor<'a> for CodeLensProvider<'a> {
+impl<'a> Visitor<'a> for CodeLensVisitor<'a> {
     fn visit(&mut self, visit: Visit<'a>) -> VisitResult {
         match &visit {
             Visit::Type(type_name, loc) => {

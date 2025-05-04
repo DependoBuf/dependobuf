@@ -50,7 +50,7 @@ impl ActionHandler {
             return format_errors::bad_insert_spaces();
         }
         if !options.properties.is_empty() {
-            return format_errors::bad_propertis();
+            return format_errors::bad_properties();
         }
         if options.trim_trailing_whitespace.is_some() {
             return format_errors::bad_trim_trailing_whitespace();
@@ -88,16 +88,11 @@ impl ActionHandler {
         pos: Position,
         document: &Url,
     ) -> Result<Option<PrepareRenameResponse>> {
-        let symbol;
-        let doc_version;
-        {
-            let file = access.read(document);
-            doc_version = file.get_version();
+        let file = access.read(document);
+        let doc_version = file.get_version();
 
-            let navigator = Navigator::new(&file);
-
-            symbol = navigator.get_symbol(pos);
-        }
+        let navigator = Navigator::new(&file);
+        let symbol = navigator.get_symbol(pos);
 
         if rename::renameable_symbol(&symbol) {
             self.rename_cache

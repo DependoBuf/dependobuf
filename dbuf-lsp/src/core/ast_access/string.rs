@@ -9,6 +9,7 @@ use std::fmt;
 use super::location::*;
 
 /// String, containing location.
+/// TODO: migrate to type in dbuf-core.
 #[derive(Debug, Clone)]
 pub struct LocString {
     string: String,
@@ -16,31 +17,35 @@ pub struct LocString {
 }
 
 /// Trait for types, that can be converted to LocString.
+/// TODO: remove such API.
 pub trait ConvertibleToString {
     fn to_loc_string(&self) -> LocString;
 }
 
 /// Helpers for dbuf-core::LocString (in future).
 pub trait LocStringHelper {
-    /// Constructs LocString with empty locations by &str.
-    fn new(string: &str) -> Self;
+    /// Constructs LocString.
+    fn new(string: &str, location: Location) -> Self;
     /// Returns string's len.
     fn len(&self) -> usize;
     /// Returns string's location.
     fn get_location(&self) -> Location;
-    /// Sets location.
-    fn set_location(&mut self, location: Location);
+    /// Constructs LocString with empty location.
+    /// TODO: remove such API.
+    fn unsafe_new(string: &str) -> Self;
     /// Sets begin of string's location.
+    /// TODO: remove such API.
     fn set_location_start(&mut self, start: Position);
     /// Sets end of string's location.
+    /// TODO: remove such API.
     fn set_location_end(&mut self, end: Position);
 }
 
 impl LocStringHelper for LocString {
-    fn new(string: &str) -> LocString {
+    fn new(string: &str, location: Location) -> LocString {
         LocString {
             string: string.to_string(),
-            location: Location::new_empty(),
+            location,
         }
     }
     fn len(&self) -> usize {
@@ -49,11 +54,14 @@ impl LocStringHelper for LocString {
     fn get_location(&self) -> Location {
         self.location
     }
-    fn set_location(&mut self, location: Location) {
-        self.location = location;
+    fn unsafe_new(string: &str) -> LocString {
+        LocString {
+            string: string.to_string(),
+            location: Location::new_empty(),
+        }
     }
     fn set_location_start(&mut self, start: Position) {
-        self.location.set_start(start);
+        self.location.reset_start(start);
     }
     fn set_location_end(&mut self, end: Position) {
         self.location.set_end(end);
@@ -74,6 +82,6 @@ impl fmt::Display for LocString {
 
 impl ConvertibleToString for &str {
     fn to_loc_string(&self) -> LocString {
-        LocString::new(self)
+        LocString::unsafe_new(self)
     }
 }

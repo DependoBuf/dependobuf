@@ -16,7 +16,7 @@ fn var_expr(var: &str) -> Expression<Loc, Str> {
     Expression {
         loc: Loc::default(),
         node: ExpressionNode::Variable {
-            name: Str::new(var),
+            name: Str::unsafe_new(var),
         },
     }
 }
@@ -30,7 +30,7 @@ fn access_expr(acc: &[&str]) -> Expression<Loc, Str> {
         basic_expr = Expression {
             loc: Loc::default(),
             node: ExpressionNode::OpCall(OpCall::Unary(
-                UnaryOp::Access(Str::new(access)),
+                UnaryOp::Access(Str::unsafe_new(access)),
                 Rec::new(basic_expr),
             )),
         };

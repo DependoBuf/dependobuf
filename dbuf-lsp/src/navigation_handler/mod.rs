@@ -62,13 +62,12 @@ impl NavigationHandler {
         let symbol = navigator.get_symbol(pos);
         let range = find_definition(&navigator, &symbol);
 
-        match range {
-            Some(range) => Ok(Some(GotoDefinitionResponse::Scalar(Location {
+        Ok(range.map(|range| {
+            GotoDefinitionResponse::Scalar(Location {
                 uri: document.to_owned(),
                 range,
-            }))),
-            None => Ok(None),
-        }
+            })
+        }))
     }
 
     /// `textDocument/typeDefintion` implementation.
@@ -86,12 +85,13 @@ impl NavigationHandler {
         let t = find_type(&navigator, symbol);
 
         let range = find_definition(&navigator, &t);
-        range.map_or(Ok(None), |range| {
-            Ok(Some(GotoTypeDefinitionResponse::Scalar(Location {
+
+        Ok(range.map(|range| {
+            GotoTypeDefinitionResponse::Scalar(Location {
                 uri: document.to_owned(),
                 range,
-            })))
-        })
+            })
+        }))
     }
 
     /// `textDocument/hover` implementation.

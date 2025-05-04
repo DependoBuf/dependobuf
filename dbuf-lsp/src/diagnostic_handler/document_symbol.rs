@@ -5,6 +5,7 @@ use crate::core::ast_access::{
 };
 use crate::core::ast_visitor::*;
 
+/// Returns all document symbols of file.
 pub fn provide_document_symbols(file: &File) -> Vec<DocumentSymbol> {
     let mut visitor = SymbolVisitor::new(file);
     visit_ast(file.get_parsed(), &mut visitor, file.get_elaborated());
@@ -225,7 +226,7 @@ impl From<Builder<Empty>> for SymbolBuilder {
 }
 
 impl From<Builder<Message>> for SymbolBuilder {
-    fn from(value: Builder<Message>)-> Self {
+    fn from(value: Builder<Message>) -> Self {
         SymbolBuilder::MessageBuilder(value)
     }
 }
@@ -353,7 +354,7 @@ impl<'a> Visitor<'a> for SymbolVisitor<'a> {
                 if !c.of_message {
                     self.push_constructor(c.name, c.loc)
                 }
-            },
+            }
             Visit::Filed(field_name, location) => self.push_field(field_name, location),
             Visit::TypeExpression(_, _) => return VisitResult::Skip,
             Visit::Expression(_) => return VisitResult::Skip,

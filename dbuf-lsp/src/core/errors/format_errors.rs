@@ -18,7 +18,7 @@ pub fn bad_insert_spaces<T>() -> Result<T> {
     Err(bad_param_error("property 'insert_spaces' not true", 0))
 }
 
-pub fn bad_propertis<T>() -> Result<T> {
+pub fn bad_properties<T>() -> Result<T> {
     Err(bad_param_error("property 'properties' not empty", 1))
 }
 

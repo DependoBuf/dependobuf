@@ -137,11 +137,9 @@ fn constructor_field_valid_rename(
 
 /// Check if constructor have field or implicit variable field.
 fn constructor_has_field<T: AsRef<str>>(ctr: &Constructor<T>, field: &str) -> bool {
-    if ctr.implicits.iter().any(|i| i.0.as_ref() == field) {
-        return true;
-    }
-    if ctr.fields.iter().any(|f| f.0.as_ref() == field) {
-        return true;
-    }
-    false
+    ctr.implicits
+        .iter()
+        .map(|i| &i.0)
+        .chain(ctr.fields.iter().map(|i| &i.0))
+        .any(|f| f.as_ref() == field)
 }

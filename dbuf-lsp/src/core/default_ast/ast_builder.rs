@@ -1,6 +1,5 @@
 //! Provide API for building parsed AST with locations.
 //!
-//! Currently allows only one module
 //!
 
 #![allow(dead_code, reason = "simple example")]

@@ -73,11 +73,7 @@ impl SkipMask {
         }
     }
     fn need_skip(&self, step: u32) -> bool {
-        if step < self.size {
-            (self.mask & (1 << step)) != 0
-        } else {
-            false
-        }
+        step < self.size && (self.mask & (1 << step)) != 0
     }
 }
 

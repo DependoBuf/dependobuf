@@ -64,16 +64,14 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
                 .map(|d| &d.data.body);
 
             match body {
-                Some(TypeDefinition::Message(m)) => {
-                    return m
-                        .iter()
-                        .find(|f| f.name.as_ref() == field)
-                        .map(|f| f.name.get_location().to_lsp())
-                        .unwrap_or_else(|| {
-                            panic!("field not found\n{:#?}", symbol);
-                        })
-                        .into()
-                }
+                Some(TypeDefinition::Message(m)) => m
+                    .iter()
+                    .find(|f| f.name.as_ref() == field)
+                    .map(|f| f.name.get_location().to_lsp())
+                    .unwrap_or_else(|| {
+                        panic!("field not found\n{:#?}", symbol);
+                    })
+                    .into(),
                 Some(TypeDefinition::Enum(branches)) => {
                     for b in branches.iter() {
                         for c in b.constructors.iter() {
@@ -90,10 +88,10 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
                                 .into();
                         }
                     }
+                    panic!("field not found\n{:#?}", symbol)
                 }
-                None => {}
+                None => panic!("field not found\n{:#?}", symbol),
             }
-            panic!("field not found\n{:#?}", symbol);
         }
         Symbol::Alias { t, branch_id, name } => {
             let parsed = navigator.parsed;
@@ -134,20 +132,20 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
 
             match &declaration.body {
                 TypeDefinition::Message(_) => {
-                    panic!("symbol::constructor shouldn't be returned for messages");
+                    panic!("symbol::constructor shouldn't be returned for messages")
                 }
                 TypeDefinition::Enum(branches) => {
-                    for b in branches.iter() {
-                        for c in b.constructors.iter() {
-                            if c.name.as_ref() != constructor {
-                                continue;
-                            }
-                            return c.name.get_location().to_lsp().into();
-                        }
+                    let c = branches
+                        .iter()
+                        .flat_map(|b| b.constructors.iter())
+                        .find(|c| c.name.as_ref() == constructor);
+                    if let Some(c) = c {
+                        c.name.get_location().to_lsp().into()
+                    } else {
+                        panic!("constructor not found\n{:#?}", symbol)
                     }
                 }
             }
-            panic!("constructor not found\n{:#?}", symbol);
         }
         Symbol::None => None,
     }
@@ -155,15 +153,10 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
 
 fn find_alias_in_pattern(p: &Pattern<Loc, Str>, alias: &String) -> Option<Range> {
     match &p.node {
-        PatternNode::ConstructorCall { name: _, fields } => {
-            for f in fields.iter().rev() {
-                let ans = find_alias_in_pattern(&f.data, alias);
-                if ans.is_some() {
-                    return ans;
-                }
-            }
-            None
-        }
+        PatternNode::ConstructorCall { name: _, fields } => fields
+            .iter()
+            .rev()
+            .find_map(|f| find_alias_in_pattern(&f.data, alias)),
         PatternNode::Variable { name } => {
             if name.as_ref() == alias {
                 name.get_location().to_lsp().into()

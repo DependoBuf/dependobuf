@@ -109,7 +109,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         &mut self,
         definition: &mut Definition<Loc, Str, TypeDeclaration<Loc, Str>>,
     ) -> Result {
-        definition.loc.set_start(self.cursor.into());
+        definition.loc.reset_start(self.cursor.into());
 
         match definition.data.body {
             TypeDefinition::Message(_) => {
@@ -163,7 +163,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         &mut self,
         dependency: &mut Definition<Loc, Str, TypeExpression<Loc, Str>>,
     ) -> Result {
-        dependency.loc.set_start(self.cursor.into());
+        dependency.loc.reset_start(self.cursor.into());
 
         self.write("(")?;
         self.write_str(&mut dependency.name)?;
@@ -201,7 +201,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     }
 
     fn parse_pattern(&mut self, pattern: &mut Pattern<Loc, Str>) -> Result {
-        pattern.loc.set_start(self.cursor.into());
+        pattern.loc.reset_start(self.cursor.into());
 
         match &mut pattern.node {
             PatternNode::ConstructorCall { name, fields } => {
@@ -241,7 +241,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         constructor: &mut Definition<Loc, Str, ConstructorBody<Loc, Str>>,
     ) -> Result {
         self.write_tab(8)?;
-        constructor.loc.set_start(self.cursor.into());
+        constructor.loc.reset_start(self.cursor.into());
 
         self.write_str(&mut constructor.name)?;
         self.write(" {")?;
@@ -266,7 +266,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                 self.new_line()?;
             }
             self.write_tab(offset as usize)?;
-            definition.loc.set_start(self.cursor.into());
+            definition.loc.reset_start(self.cursor.into());
             self.write_str(&mut definition.name)?;
             self.write(" ")?;
             self.parse_type_expression(&mut definition.data)?;
@@ -279,7 +279,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     }
 
     fn parse_type_expression(&mut self, type_expression: &mut TypeExpression<Loc, Str>) -> Result {
-        type_expression.loc.set_start(self.cursor.into());
+        type_expression.loc.reset_start(self.cursor.into());
 
         match &mut type_expression.node {
             ExpressionNode::FunCall { fun, args } => {
@@ -309,7 +309,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
     // TODO: change logic: distinguish variable from empty constructor
     fn parse_expression(&mut self, expression: &mut Expression<Loc, Str>) -> Result {
-        expression.loc.set_start(self.cursor.into());
+        expression.loc.reset_start(self.cursor.into());
 
         match &mut expression.node {
             ExpressionNode::ConstructorCall { name, fields } => {

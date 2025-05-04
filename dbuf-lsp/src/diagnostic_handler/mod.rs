@@ -28,8 +28,7 @@ mod code_lens;
 mod document_symbol;
 mod semantic_token;
 
-use code_lens::CodeLensProvider;
-
+use code_lens::provide_code_lens;
 use document_symbol::provide_document_symbols;
 use semantic_token::SemanticTokenProvider;
 
@@ -63,8 +62,7 @@ impl DiagnosticHandler {
         document: &Url,
     ) -> Result<Option<SemanticTokensResult>> {
         let file = access.read(document);
-        let mut provider = SemanticTokenProvider::new(&file);
-        let tokens = provider.provide();
+        let tokens = SemanticTokenProvider::provide_semantic_tokens(&file);
 
         Ok(Some(tokens.into()))
     }
@@ -128,8 +126,7 @@ impl DiagnosticHandler {
         document: &Url,
     ) -> Result<Option<Vec<CodeLens>>> {
         let file = access.read(document);
-        let mut provider = CodeLensProvider::new(&file);
-        let lens = provider.provide();
+        let lens = provide_code_lens(&file);
 
         Ok(Some(lens))
     }

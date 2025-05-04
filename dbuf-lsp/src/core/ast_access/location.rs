@@ -65,8 +65,8 @@ pub trait LocationHelpers {
     fn get_start(&self) -> Position;
     /// Get end of location.
     fn get_end(&self) -> Position;
-    /// Sets start of location.
-    fn set_start(&mut self, start: Position);
+    /// Sets start of location and resets end.
+    fn reset_start(&mut self, start: Position);
     /// Sets end of location.
     fn set_end(&mut self, end: Position);
 }
@@ -87,7 +87,7 @@ impl LocationHelpers for Location {
 
     fn new(start: Position, end: Position) -> Self {
         let mut ans = Self::new_empty();
-        ans.set_start(start);
+        ans.reset_start(start);
         ans.set_end(end);
         ans
     }
@@ -100,22 +100,11 @@ impl LocationHelpers for Location {
     }
 
     fn contains(&self, p: lsp_types::Position) -> bool {
-        let line = p.line as usize;
-        let char = p.character as usize;
-
-        if self.start.lines > line {
-            return false;
-        }
-        if self.start.lines == line && self.start.columns > char {
-            return false;
-        }
-        if self.end().lines < line {
-            return false;
-        }
-        if self.end().lines > line {
-            return true;
-        }
-        char <= self.end().columns
+        let target = Position {
+            lines: p.line as usize,
+            columns: p.character as usize,
+        };
+        self.start <= target && target <= self.end()
     }
 
     fn get_start(&self) -> Position {
@@ -126,12 +115,9 @@ impl LocationHelpers for Location {
         self.end()
     }
 
-    fn set_start(&mut self, start: Position) {
+    fn reset_start(&mut self, start: Position) {
         self.start = start;
-        self.length = Offset {
-            lines: 0,
-            columns: 0,
-        };
+        self.length = Offset::default();
     }
 
     fn set_end(&mut self, end: Position) {

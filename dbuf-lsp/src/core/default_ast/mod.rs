@@ -1,9 +1,11 @@
 //! Provides function, that returns Ast sample.
 //!
+//! TODO: remove such API when parsers are ready.
+//!
 
 mod ast_builder;
 mod ast_fix_locations;
-pub mod mutable_pretty_printer;
+mod mutable_pretty_printer;
 
 mod elaborated_ast_example;
 mod parsed_ast_example;
