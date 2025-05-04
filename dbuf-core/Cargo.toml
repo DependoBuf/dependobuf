@@ -4,3 +4,6 @@ edition = "2021"
 version.workspace = true
 
 [dependencies]
+chumsky.workspace = true
+logos.workspace = true
+unescape.workspace = true
