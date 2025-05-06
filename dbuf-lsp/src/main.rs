@@ -1,38 +1,68 @@
 use tower_lsp::jsonrpc::Result;
+use tower_lsp::lsp_types::request::*;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
-#[allow(unused_imports)]
-#[allow(clippy::single_component_path_imports)]
-use dbuf_core;
+use dbuf_lsp::handler::{Capabilities, Handler};
+use dbuf_lsp::WorkspaceAccess;
 
-#[derive(Debug)]
-#[allow(dead_code)]
+use dbuf_lsp::action_handler::ActionHandler;
+use dbuf_lsp::completion_handler::CompletitionHandler;
+use dbuf_lsp::diagnostic_handler::DiagnosticHandler;
+use dbuf_lsp::navigation_handler::NavigationHandler;
+
 struct Backend {
     client: Client,
+    workspace: WorkspaceAccess,
+    action_handler: ActionHandler,
+    completition_handler: CompletitionHandler,
+    diagnostic_handler: DiagnosticHandler,
+    navigation_handler: NavigationHandler,
+}
 
-    ast: Option<()>,
+impl Backend {
+    fn new(client: Client) -> Self {
+        Self {
+            client,
+            workspace: WorkspaceAccess::new(),
+            action_handler: ActionHandler::new(),
+            completition_handler: CompletitionHandler::new(),
+            diagnostic_handler: DiagnosticHandler::new(),
+            navigation_handler: NavigationHandler::new(),
+        }
+    }
 }
 
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
-    async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
-        eprintln!("init");
+    async fn initialize(&self, init: InitializeParams) -> Result<InitializeResult> {
+        let mut capabilities = ServerCapabilities {
+            text_document_sync: Some(TextDocumentSyncCapability::Options(
+                TextDocumentSyncOptions {
+                    open_close: Some(true),
+                    change: Some(TextDocumentSyncKind::FULL),
+                    will_save: Some(false),
+                    will_save_wait_until: Some(false),
+                    save: Some(TextDocumentSyncSaveOptions::Supported(false)),
+                },
+            )),
+            ..Default::default()
+        };
+
+        self.action_handler.init(&init).apply(&mut capabilities);
+        self.completition_handler
+            .init(&init)
+            .apply(&mut capabilities);
+        self.diagnostic_handler.init(&init).apply(&mut capabilities);
+        self.navigation_handler.init(&init).apply(&mut capabilities);
+
         Ok(InitializeResult {
-            capabilities: ServerCapabilities {
-                hover_provider: Some(HoverProviderCapability::Simple(true)),
-                completion_provider: Some(CompletionOptions::default()),
-                text_document_sync: Some(TextDocumentSyncCapability::Kind(
-                    TextDocumentSyncKind::FULL,
-                )),
-                ..Default::default()
-            },
+            capabilities,
             ..Default::default()
         })
     }
 
     async fn initialized(&self, _: InitializedParams) {
-        eprintln!("inited");
         self.client
             .log_message(MessageType::INFO, "server initialized!")
             .await;
@@ -43,53 +73,143 @@ impl LanguageServer for Backend {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        // eprintln!("did open: {:?}", params);
-        // TODO: read params.text_document.text, containing full document text and build AST
-        let _ = params;
-        eprintln!("WARN: did open is not fully implemented")
+        let doc = params.text_document;
+        self.workspace.open(doc.uri, doc.version, &doc.text);
+
+        self.client
+            .log_message(MessageType::INFO, "file opened")
+            .await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
-        // eprintln!("did change: {:?}", params);
-        // TODO: read params.content_changes[0].text, containing full document text and build AST
-        let _ = params;
-        eprintln!("WARN: did change is not fully implemented")
+        if params.content_changes.len() != 1 {
+            self.client
+                .log_message(MessageType::ERROR, "file change is not full")
+                .await;
+            panic!("bad param for did change");
+        }
+
+        let doc = params.text_document;
+        let new_text = &params.content_changes[0].text;
+
+        self.workspace.change(&doc.uri, doc.version, new_text);
+
+        self.client
+            .log_message(MessageType::INFO, "file changed")
+            .await;
     }
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
-        // eprintln!("did close: {:?}", params);
-        // TODO: remove existing AST
-        let _ = params;
-        eprintln!("WARN: did close is not fully implemented");
+        let doc = params.text_document;
+        self.workspace.close(&doc.uri);
+
+        self.client
+            .log_message(MessageType::INFO, "file closed")
+            .await;
     }
 
-    async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
-        eprintln!("WARN: completition is not fully implemented");
-        let _ = params;
-        Ok(Some(CompletionResponse::Array(vec![
-            CompletionItem {
-                label: "message".to_string(),
-                kind: Some(CompletionItemKind::KEYWORD),
-                detail: Some("keyword for message construction".to_string()),
-                ..CompletionItem::default()
-            },
-            CompletionItem {
-                label: "enum".to_string(),
-                kind: Some(CompletionItemKind::KEYWORD),
-                detail: Some("keyword for enum construction".to_string()),
-                ..CompletionItem::default()
-            },
-            CompletionItem::new_simple("Hello".to_string(), "Some detail".to_string()),
-            CompletionItem::new_simple("Bye".to_string(), "More detail".to_string()),
-        ])))
+    async fn document_symbol(
+        &self,
+        params: DocumentSymbolParams,
+    ) -> Result<Option<DocumentSymbolResponse>> {
+        let doc = params.text_document.uri;
+
+        self.diagnostic_handler
+            .document_symbol(&self.workspace, &doc)
+    }
+
+    async fn semantic_tokens_full(
+        &self,
+        params: SemanticTokensParams,
+    ) -> Result<Option<SemanticTokensResult>> {
+        let doc = params.text_document.uri;
+
+        self.diagnostic_handler
+            .semantic_tokens_full(&self.workspace, &doc)
+    }
+
+    async fn code_lens(&self, params: CodeLensParams) -> Result<Option<Vec<CodeLens>>> {
+        let doc = params.text_document.uri;
+
+        self.diagnostic_handler.code_lens(&self.workspace, &doc)
+    }
+
+    async fn goto_definition(
+        &self,
+        params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        let doc_pos = params.text_document_position_params;
+        let pos = doc_pos.position;
+        let uri = doc_pos.text_document.uri;
+
+        self.navigation_handler
+            .goto_definition(&self.workspace, pos, &uri)
+    }
+
+    async fn goto_type_definition(
+        &self,
+        params: GotoTypeDefinitionParams,
+    ) -> Result<Option<GotoTypeDefinitionResponse>> {
+        let doc_pos = params.text_document_position_params;
+        let pos = doc_pos.position;
+        let uri = doc_pos.text_document.uri;
+
+        self.navigation_handler
+            .goto_type_definition(&self.workspace, pos, &uri)
+    }
+
+    async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
+        let doc_pos = params.text_document_position;
+        let pos = doc_pos.position;
+        let uri = doc_pos.text_document.uri;
+
+        self.diagnostic_handler
+            .references(&self.workspace, pos, &uri)
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
-        eprintln!("WARN: hover is not fully implemented");
-        let _ = params;
-        Ok(Some(Hover {
-            contents: HoverContents::Scalar(MarkedString::String("You're hovering!".to_string())),
-            range: None,
-        }))
+        let doc_pos = params.text_document_position_params;
+        let pos = doc_pos.position;
+        let uri = doc_pos.text_document.uri;
+
+        self.navigation_handler.hover(&self.workspace, pos, &uri)
+    }
+
+    async fn document_highlight(
+        &self,
+        params: DocumentHighlightParams,
+    ) -> Result<Option<Vec<DocumentHighlight>>> {
+        let doc_pos = params.text_document_position_params;
+        let pos = doc_pos.position;
+        let uri = doc_pos.text_document.uri;
+
+        self.diagnostic_handler
+            .document_highlight(&self.workspace, pos, &uri)
+    }
+
+    async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
+        let uri = params.text_document.uri;
+        self.action_handler
+            .formatting(&self.workspace, params.options, &uri)
+    }
+
+    async fn prepare_rename(
+        &self,
+        params: TextDocumentPositionParams,
+    ) -> Result<Option<PrepareRenameResponse>> {
+        let pos = params.position;
+        let uri = params.text_document.uri;
+
+        self.action_handler
+            .prepare_rename(&self.workspace, pos, &uri)
+    }
+
+    async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>> {
+        let doc_pos = params.text_document_position;
+        let pos = doc_pos.position;
+        let uri = doc_pos.text_document.uri;
+
+        self.action_handler
+            .rename(&self.workspace, params.new_name, pos, &uri)
     }
 }
 
@@ -98,6 +218,6 @@ async fn main() {
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
 
-    let (service, socket) = LspService::new(|client| Backend { client, ast: None });
+    let (service, socket) = LspService::new(Backend::new);
     Server::new(stdin, stdout, socket).serve(service).await;
 }
