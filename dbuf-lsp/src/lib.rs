@@ -5,7 +5,7 @@
 //! * re-read files to fill documentation.
 //! * add literals to navigator symbol.
 //! * rewrite pretty printer.
-//!
+//! * Each handler has it's own accesses
 
 pub(crate) mod core;
 

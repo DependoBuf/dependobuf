@@ -205,7 +205,9 @@ impl SemanticTokenVisitor<'_> {
 }
 
 impl<'a> Visitor<'a> for SemanticTokenVisitor<'a> {
-    fn visit(&mut self, visit: Visit<'a>) -> VisitResult {
+    type StopResult = ();
+
+    fn visit(&mut self, visit: Visit<'a>) -> VisitResult<Self::StopResult> {
         match &visit {
             Visit::Keyword(keyword, location) => self.push_keyword(keyword, location),
             Visit::Type(type_name, _) => {

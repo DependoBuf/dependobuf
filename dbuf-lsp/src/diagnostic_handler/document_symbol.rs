@@ -338,7 +338,8 @@ impl SymbolVisitor<'_> {
 }
 
 impl<'a> Visitor<'a> for SymbolVisitor<'a> {
-    fn visit(&mut self, visit: Visit<'a>) -> VisitResult {
+    type StopResult = ();
+    fn visit(&mut self, visit: Visit<'a>) -> VisitResult<Self::StopResult> {
         match &visit {
             Visit::Keyword(_, _) => {}
             Visit::Type(type_name, location) => self.push_type_symbol(type_name, location),

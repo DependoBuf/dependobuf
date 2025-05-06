@@ -25,10 +25,10 @@ use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
 
 use crate::core::ast_access::WorkspaceAccess;
-use crate::core::errors::format_errors;
+use crate::core::errors::FormatError;
 use crate::core::navigator::Navigator;
 use crate::core::pretty_printer::PrettyPrinter;
-use crate::handler::Handler;
+use crate::handler::{Capabilities, Handler};
 
 pub struct ActionHandler {
     rename_cache: RenameCache,
@@ -47,19 +47,19 @@ impl ActionHandler {
         document: &Url,
     ) -> Result<Option<Vec<TextEdit>>> {
         if !options.insert_spaces {
-            return format_errors::bad_insert_spaces();
+            return FormatError::InsertSpaces.into();
         }
         if !options.properties.is_empty() {
-            return format_errors::bad_properties();
+            return FormatError::Properties.into();
         }
         if options.trim_trailing_whitespace.is_some() {
-            return format_errors::bad_trim_trailing_whitespace();
+            return FormatError::TrimTrailingWhitespace.into();
         }
         if options.insert_final_newline.is_some() {
-            return format_errors::bad_insert_final_newline();
+            return FormatError::InsertFinalNewLine.into();
         }
         if options.trim_final_newlines.is_some() {
-            return format_errors::bad_trim_final_newlines();
+            return FormatError::TrimFinalNewLines.into();
         }
 
         let mut edit = TextEdit {
@@ -151,6 +151,27 @@ impl ActionHandler {
     }
 }
 
+struct ActionCapabilities {
+    formatting: bool,
+    rename: bool,
+}
+
+impl Capabilities for ActionCapabilities {
+    fn apply(self, capabilities: &mut ServerCapabilities) {
+        if self.formatting {
+            capabilities.document_formatting_provider = Some(Left(true));
+        }
+        if self.rename {
+            capabilities.rename_provider = Some(Right(RenameOptions {
+                prepare_provider: Some(true),
+                work_done_progress_options: WorkDoneProgressOptions {
+                    work_done_progress: None,
+                },
+            }));
+        }
+    }
+}
+
 impl Handler for ActionHandler {
     fn new() -> ActionHandler {
         ActionHandler {
@@ -158,13 +179,10 @@ impl Handler for ActionHandler {
         }
     }
 
-    fn init(&self, _init: &InitializeParams, capabilites: &mut ServerCapabilities) {
-        capabilites.document_formatting_provider = Some(Left(true));
-        capabilites.rename_provider = Some(Right(RenameOptions {
-            prepare_provider: Some(true),
-            work_done_progress_options: WorkDoneProgressOptions {
-                work_done_progress: None,
-            },
-        }));
+    fn init(&self, _init: &InitializeParams) -> impl Capabilities {
+        ActionCapabilities {
+            formatting: true,
+            rename: true,
+        }
     }
 }

@@ -35,6 +35,8 @@ pub trait ElaboratedHelper {
     fn is_type_constructor(&self, type_name: &str, name: &str) -> bool;
     /// returns if `name` is field of `constructor`.
     fn is_constructor_field(&self, constructor_name: &str, name: &str) -> bool;
+    /// returns if `name` is implicit of `constructor`.
+    fn is_constructor_implicit(&self, constructor_name: &str, name: &str) -> bool;
 }
 
 impl ElaboratedHelper for ElaboratedAst {
@@ -99,5 +101,10 @@ impl ElaboratedHelper for ElaboratedAst {
     fn is_constructor_field(&self, constructor_name: &str, name: &str) -> bool {
         self.get_constructor(constructor_name)
             .is_some_and(|c| c.fields.iter().any(|f| f.0 == name))
+    }
+
+    fn is_constructor_implicit(&self, constructor_name: &str, name: &str) -> bool {
+        self.get_constructor(constructor_name)
+            .is_some_and(|c| c.implicits.iter().any(|f| f.0 == name))
     }
 }

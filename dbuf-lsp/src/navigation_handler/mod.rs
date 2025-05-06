@@ -39,6 +39,7 @@ use tower_lsp::lsp_types::*;
 
 use crate::core::ast_access::WorkspaceAccess;
 use crate::core::navigator::Navigator;
+use crate::handler::Capabilities;
 use crate::handler::Handler;
 
 pub struct NavigationHandler {}
@@ -122,14 +123,37 @@ impl NavigationHandler {
     }
 }
 
+struct NavigationCapabilities {
+    definition: bool,
+    type_definition: bool,
+    hover: bool,
+}
+
+impl Capabilities for NavigationCapabilities {
+    fn apply(self, capabilities: &mut ServerCapabilities) {
+        if self.definition {
+            capabilities.definition_provider = Some(Left(true));
+        }
+        if self.type_definition {
+            capabilities.type_definition_provider =
+                Some(TypeDefinitionProviderCapability::Simple(true));
+        }
+        if self.hover {
+            capabilities.hover_provider = Some(HoverProviderCapability::Simple(true));
+        }
+    }
+}
+
 impl Handler for NavigationHandler {
     fn new() -> Self {
         Self {}
     }
 
-    fn init(&self, _init: &InitializeParams, capabilites: &mut ServerCapabilities) {
-        capabilites.definition_provider = Some(Left(true));
-        capabilites.type_definition_provider = Some(TypeDefinitionProviderCapability::Simple(true));
-        capabilites.hover_provider = Some(HoverProviderCapability::Simple(true));
+    fn init(&self, _init: &InitializeParams) -> impl Capabilities {
+        NavigationCapabilities {
+            definition: true,
+            type_definition: true,
+            hover: true,
+        }
     }
 }

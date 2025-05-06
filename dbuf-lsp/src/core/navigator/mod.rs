@@ -17,10 +17,24 @@ type Str = String;
 #[derive(Debug, Clone)]
 pub enum Symbol {
     Type(Str),
-    Dependency { t: Str, dependency: Str },
-    Field { constructor: Str, field: Str },
-    Alias { t: Str, branch_id: usize, name: Str },
-    Constructor(Str),
+    Dependency {
+        t: Str,
+        dependency: Str,
+    },
+    Field {
+        t: Str,
+        constructor: Str,
+        field: Str,
+    },
+    Alias {
+        t: Str,
+        branch_id: usize,
+        alias: Str,
+    },
+    Constructor {
+        t: Str,
+        constructor: Str,
+    },
     None,
 }
 

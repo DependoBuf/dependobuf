@@ -10,6 +10,7 @@
 //! * mod scope visitor containing ScopeVisitor, wich helps with scope control
 //!
 
+pub mod safe_skip;
 pub mod scope_visitor;
 
 #[cfg(test)]
@@ -31,7 +32,6 @@ use super::ast_access::Position;
 ///
 /// 'a is lifetime of parsed ast reference.
 #[derive(Debug)]
-
 pub struct Constructor<'a> {
     /// Name of constructor
     pub name: &'a Str,
@@ -101,9 +101,6 @@ pub enum Visit<'a> {
     /// Can be skipped (to next call argument).
     ///
     /// 0: field name.
-    ///
-    /// Currently, always None
-    /// due to incomplete parsed ast.
     PatternCallArgument(&'a Str),
     /// Call end.
     ///
@@ -260,17 +257,19 @@ impl<'a> Visit<'a> {
 /// * Continue - parse current subtree (if any),
 /// * Skip - skip current subtree. Panics if no such.
 /// * Stop - stop parsing.
-pub enum VisitResult {
+pub enum VisitResult<T> {
     Continue,
     Skip,
-    Stop,
+    Stop(T),
 }
 
 /// Visitor - the one, who can parse Visit tokens.
 ///
 /// 'a is lifetime of parsed ast reference.
 pub trait Visitor<'a> {
-    fn visit(&mut self, visit: Visit<'a>) -> VisitResult;
+    type StopResult;
+
+    fn visit(&mut self, visit: Visit<'a>) -> VisitResult<Self::StopResult>;
 }
 
 /// Visit whole ast. Skips parts, if visitor tells so.
@@ -285,9 +284,7 @@ pub fn visit_ast<'a, V: Visitor<'a>>(
     ast: &'a ParsedAst,
     visitor: &mut V,
     tempo_elaborated: &'a ElaboratedAst,
-) {
-    let mut stop_visit = false;
-
+) -> Option<V::StopResult> {
     for td in ast.iter() {
         let keyword = if tempo_elaborated.is_message(td.name.as_ref()) {
             get_keyword("message", td.name.get_location().get_start().get_line())
@@ -299,31 +296,34 @@ pub fn visit_ast<'a, V: Visitor<'a>>(
         match res {
             VisitResult::Continue => {}
             VisitResult::Skip => continue,
-            VisitResult::Stop => stop_visit = true,
-        }
-
-        if stop_visit {
-            return;
+            VisitResult::Stop(r) => return Some(r),
         }
 
         let res = visitor.visit(Visit::Type(&td.name, &td.loc));
         match res {
-            VisitResult::Continue => {
-                stop_visit |= visit_type_declaration(td, &td.name, &td.loc, visitor).is_err()
-            }
+            VisitResult::Continue => {}
             VisitResult::Skip => continue,
-            VisitResult::Stop => stop_visit = true,
+            VisitResult::Stop(r) => return Some(r),
         }
-        if stop_visit {
-            return;
+
+        let res = visit_type_declaration(td, &td.name, &td.loc, visitor);
+
+        if let Err(e) = res {
+            return Some(e);
         }
     }
+    None
 }
 
-type Stop = std::result::Result<(), ()>;
+type Stop<T> = std::result::Result<(), T>;
 
-const STOP: Stop = Stop::Err(());
-const CONTINUE: Stop = Stop::Ok(());
+fn stop<T>(value: T) -> Stop<T> {
+    Stop::Err(value)
+}
+
+fn next<T>() -> Stop<T> {
+    Stop::Ok(())
+}
 
 fn get_keyword<'a>(keyword: &'static str, line: u32) -> Visit<'a> {
     let start = Position::new(line, 0);
@@ -339,13 +339,13 @@ fn visit_type_declaration<'a, V: Visitor<'a>>(
     type_name: &'a Str,
     type_loc: &'a Loc,
     visitor: &mut V,
-) -> Stop {
+) -> Stop<V::StopResult> {
     for d in td.dependencies.iter() {
         let res = visitor.visit(Visit::Dependency(&d.name, &d.loc));
         match res {
             VisitResult::Continue => visit_type_expression(d, visitor)?,
             VisitResult::Skip => continue,
-            VisitResult::Stop => return STOP,
+            VisitResult::Stop(r) => return stop(r),
         }
     }
 
@@ -354,8 +354,8 @@ fn visit_type_declaration<'a, V: Visitor<'a>>(
             let res = visitor.visit(Visit::message_constructor(type_name, type_loc));
             match res {
                 VisitResult::Continue => visit_constructor(fields, visitor)?,
-                VisitResult::Skip => return CONTINUE,
-                VisitResult::Stop => return STOP,
+                VisitResult::Skip => return next(),
+                VisitResult::Stop(r) => return stop(r),
             }
         }
         TypeDefinition::Enum(enum_branchs) => {
@@ -364,7 +364,7 @@ fn visit_type_declaration<'a, V: Visitor<'a>>(
                 match res {
                     VisitResult::Continue => {}
                     VisitResult::Skip => continue,
-                    VisitResult::Stop => return STOP,
+                    VisitResult::Stop(r) => return stop(r),
                 }
 
                 for pattern in branch.patterns.iter() {
@@ -377,7 +377,7 @@ fn visit_type_declaration<'a, V: Visitor<'a>>(
                     match res {
                         VisitResult::Continue => {}
                         VisitResult::Skip => continue,
-                        VisitResult::Stop => return STOP,
+                        VisitResult::Stop(r) => return stop(r),
                     }
 
                     visit_constructor(constructor, visitor)?;
@@ -386,59 +386,62 @@ fn visit_type_declaration<'a, V: Visitor<'a>>(
         }
     }
 
-    CONTINUE
+    next()
 }
 
-fn visit_pattern<'a, V: Visitor<'a>>(p: &'a Pattern<Loc, Str>, visitor: &mut V) -> Stop {
+fn visit_pattern<'a, V: Visitor<'a>>(
+    p: &'a Pattern<Loc, Str>,
+    visitor: &mut V,
+) -> Stop<V::StopResult> {
     match &p.node {
         PatternNode::ConstructorCall { name, fields } => {
             let res = visitor.visit(Visit::PatternCall(name, &p.loc));
             match res {
                 VisitResult::Continue => visit_pattern_call_arguments(fields, visitor)?,
-                VisitResult::Skip => return CONTINUE,
-                VisitResult::Stop => return STOP,
+                VisitResult::Skip => return next(),
+                VisitResult::Stop(r) => return stop(r),
             }
         }
         PatternNode::Variable { name } => {
             let res = visitor.visit(Visit::PatternAlias(name));
             match res {
-                VisitResult::Continue => return CONTINUE,
+                VisitResult::Continue => return next(),
                 VisitResult::Skip => panic!("pattern alias can't be skipped"),
-                VisitResult::Stop => return STOP,
+                VisitResult::Stop(r) => return stop(r),
             }
         }
         PatternNode::Literal(l) => visit_pattern_literal(l, &p.loc, visitor)?,
         PatternNode::Underscore => {
             let res = visitor.visit(Visit::PatternUnderscore(&p.loc));
             match res {
-                VisitResult::Continue => return CONTINUE,
+                VisitResult::Continue => return next(),
                 VisitResult::Skip => panic!("pattern underscore can't be skipped"),
-                VisitResult::Stop => return STOP,
+                VisitResult::Stop(r) => return stop(r),
             }
         }
     }
 
-    CONTINUE
+    next()
 }
 
 fn visit_pattern_call_arguments<'a, V: Visitor<'a>>(
     p: &'a Definitions<Loc, Str, Pattern<Loc, Str>>,
     visitor: &mut V,
-) -> Stop {
+) -> Stop<V::StopResult> {
     for p in p.iter() {
         let res = visitor.visit(Visit::PatternCallArgument(&p.name));
         match res {
             VisitResult::Continue => visit_pattern(&p.data, visitor)?,
             VisitResult::Skip => continue,
-            VisitResult::Stop => return STOP,
+            VisitResult::Stop(r) => return stop(r),
         }
     }
 
     let res = visitor.visit(Visit::PatternCallStop);
     match res {
-        VisitResult::Continue => CONTINUE,
+        VisitResult::Continue => next(),
         VisitResult::Skip => panic!("pattern call stop can't be skipped"),
-        VisitResult::Stop => STOP,
+        VisitResult::Stop(r) => stop(r),
     }
 }
 
@@ -446,45 +449,45 @@ fn visit_pattern_literal<'a, V: Visitor<'a>>(
     l: &'a Literal,
     loc: &'a Loc,
     visitor: &mut V,
-) -> Stop {
+) -> Stop<V::StopResult> {
     let res = visitor.visit(Visit::PatternLiteral(l, loc));
     match res {
         VisitResult::Continue => {}
         VisitResult::Skip => panic!("pattern literal can't be skipped"),
-        VisitResult::Stop => return STOP,
+        VisitResult::Stop(r) => return stop(r),
     }
 
-    CONTINUE
+    next()
 }
 
 fn visit_constructor<'a, V: Visitor<'a>>(
     c: &'a ConstructorBody<Loc, Str>,
     visitor: &mut V,
-) -> Stop {
+) -> Stop<V::StopResult> {
     for field in c.iter() {
         let res = visitor.visit(Visit::Filed(&field.name, &field.loc));
         match res {
             VisitResult::Continue => {}
             VisitResult::Skip => continue,
-            VisitResult::Stop => return STOP,
+            VisitResult::Stop(r) => return stop(r),
         }
 
         visit_type_expression(field, visitor)?;
     }
 
-    CONTINUE
+    next()
 }
 
 fn visit_type_expression<'a, V: Visitor<'a>>(
     te: &'a TypeExpression<Loc, Str>,
     visitor: &mut V,
-) -> Stop {
+) -> Stop<V::StopResult> {
     if let ExpressionNode::FunCall { fun, args } = &te.node {
         let res = visitor.visit(Visit::TypeExpression(fun, &te.loc));
         match res {
             VisitResult::Continue => {}
-            VisitResult::Skip => return CONTINUE,
-            VisitResult::Stop => return STOP,
+            VisitResult::Skip => return next(),
+            VisitResult::Stop(r) => return stop(r),
         }
 
         for expr in args.iter() {
@@ -493,19 +496,22 @@ fn visit_type_expression<'a, V: Visitor<'a>>(
             match res {
                 VisitResult::Continue => {}
                 VisitResult::Skip => continue,
-                VisitResult::Stop => return STOP,
+                VisitResult::Stop(r) => return stop(r),
             };
 
             visit_expression(expr, visitor)?;
         }
 
-        return CONTINUE;
+        return next();
     }
 
     panic!("bad type expression");
 }
 
-fn visit_expression<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: &mut V) -> Stop {
+fn visit_expression<'a, V: Visitor<'a>>(
+    e: &'a Expression<Loc, Str>,
+    visitor: &mut V,
+) -> Stop<V::StopResult> {
     match &e.node {
         ExpressionNode::OpCall(OpCall::Binary(_, lhs, rhs)) => {
             visit_expression(lhs, visitor)?;
@@ -514,22 +520,22 @@ fn visit_expression<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: &m
             match res {
                 VisitResult::Continue => visit_expression(rhs, visitor)?,
                 VisitResult::Skip => panic!("operator can't be skipped"),
-                VisitResult::Stop => return STOP,
+                VisitResult::Stop(r) => return stop(r),
             }
         }
         ExpressionNode::OpCall(OpCall::Unary(UnaryOp::Access(s), lhs)) => {
             let res = visitor.visit(Visit::AccessChainStart);
             match res {
                 VisitResult::Continue => visit_access_chain(lhs, visitor)?,
-                VisitResult::Skip => return CONTINUE,
-                VisitResult::Stop => return STOP,
+                VisitResult::Skip => return next(),
+                VisitResult::Stop(r) => return stop(r),
             }
 
             let res = visitor.visit(Visit::AccessChainLast(s));
             match res {
-                VisitResult::Continue => return CONTINUE,
+                VisitResult::Continue => return next(),
                 VisitResult::Skip => panic!("access chain last can't be skipped"),
-                VisitResult::Stop => return STOP,
+                VisitResult::Stop(r) => return stop(r),
             }
         }
         ExpressionNode::OpCall(OpCall::Unary(_, rhs)) => {
@@ -538,31 +544,31 @@ fn visit_expression<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: &m
             match res {
                 VisitResult::Continue => visit_expression(rhs, visitor)?,
                 VisitResult::Skip => panic!("operator can't be skipped"),
-                VisitResult::Stop => return STOP,
+                VisitResult::Stop(r) => return stop(r),
             }
         }
         ExpressionNode::OpCall(OpCall::Literal(l)) => {
             let res = visitor.visit(Visit::Literal(l, &e.loc));
             match res {
-                VisitResult::Continue => return CONTINUE,
+                VisitResult::Continue => return next(),
                 VisitResult::Skip => panic!("literal can't be skipped"),
-                VisitResult::Stop => return STOP,
+                VisitResult::Stop(r) => return stop(r),
             }
         }
         ExpressionNode::Variable { name } => {
             let res = visitor.visit(Visit::VarAccess(name));
             match res {
-                VisitResult::Continue => return CONTINUE,
+                VisitResult::Continue => return next(),
                 VisitResult::Skip => panic!("variable access can't be skipped"),
-                VisitResult::Stop => return STOP,
+                VisitResult::Stop(r) => return stop(r),
             }
         }
         ExpressionNode::ConstructorCall { name, fields } => {
             let res = visitor.visit(Visit::ConstructorExpr(name));
             match res {
                 VisitResult::Continue => {}
-                VisitResult::Skip => return CONTINUE,
-                VisitResult::Stop => return STOP,
+                VisitResult::Skip => return next(),
+                VisitResult::Stop(r) => return stop(r),
             }
 
             for expr in fields.iter() {
@@ -570,7 +576,7 @@ fn visit_expression<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: &m
                 match res {
                     VisitResult::Continue => {}
                     VisitResult::Skip => continue,
-                    VisitResult::Stop => return STOP,
+                    VisitResult::Stop(r) => return stop(r),
                 }
 
                 visit_expression(&expr.data, visitor)?;
@@ -578,9 +584,9 @@ fn visit_expression<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: &m
 
             let res = visitor.visit(Visit::ConstructorExprStop);
             match res {
-                VisitResult::Continue => return CONTINUE,
+                VisitResult::Continue => return next(),
                 VisitResult::Skip => panic!("constructor expression stop can't be skipped"),
-                VisitResult::Stop => return STOP,
+                VisitResult::Stop(r) => return stop(r),
             }
         }
         ExpressionNode::FunCall { fun: _, args: _ } => {
@@ -589,10 +595,13 @@ fn visit_expression<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: &m
         ExpressionNode::TypedHole => panic!("bad expression: type hole"),
     }
 
-    CONTINUE
+    next()
 }
 
-fn visit_access_chain<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: &mut V) -> Stop {
+fn visit_access_chain<'a, V: Visitor<'a>>(
+    e: &'a Expression<Loc, Str>,
+    visitor: &mut V,
+) -> Stop<V::StopResult> {
     match &e.node {
         ExpressionNode::OpCall(OpCall::Unary(UnaryOp::Access(s), lhs)) => {
             visit_access_chain(lhs, visitor)?;
@@ -601,7 +610,7 @@ fn visit_access_chain<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: 
             match res {
                 VisitResult::Continue => {}
                 VisitResult::Skip => panic!("access chain can't be skipped"),
-                VisitResult::Stop => return STOP,
+                VisitResult::Stop(r) => return stop(r),
             }
         }
         ExpressionNode::Variable { name } => {
@@ -609,7 +618,7 @@ fn visit_access_chain<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: 
             match res {
                 VisitResult::Continue => {}
                 VisitResult::Skip => panic!("acess chain can't be skiped"),
-                VisitResult::Stop => return STOP,
+                VisitResult::Stop(r) => return stop(r),
             }
         }
         _ => panic!("bad access chain"),
@@ -622,9 +631,9 @@ fn visit_access_chain<'a, V: Visitor<'a>>(e: &'a Expression<Loc, Str>, visitor: 
 
     let res = visitor.visit(Visit::AccessDot(loc)); // TODO: better find location
     match res {
-        VisitResult::Continue => CONTINUE,
+        VisitResult::Continue => next(),
         VisitResult::Skip => panic!("access chain dot can't be skipped"),
-        VisitResult::Stop => STOP,
+        VisitResult::Stop(r) => stop(r),
     }
 }
 

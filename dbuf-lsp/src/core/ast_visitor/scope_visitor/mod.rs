@@ -82,7 +82,9 @@ impl<'a> ScopeVisitor<'a> {
 }
 
 impl<'a> Visitor<'a> for ScopeVisitor<'a> {
-    fn visit(&mut self, visit: Visit<'a>) -> VisitResult {
+    type StopResult = ();
+
+    fn visit(&mut self, visit: Visit<'a>) -> VisitResult<Self::StopResult> {
         match visit {
             Visit::Keyword(_, _) => {}
             Visit::Type(type_name, _) => {

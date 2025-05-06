@@ -4,6 +4,7 @@ use crate::core::ast_access::ElaboratedAst;
 use crate::core::ast_access::ParsedAst;
 use crate::core::default_ast::default_parsed_ast;
 
+use super::safe_skip::safe_skip;
 use super::visit_ast;
 use super::Visit;
 use super::VisitResult;
@@ -11,35 +12,6 @@ use super::Visitor;
 
 fn get_ast() -> ParsedAst {
     default_parsed_ast()
-}
-
-fn correct_skip(visit: &Visit<'_>) -> VisitResult {
-    match visit {
-        Visit::Keyword(_, _location) => VisitResult::Skip,
-        Visit::Type(_loc_string, _locationn) => VisitResult::Skip,
-        Visit::Dependency(_loc_string, _location) => VisitResult::Skip,
-        Visit::Branch => VisitResult::Skip,
-        Visit::PatternAlias(_loc_string) => VisitResult::Continue,
-        Visit::PatternCall(_loc_string, _location) => VisitResult::Skip,
-        Visit::PatternCallArgument(_loc_string) => VisitResult::Skip,
-        Visit::PatternCallStop => VisitResult::Continue,
-        Visit::PatternLiteral(_literal, _locationn) => VisitResult::Continue,
-        Visit::PatternUnderscore(_location) => VisitResult::Continue,
-        Visit::Constructor(_constructor) => VisitResult::Skip,
-        Visit::Filed(_loc_string, _locationn) => VisitResult::Skip,
-        Visit::TypeExpression(_loc_string, _locationn) => VisitResult::Skip,
-        Visit::Expression(_location) => VisitResult::Skip,
-        Visit::AccessChainStart => VisitResult::Skip,
-        Visit::AccessChain(_loc_string) => VisitResult::Continue,
-        Visit::AccessDot(_location) => VisitResult::Continue,
-        Visit::AccessChainLast(_loc_string) => VisitResult::Continue,
-        Visit::ConstructorExpr(_loc_string) => VisitResult::Skip,
-        Visit::ConstructorExprArgument(_loc_string) => VisitResult::Skip,
-        Visit::ConstructorExprStop => VisitResult::Continue,
-        Visit::VarAccess(_loc_string) => VisitResult::Continue,
-        Visit::Operator(_, _location) => VisitResult::Continue,
-        Visit::Literal(_literal, _locationn) => VisitResult::Continue,
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -95,14 +67,16 @@ impl TestVisitor {
 }
 
 impl<'a> Visitor<'a> for TestVisitor {
-    fn visit(&mut self, visit: Visit<'a>) -> VisitResult {
+    type StopResult = u32;
+
+    fn visit(&mut self, visit: Visit<'a>) -> VisitResult<Self::StopResult> {
         assert!(!self.stopped, "execution stops after stop signal");
 
         let result = if self.step == self.stop_after {
             self.stopped = true;
-            VisitResult::Stop
+            VisitResult::Stop(self.step + 1)
         } else if self.skip_mask.need_skip(self.step) {
-            correct_skip(&visit)
+            safe_skip(&visit)
         } else {
             VisitResult::Continue
         };
@@ -133,7 +107,7 @@ fn check_skip_mask(mask: u32, skip_at: &[u32]) {
                 step,
                 mask
             ),
-            VisitResult::Stop => panic!("unexpected stop signal at mask {}", mask),
+            VisitResult::Stop(step) => panic!("unexpected stop signal at mask {mask}, step {step}"),
         }
         step += 1;
     }
@@ -178,8 +152,13 @@ fn test_stop_after_signal() {
     for stop_after in 0.. {
         let skip_mask = SkipMask::new(0);
         let mut visitor = TestVisitor::new(skip_mask, stop_after);
-        visit_ast(&ast, &mut visitor, &tempo_elaborated);
+        let res = visit_ast(&ast, &mut visitor, &tempo_elaborated);
+        if visitor.stopped {
+            assert!(res.is_some());
+            assert!(res.unwrap() == visitor.step)
+        }
         if !visitor.stopped {
+            assert!(res.is_none());
             break;
         }
     }
@@ -197,8 +176,9 @@ fn test_skip_correctness() {
 
     for mask in skip_mask {
         let mut visitor = TestVisitor::new(mask, 1e9 as u32);
-        visit_ast(&ast, &mut visitor, &tempo_elaborated);
+        let res = visit_ast(&ast, &mut visitor, &tempo_elaborated);
         assert!(!visitor.stopped, "all steps done");
+        assert!(res.is_none());
     }
 }
 
@@ -214,8 +194,13 @@ fn test_skip_stop_correctness() {
     for mask in skip_mask {
         for stop_after in 0.. {
             let mut visitor = TestVisitor::new(mask, stop_after);
-            visit_ast(&ast, &mut visitor, &tempo_elaborated);
+            let res = visit_ast(&ast, &mut visitor, &tempo_elaborated);
+            if visitor.stopped {
+                assert!(res.is_some());
+                assert!(res.unwrap() == visitor.step)
+            }
             if !visitor.stopped {
+                assert!(res.is_none());
                 break;
             }
         }

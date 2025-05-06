@@ -16,16 +16,24 @@
 
 use tower_lsp::lsp_types::*;
 
-use crate::handler::Handler;
+use crate::handler::{Capabilities, Handler};
 
 pub struct CompletitionHandler {}
 
 impl CompletitionHandler {}
+
+struct CompletitionCapabilities {}
+
+impl Capabilities for CompletitionCapabilities {
+    fn apply(self, _capabilities: &mut ServerCapabilities) {}
+}
 
 impl Handler for CompletitionHandler {
     fn new() -> Self {
         CompletitionHandler {}
     }
 
-    fn init(&self, _init: &InitializeParams, _capabilites: &mut ServerCapabilities) {}
+    fn init(&self, _init: &InitializeParams) -> impl Capabilities {
+        CompletitionCapabilities {}
+    }
 }

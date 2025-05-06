@@ -50,7 +50,17 @@ impl FindImpl<'_> {
                     return;
                 }
             }
-            Symbol::Field { constructor, field } => {
+            Symbol::Field {
+                t,
+                constructor,
+                field,
+            } => {
+                if !self.scope.has_type() {
+                    return;
+                }
+                if t != self.scope.get_type() {
+                    return;
+                }
                 if !self.scope.has_constructor() {
                     return;
                 }
@@ -61,7 +71,11 @@ impl FindImpl<'_> {
                     return;
                 }
             }
-            Symbol::Alias { t, branch_id, name } => {
+            Symbol::Alias {
+                t,
+                branch_id,
+                alias,
+            } => {
                 if !self.scope.has_type() {
                     return;
                 }
@@ -71,11 +85,11 @@ impl FindImpl<'_> {
                 if *branch_id != self.scope.get_branch_id() {
                     return;
                 }
-                if name != str.as_ref() {
+                if alias != str.as_ref() {
                     return;
                 }
             }
-            Symbol::Constructor(constructor) => {
+            Symbol::Constructor { t: _, constructor } => {
                 if constructor != str.as_ref() {
                     return;
                 }
@@ -87,7 +101,9 @@ impl FindImpl<'_> {
 }
 
 impl<'a> Visitor<'a> for FindImpl<'a> {
-    fn visit(&mut self, visit: Visit<'a>) -> VisitResult {
+    type StopResult = ();
+
+    fn visit(&mut self, visit: Visit<'a>) -> VisitResult<Self::StopResult> {
         match &visit {
             Visit::Keyword(_, _) => {}
             Visit::Type(type_name, _) => self.check_add(type_name),

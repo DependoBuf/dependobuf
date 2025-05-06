@@ -34,7 +34,7 @@ use tower_lsp::lsp_types::*;
 
 use crate::core::ast_access::WorkspaceAccess;
 use crate::core::navigator::Navigator;
-use crate::handler::Handler;
+use crate::handler::{Capabilities, Handler};
 
 pub struct DiagnosticHandler {}
 
@@ -129,32 +129,60 @@ impl DiagnosticHandler {
     }
 }
 
+struct DiagnosticCapabilities {
+    document_symbol: bool,
+    semantic_tokens: Option<SemanticTokensLegend>,
+    references: bool,
+    document_highlight: bool,
+    code_lens: bool,
+}
+
+impl Capabilities for DiagnosticCapabilities {
+    fn apply(self, capabilities: &mut ServerCapabilities) {
+        if self.document_symbol {
+            capabilities.document_symbol_provider = Some(Left(true));
+        }
+        if let Some(legend) = self.semantic_tokens {
+            capabilities.semantic_tokens_provider = Some(
+                SemanticTokensOptions {
+                    legend,
+                    full: Some(SemanticTokensFullOptions::Bool(true)),
+                    ..Default::default()
+                }
+                .into(),
+            );
+        }
+        if self.references {
+            capabilities.references_provider = Some(Left(true));
+        }
+        if self.document_highlight {
+            capabilities.document_highlight_provider = Some(Left(true));
+        }
+        if self.code_lens {
+            capabilities.code_lens_provider = Some(CodeLensOptions {
+                resolve_provider: Some(false),
+            });
+        }
+    }
+}
+
 impl Handler for DiagnosticHandler {
     fn new() -> Self {
         Self {}
     }
 
-    fn init(&self, _init: &InitializeParams, capabilites: &mut ServerCapabilities) {
-        capabilites.document_symbol_provider = Some(Left(true));
-
+    fn init(&self, _init: &InitializeParams) -> impl Capabilities {
         let legend = SemanticTokensLegend {
             token_types: semantic_token::get_token_types(),
             token_modifiers: semantic_token::get_token_modifiers(),
         };
 
-        capabilites.semantic_tokens_provider = Some(
-            SemanticTokensOptions {
-                legend,
-                full: Some(SemanticTokensFullOptions::Bool(true)),
-                ..Default::default()
-            }
-            .into(),
-        );
-
-        capabilites.references_provider = Some(Left(true));
-        capabilites.document_highlight_provider = Some(Left(true));
-        capabilites.code_lens_provider = Some(CodeLensOptions {
-            resolve_provider: Some(false),
-        });
+        DiagnosticCapabilities {
+            document_symbol: true,
+            semantic_tokens: Some(legend),
+            references: true,
+            document_highlight: true,
+            code_lens: true,
+        }
     }
 }

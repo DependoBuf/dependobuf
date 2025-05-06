@@ -3,7 +3,7 @@ use tower_lsp::lsp_types::request::*;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
-use dbuf_lsp::handler::Handler;
+use dbuf_lsp::handler::{Capabilities, Handler};
 use dbuf_lsp::WorkspaceAccess;
 
 use dbuf_lsp::action_handler::ActionHandler;
@@ -49,10 +49,12 @@ impl LanguageServer for Backend {
             ..Default::default()
         };
 
-        self.action_handler.init(&init, &mut capabilities);
-        self.completition_handler.init(&init, &mut capabilities);
-        self.diagnostic_handler.init(&init, &mut capabilities);
-        self.navigation_handler.init(&init, &mut capabilities);
+        self.action_handler.init(&init).apply(&mut capabilities);
+        self.completition_handler
+            .init(&init)
+            .apply(&mut capabilities);
+        self.diagnostic_handler.init(&init).apply(&mut capabilities);
+        self.navigation_handler.init(&init).apply(&mut capabilities);
 
         Ok(InitializeResult {
             capabilities,

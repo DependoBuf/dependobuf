@@ -31,10 +31,14 @@ pub fn find_type_impl(navigator: &Navigator, symbol: Symbol) -> Symbol {
                 .find(|d| d.0 == dependency.as_ref())
                 .map(|d| get_type(&d.1))
                 .unwrap_or_else(|| {
-                    panic!("alias not found\n{:#?}", symbol);
+                    panic!("dependency not found\n{:#?}", symbol);
                 })
         }
-        Symbol::Field { constructor, field } => {
+        Symbol::Field {
+            t: _,
+            constructor,
+            field,
+        } => {
             let elaborated = navigator.elaborated;
             let cons = elaborated.get_constructor(constructor).unwrap_or_else(|| {
                 panic!("field not found\n{:#?}", symbol);
@@ -47,7 +51,11 @@ pub fn find_type_impl(navigator: &Navigator, symbol: Symbol) -> Symbol {
                     panic!("field not found\n{:#?}", symbol);
                 })
         }
-        Symbol::Alias { t, branch_id, name } => {
+        Symbol::Alias {
+            t,
+            branch_id,
+            alias,
+        } => {
             let parsed = navigator.parsed;
             let elaborated = navigator.elaborated;
             let body = parsed
@@ -69,7 +77,7 @@ pub fn find_type_impl(navigator: &Navigator, symbol: Symbol) -> Symbol {
                 });
                 cons.implicits
                     .iter()
-                    .find(|i| i.0 == name.as_ref())
+                    .find(|i| i.0 == alias.as_ref())
                     .map(|i| get_type(&i.1))
                     .unwrap_or_else(|| {
                         panic!("alias not found\n{:#?}", symbol);
@@ -78,11 +86,13 @@ pub fn find_type_impl(navigator: &Navigator, symbol: Symbol) -> Symbol {
                 panic!("alias not found\n{:#?}", symbol);
             }
         }
-        Symbol::Constructor(cons) => {
+        Symbol::Constructor { t: _, constructor } => {
             let elaborated = navigator.elaborated;
-            let type_name = elaborated.get_constructor_type(cons).unwrap_or_else(|| {
-                panic!("constructor not found\n{:#?}", symbol);
-            });
+            let type_name = elaborated
+                .get_constructor_type(constructor)
+                .unwrap_or_else(|| {
+                    panic!("constructor not found\n{:#?}", symbol);
+                });
             Symbol::Type(type_name.to_string())
         }
         Symbol::None => Symbol::None,

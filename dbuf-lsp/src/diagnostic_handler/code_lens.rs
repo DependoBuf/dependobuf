@@ -51,7 +51,9 @@ impl CodeLensVisitor<'_> {
 }
 
 impl<'a> Visitor<'a> for CodeLensVisitor<'a> {
-    fn visit(&mut self, visit: Visit<'a>) -> VisitResult {
+    type StopResult = ();
+
+    fn visit(&mut self, visit: Visit<'a>) -> VisitResult<Self::StopResult> {
         match &visit {
             Visit::Type(type_name, loc) => {
                 self.push_type(type_name, loc);

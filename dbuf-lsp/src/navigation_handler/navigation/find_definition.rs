@@ -1,15 +1,14 @@
 //! Find definition of symbol
 //!
 
-use dbuf_core::ast::parsed::Pattern;
-use dbuf_core::ast::parsed::PatternNode;
-use dbuf_core::ast::parsed::TypeDefinition;
 use tower_lsp::lsp_types::Range;
 
-use crate::core::ast_access::ElaboratedHelper;
 use crate::core::ast_access::LocStringHelper;
 use crate::core::ast_access::LocationHelpers;
-use crate::core::ast_access::{Loc, Str};
+use crate::core::ast_access::Str;
+use crate::core::ast_visitor::safe_skip::safe_skip;
+use crate::core::ast_visitor::VisitResult::*;
+use crate::core::ast_visitor::*;
 use crate::core::dbuf_language::get_builtin_types;
 
 use crate::core::navigator::Navigator;
@@ -21,150 +20,235 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
             if get_builtin_types().contains(t) {
                 return None;
             }
-            navigator
-                .parsed
-                .iter()
-                .find(|d| d.name.as_ref() == t)
-                .map(|d| d.name.get_location().to_lsp())
-                .unwrap_or_else(|| {
-                    panic!("type not found\n{:#?}", symbol);
-                })
-                .into()
+            let mut visitor = FindTypeVisitor { t };
+            visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
         }
         Symbol::Dependency { t, dependency } => {
-            let dep = navigator
-                .parsed
-                .iter()
-                .find(|d| d.name.as_ref() == t)
-                .map(|d| &d.data.dependencies);
-            if let Some(dependencies) = dep {
-                dependencies
-                    .iter()
-                    .find(|d| d.name.as_ref() == dependency)
-                    .map(|d| d.name.get_location().to_lsp())
-                    .unwrap_or_else(|| {
-                        panic!("dependency not found\n{:#?}", symbol);
-                    })
-                    .into()
-            } else {
-                panic!("dependency not found\n{:#?}", symbol);
-            }
+            let mut visitor = FindDependencyVisitor { t, dependency };
+            visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
         }
-        Symbol::Field { constructor, field } => {
-            let elaborated = navigator.elaborated;
-            let t = elaborated
-                .get_constructor_type(constructor)
-                .unwrap_or_else(|| {
-                    panic!("field not found\n{:#?}", symbol);
-                });
-            let body = navigator
-                .parsed
-                .iter()
-                .find(|d| d.name.as_ref() == t)
-                .map(|d| &d.data.body);
-
-            match body {
-                Some(TypeDefinition::Message(m)) => m
-                    .iter()
-                    .find(|f| f.name.as_ref() == field)
-                    .map(|f| f.name.get_location().to_lsp())
-                    .unwrap_or_else(|| {
-                        panic!("field not found\n{:#?}", symbol);
-                    })
-                    .into(),
-                Some(TypeDefinition::Enum(branches)) => {
-                    for b in branches.iter() {
-                        for c in b.constructors.iter() {
-                            if c.name.as_ref() != constructor {
-                                continue;
-                            }
-                            return c
-                                .iter()
-                                .find(|f| f.name.as_ref() == field)
-                                .map(|f| f.name.get_location().to_lsp())
-                                .unwrap_or_else(|| {
-                                    panic!("field not found\n{:#?}", symbol);
-                                })
-                                .into();
-                        }
-                    }
-                    panic!("field not found\n{:#?}", symbol)
-                }
-                None => panic!("field not found\n{:#?}", symbol),
-            }
+        Symbol::Field {
+            t,
+            constructor,
+            field,
+        } => {
+            let mut visitor = FindFieldVisitor {
+                t,
+                constructor,
+                field,
+            };
+            visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
         }
-        Symbol::Alias { t, branch_id, name } => {
-            let parsed = navigator.parsed;
-            let body = parsed
-                .iter()
-                .find(|d| d.name.as_ref() == t)
-                .map(|d| &d.data.body);
-
-            if let Some(TypeDefinition::Enum(e)) = body {
-                let b = e.get(*branch_id).unwrap_or_else(|| {
-                    panic!("alias not found\n{:#?}", symbol);
-                });
-
-                for p in b.patterns.iter() {
-                    let ans = find_alias_in_pattern(p, name);
-                    if ans.is_some() {
-                        return ans;
-                    }
-                }
-            }
-            panic!("alias not found\n{:#?}", symbol);
+        Symbol::Alias {
+            t,
+            branch_id,
+            alias,
+        } => {
+            let mut visitor = FindAliasVisitor {
+                t,
+                branch_id: *branch_id,
+                alias,
+            };
+            visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
         }
-        Symbol::Constructor(constructor) => {
-            let elaborated = navigator.elaborated;
-            let t = elaborated
-                .get_constructor_type(constructor)
-                .unwrap_or_else(|| {
-                    panic!("constructor not found\n{:#?}", symbol);
-                });
-
-            let declaration = navigator
-                .parsed
-                .iter()
-                .find(|d| d.name.as_ref() == t)
-                .unwrap_or_else(|| {
-                    panic!("constructor not found\n{:#?}", symbol);
-                });
-
-            match &declaration.body {
-                TypeDefinition::Message(_) => {
-                    panic!("symbol::constructor shouldn't be returned for messages")
-                }
-                TypeDefinition::Enum(branches) => {
-                    let c = branches
-                        .iter()
-                        .flat_map(|b| b.constructors.iter())
-                        .find(|c| c.name.as_ref() == constructor);
-                    if let Some(c) = c {
-                        c.name.get_location().to_lsp().into()
-                    } else {
-                        panic!("constructor not found\n{:#?}", symbol)
-                    }
-                }
-            }
+        Symbol::Constructor { t, constructor } => {
+            let mut visitor = FindConstructorVisitor { t, constructor };
+            visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
         }
         Symbol::None => None,
     }
 }
+struct FindTypeVisitor<'a> {
+    t: &'a String,
+}
 
-fn find_alias_in_pattern(p: &Pattern<Loc, Str>, alias: &String) -> Option<Range> {
-    match &p.node {
-        PatternNode::ConstructorCall { name: _, fields } => fields
-            .iter()
-            .rev()
-            .find_map(|f| find_alias_in_pattern(&f.data, alias)),
-        PatternNode::Variable { name } => {
-            if name.as_ref() == alias {
-                name.get_location().to_lsp().into()
-            } else {
-                None
-            }
+impl FindTypeVisitor<'_> {
+    fn check_type(&self, t: &Str) -> VisitResult<Range> {
+        if t.as_ref() == self.t {
+            Stop(t.get_location().to_lsp())
+        } else {
+            Skip
         }
-        PatternNode::Literal(_) => None,
-        PatternNode::Underscore => None,
+    }
+}
+
+impl<'a> Visitor<'a> for FindTypeVisitor<'a> {
+    type StopResult = Range;
+
+    fn visit(&mut self, visit: Visit<'a>) -> VisitResult<Self::StopResult> {
+        match &visit {
+            Visit::Keyword(_, _) => Continue,
+            Visit::Type(t, _) => self.check_type(t),
+            _ => safe_skip(&visit),
+        }
+    }
+}
+
+struct FindDependencyVisitor<'a> {
+    t: &'a String,
+    dependency: &'a String,
+}
+
+impl FindDependencyVisitor<'_> {
+    fn check_type(&self, t: &Str) -> VisitResult<Range> {
+        if t.as_ref() == self.t {
+            Continue
+        } else {
+            Skip
+        }
+    }
+
+    fn check_dependency(&self, d: &Str) -> VisitResult<Range> {
+        if d.as_ref() == self.dependency {
+            Stop(d.get_location().to_lsp())
+        } else {
+            Skip
+        }
+    }
+}
+
+impl<'a> Visitor<'a> for FindDependencyVisitor<'a> {
+    type StopResult = Range;
+
+    fn visit(&mut self, visit: Visit<'a>) -> VisitResult<Self::StopResult> {
+        match &visit {
+            Visit::Keyword(_, _) => Continue,
+            Visit::Type(t, _) => self.check_type(t),
+            Visit::Dependency(d, _) => self.check_dependency(d),
+            _ => safe_skip(&visit),
+        }
+    }
+}
+
+struct FindFieldVisitor<'a> {
+    t: &'a String,
+    constructor: &'a String,
+    field: &'a String,
+}
+
+impl FindFieldVisitor<'_> {
+    fn check_type(&self, t: &Str) -> VisitResult<Range> {
+        if t.as_ref() == self.t {
+            Continue
+        } else {
+            Skip
+        }
+    }
+
+    fn check_constructor(&self, c: &Str) -> VisitResult<Range> {
+        if c.as_ref() == self.constructor {
+            Continue
+        } else {
+            Skip
+        }
+    }
+
+    fn check_field(&self, f: &Str) -> VisitResult<Range> {
+        if f.as_ref() == self.field {
+            Stop(f.get_location().to_lsp())
+        } else {
+            Skip
+        }
+    }
+}
+
+impl<'a> Visitor<'a> for FindFieldVisitor<'a> {
+    type StopResult = Range;
+
+    fn visit(&mut self, visit: Visit<'a>) -> VisitResult<Self::StopResult> {
+        match &visit {
+            Visit::Keyword(_, _) => Continue,
+            Visit::Type(t, _) => self.check_type(t),
+            Visit::Branch => Continue,
+            Visit::Constructor(c) => self.check_constructor(c.name),
+            Visit::Filed(f, _) => self.check_field(f),
+            _ => safe_skip(&visit),
+        }
+    }
+}
+
+struct FindAliasVisitor<'a> {
+    t: &'a String,
+    branch_id: usize,
+    alias: &'a String,
+}
+
+impl FindAliasVisitor<'_> {
+    fn check_type(&self, t: &Str) -> VisitResult<Range> {
+        if t.as_ref() == self.t {
+            Continue
+        } else {
+            Skip
+        }
+    }
+
+    fn check_branch(&mut self) -> VisitResult<Range> {
+        if self.branch_id == 0 {
+            Continue
+        } else {
+            self.branch_id -= 1;
+            Skip
+        }
+    }
+
+    fn check_alias(&self, a: &Str) -> VisitResult<Range> {
+        if a.as_ref() == self.alias {
+            Stop(a.get_location().to_lsp())
+        } else {
+            Skip
+        }
+    }
+}
+
+impl<'a> Visitor<'a> for FindAliasVisitor<'a> {
+    type StopResult = Range;
+
+    fn visit(&mut self, visit: Visit<'a>) -> VisitResult<Self::StopResult> {
+        match &visit {
+            Visit::Keyword(_, _) => Continue,
+            Visit::Type(t, _) => self.check_type(t),
+            Visit::Branch => self.check_branch(),
+            Visit::PatternAlias(a) => self.check_alias(a),
+            Visit::PatternCall(_, _) => Continue,
+            Visit::PatternCallArgument(_) => Continue,
+            _ => safe_skip(&visit),
+        }
+    }
+}
+
+struct FindConstructorVisitor<'a> {
+    t: &'a String,
+    constructor: &'a String,
+}
+
+impl FindConstructorVisitor<'_> {
+    fn check_type(&self, t: &Str) -> VisitResult<Range> {
+        if t.as_ref() == self.t {
+            Continue
+        } else {
+            Skip
+        }
+    }
+
+    fn check_constructor(&self, c: &Str) -> VisitResult<Range> {
+        if c.as_ref() == self.constructor {
+            Stop(c.get_location().to_lsp())
+        } else {
+            Skip
+        }
+    }
+}
+
+impl<'a> Visitor<'a> for FindConstructorVisitor<'a> {
+    type StopResult = Range;
+
+    fn visit(&mut self, visit: Visit<'a>) -> VisitResult<Self::StopResult> {
+        match &visit {
+            Visit::Keyword(_, _) => Continue,
+            Visit::Type(t, _) => self.check_type(t),
+            Visit::Branch => Continue,
+            Visit::Constructor(c) => self.check_constructor(c.name),
+            _ => safe_skip(&visit),
+        }
     }
 }
