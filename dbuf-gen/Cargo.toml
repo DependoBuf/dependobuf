@@ -1,0 +1,12 @@
+[package]
+name = "dbuf-gen"
+edition = "2024"
+version.workspace = true
+
+[dependencies]
+dbuf-core.workspace = true
+pretty.workspace = true
+
+[dev-dependencies]
+pretty_assertions.workspace = true
+dbuf-rust-runtime.workspace = true
