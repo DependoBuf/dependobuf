@@ -33,8 +33,8 @@ mod inlay_hint;
 mod navigation;
 
 use tower_lsp::jsonrpc::Result;
-use tower_lsp::lsp_types::request::*;
 use tower_lsp::lsp_types::OneOf::*;
+use tower_lsp::lsp_types::request::*;
 use tower_lsp::lsp_types::*;
 
 use crate::core::ast_access::WorkspaceAccess;

@@ -3,8 +3,8 @@ use tower_lsp::lsp_types::request::*;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
-use dbuf_lsp::handler::{Capabilities, Handler};
 use dbuf_lsp::WorkspaceAccess;
+use dbuf_lsp::handler::{Capabilities, Handler};
 
 use dbuf_lsp::action_handler::ActionHandler;
 use dbuf_lsp::completion_handler::CompletitionHandler;

@@ -71,12 +71,16 @@ impl<'a> ScopeVisitor<'a> {
         self.cons_stack.get_last()
     }
 
+    /// Returns if branch_id is set
+    pub fn has_branch_id(&self) -> bool {
+        self.branch_id >= 0 && self.branch_id <= 1e9 as i32
+    }
+
     /// Returns current branch id.
     ///
     /// Panics if it is not set.
     pub fn get_branch_id(&self) -> usize {
-        assert!(self.branch_id >= 0);
-        assert!(self.branch_id <= 1e9 as i32);
+        assert!(self.has_branch_id());
         self.branch_id as usize
     }
 }

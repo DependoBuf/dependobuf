@@ -6,10 +6,8 @@ use std::{collections::HashSet, sync::LazyLock};
 static BUILTIN_TYPES: LazyLock<HashSet<String>> = LazyLock::new(|| {
     HashSet::from(["Int", "String", "Bool", "Unsigned", "Float"].map(|t| t.to_string()))
 });
-static KEYWORDS: LazyLock<HashSet<String>> = LazyLock::new(|| {
-    HashSet::from(["message", "enum"].map(|t| t.to_string()))
-});
-
+static KEYWORDS: LazyLock<HashSet<String>> =
+    LazyLock::new(|| HashSet::from(["message", "enum"].map(|t| t.to_string())));
 
 /// Returns builtint types set.
 pub fn get_builtin_types() -> &'static HashSet<String> {

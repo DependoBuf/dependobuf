@@ -4,11 +4,11 @@ use crate::core::ast_access::ElaboratedAst;
 use crate::core::ast_access::ParsedAst;
 use crate::core::default_ast::default_parsed_ast;
 
-use super::safe_skip::safe_skip;
-use super::visit_ast;
 use super::Visit;
 use super::VisitResult;
 use super::Visitor;
+use super::safe_skip::safe_skip;
+use super::visit_ast;
 
 fn get_ast() -> ParsedAst {
     default_parsed_ast()

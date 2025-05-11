@@ -15,8 +15,8 @@ mod parsed_ast;
 mod parsers;
 mod string;
 
-use dashmap::mapref::one::Ref;
 use dashmap::DashMap;
+use dashmap::mapref::one::Ref;
 use tower_lsp::lsp_types::Url;
 
 use parsers::*;

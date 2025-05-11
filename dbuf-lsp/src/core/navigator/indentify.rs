@@ -7,8 +7,8 @@ use crate::core::ast_access::{
     ElaboratedAst, ElaboratedHelper, LocStringHelper, LocationHelpers, Str,
 };
 
-use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
 use crate::core::ast_visitor::VisitResult::*;
+use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
 use crate::core::ast_visitor::*;
 
 use super::Navigator;

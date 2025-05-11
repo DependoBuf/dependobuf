@@ -6,8 +6,8 @@ use tower_lsp::lsp_types::Range;
 use crate::core::ast_access::LocStringHelper;
 use crate::core::ast_access::LocationHelpers;
 use crate::core::ast_access::Str;
-use crate::core::ast_visitor::safe_skip::safe_skip;
 use crate::core::ast_visitor::VisitResult::*;
+use crate::core::ast_visitor::safe_skip::safe_skip;
 use crate::core::ast_visitor::*;
 use crate::core::dbuf_language::get_builtin_types;
 
@@ -91,11 +91,7 @@ struct FindDependencyVisitor<'a> {
 
 impl FindDependencyVisitor<'_> {
     fn check_type(&self, t: &Str) -> VisitResult<Range> {
-        if t.as_ref() == self.t {
-            Continue
-        } else {
-            Skip
-        }
+        if t.as_ref() == self.t { Continue } else { Skip }
     }
 
     fn check_dependency(&self, d: &Str) -> VisitResult<Range> {
@@ -128,11 +124,7 @@ struct FindFieldVisitor<'a> {
 
 impl FindFieldVisitor<'_> {
     fn check_type(&self, t: &Str) -> VisitResult<Range> {
-        if t.as_ref() == self.t {
-            Continue
-        } else {
-            Skip
-        }
+        if t.as_ref() == self.t { Continue } else { Skip }
     }
 
     fn check_constructor(&self, c: &Str) -> VisitResult<Range> {
@@ -175,11 +167,7 @@ struct FindAliasVisitor<'a> {
 
 impl FindAliasVisitor<'_> {
     fn check_type(&self, t: &Str) -> VisitResult<Range> {
-        if t.as_ref() == self.t {
-            Continue
-        } else {
-            Skip
-        }
+        if t.as_ref() == self.t { Continue } else { Skip }
     }
 
     fn check_branch(&mut self) -> VisitResult<Range> {
@@ -223,11 +211,7 @@ struct FindConstructorVisitor<'a> {
 
 impl FindConstructorVisitor<'_> {
     fn check_type(&self, t: &Str) -> VisitResult<Range> {
-        if t.as_ref() == self.t {
-            Continue
-        } else {
-            Skip
-        }
+        if t.as_ref() == self.t { Continue } else { Skip }
     }
 
     fn check_constructor(&self, c: &Str) -> VisitResult<Range> {
