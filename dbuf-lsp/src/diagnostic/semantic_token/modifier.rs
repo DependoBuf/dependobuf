@@ -2,6 +2,8 @@
 //! response to `textDocument/semantic` request.
 //!
 
+use std::sync::LazyLock;
+
 use tower_lsp::lsp_types::*;
 
 use strum::IntoEnumIterator;
@@ -12,9 +14,11 @@ pub enum Modifier {
     Declaration,
 }
 
+static MODIFIERS_ORDER: LazyLock<Vec<Modifier>> = LazyLock::new(|| Modifier::iter().collect());
+
 impl Modifier {
     pub fn to_index(self) -> u32 {
-        Modifier::iter().position(|m| m == self).unwrap() as u32
+        MODIFIERS_ORDER.iter().position(|m| *m == self).unwrap() as u32
     }
     pub fn to_lsp(self) -> SemanticTokenModifier {
         match self {
@@ -24,5 +28,5 @@ impl Modifier {
 }
 
 pub fn get_all_modifiers() -> Vec<SemanticTokenModifier> {
-    Modifier::iter().map(|m| m.to_lsp()).collect()
+    MODIFIERS_ORDER.iter().map(|m| m.to_lsp()).collect()
 }

@@ -2,6 +2,8 @@
 //! response to `textDocument/semantic` request.
 //!
 
+use std::sync::LazyLock;
+
 use tower_lsp::lsp_types::*;
 
 use strum::IntoEnumIterator;
@@ -21,9 +23,11 @@ pub enum Token {
     Operator,
 }
 
+static TOKENS_ORDER: LazyLock<Vec<Token>> = LazyLock::new(|| Token::iter().collect());
+
 impl Token {
     pub fn to_index(self) -> u32 {
-        Token::iter().position(|t| t == self).unwrap() as u32
+        TOKENS_ORDER.iter().position(|t| *t == self).unwrap() as u32
     }
     pub fn to_lsp(self) -> SemanticTokenType {
         match self {
@@ -42,5 +46,5 @@ impl Token {
 }
 
 pub fn get_all_tokens() -> Vec<SemanticTokenType> {
-    Token::iter().map(|t| t.to_lsp()).collect()
+    TOKENS_ORDER.iter().map(|t| t.to_lsp()).collect()
 }
