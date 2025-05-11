@@ -1,21 +1,24 @@
 //! Contains dbuf language specific information, like builtin types or constants.
 //!
 
-use std::{collections::HashSet, sync::OnceLock};
+use std::{collections::HashSet, sync::LazyLock};
 
-static BUILTIN_TYPES: OnceLock<HashSet<String>> = OnceLock::new();
-static KEYWORDS: OnceLock<HashSet<String>> = OnceLock::new();
+static BUILTIN_TYPES: LazyLock<HashSet<String>> = LazyLock::new(|| {
+    HashSet::from(["Int", "String", "Bool", "Unsigned", "Float"].map(|t| t.to_string()))
+});
+static KEYWORDS: LazyLock<HashSet<String>> = LazyLock::new(|| {
+    HashSet::from(["message", "enum"].map(|t| t.to_string()))
+});
+
 
 /// Returns builtint types set.
 pub fn get_builtin_types() -> &'static HashSet<String> {
-    BUILTIN_TYPES.get_or_init(|| {
-        HashSet::from(["Int", "String", "Bool", "Unsigned", "Float"].map(|t| t.to_string()))
-    })
+    &BUILTIN_TYPES
 }
 
 /// Returns dbuf keywords set.
 pub fn get_keywords() -> &'static HashSet<String> {
-    KEYWORDS.get_or_init(|| HashSet::from(["message", "enum"].map(|t| t.to_string())))
+    &KEYWORDS
 }
 
 /// Type, that contains correct `type name`.
