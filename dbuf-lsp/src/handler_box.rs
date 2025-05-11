@@ -1,5 +1,5 @@
-use std::cell::OnceCell;
 use std::ops::Deref;
+use std::sync::OnceLock;
 
 /// Box for all handlers.
 ///
@@ -8,7 +8,7 @@ use std::ops::Deref;
 /// * uses HandlerBox.set() to init state.
 /// * returns capabilities of handler.
 pub struct HandlerBox<T> {
-    handler: OnceCell<T>,
+    handler: OnceLock<T>,
 }
 
 impl<T> HandlerBox<T> {
@@ -35,7 +35,3 @@ impl<T> Default for HandlerBox<T> {
         }
     }
 }
-
-/// SAFETY: guaranteed that once cell is set before sync is need,
-/// so at that time it is just read only, which is safe to use.
-unsafe impl<T: Sync> Sync for HandlerBox<T> {}
