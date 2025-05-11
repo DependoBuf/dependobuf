@@ -70,14 +70,16 @@ impl GetImpl<'_> {
         }
     }
 
-    #[allow(unused_variables, reason = "type name is undeducable in context")]
-    #[allow(unreachable_code, reason = "type name is undeducable in context")]
     fn get_argument(&self, argument: &Str) -> Symbol {
-        let ctr = self.scope.get_constructor_expr();
+        let constructor = self.scope.get_constructor_expr();
+        let type_name = self
+            .elaborated
+            .get_constructor_type(constructor)
+            .expect("correctly builded AST");
 
         Symbol::Field {
-            type_name: todo!(),
-            constructor: ctr.to_owned(),
+            type_name: type_name.to_owned(),
+            constructor: constructor.to_owned(),
             field: argument.to_string(),
         }
     }
