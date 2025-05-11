@@ -34,7 +34,7 @@ pub fn get_symbol_impl(navigator: &Navigator, pos: Position) -> Symbol {
 
 impl GetImpl<'_> {
     fn get_type(&self, type_name: &Str) -> Symbol {
-        assert!(type_name.get_location().contains(self.target));
+        assert!(type_name.contains(self.target));
 
         Symbol::Type {
             type_name: type_name.to_string(),
@@ -42,7 +42,7 @@ impl GetImpl<'_> {
     }
 
     fn get_dependency(&self, dependency: &Str) -> Symbol {
-        assert!(dependency.get_location().contains(self.target));
+        assert!(dependency.contains(self.target));
 
         Symbol::Dependency {
             type_name: self.scope.get_type().to_owned(),
@@ -51,7 +51,7 @@ impl GetImpl<'_> {
     }
 
     fn get_field(&self, field: &Str) -> Symbol {
-        assert!(field.get_location().contains(self.target));
+        assert!(field.contains(self.target));
 
         Symbol::Field {
             type_name: self.scope.get_type().to_owned(),
@@ -61,7 +61,7 @@ impl GetImpl<'_> {
     }
 
     fn get_alias(&self, alias: &Str) -> Symbol {
-        assert!(alias.get_location().contains(self.target));
+        assert!(alias.contains(self.target));
 
         Symbol::Alias {
             type_name: self.scope.get_type().to_owned(),
@@ -70,8 +70,20 @@ impl GetImpl<'_> {
         }
     }
 
+    #[allow(unused_variables, reason = "type name is undeducable in context")]
+    #[allow(unreachable_code, reason = "type name is undeducable in context")]
+    fn get_argument(&self, argument: &Str) -> Symbol {
+        let ctr = self.scope.get_constructor_expr();
+
+        Symbol::Field {
+            type_name: todo!(),
+            constructor: ctr.to_owned(),
+            field: argument.to_string(),
+        }
+    }
+
     fn get_constructor(&self, constructor: &Str) -> Symbol {
-        assert!(constructor.get_location().contains(self.target));
+        assert!(constructor.contains(self.target));
 
         if self.elaborated.is_message(constructor.as_ref()) {
             Symbol::Type {
@@ -86,7 +98,7 @@ impl GetImpl<'_> {
     }
 
     fn get_access(&self, access: &Str) -> Symbol {
-        assert!(access.get_location().contains(self.target));
+        assert!(access.contains(self.target));
 
         // Variable should be one of: dependency, field, alias
         if self
@@ -115,104 +127,54 @@ impl<'a> Visitor<'a> for GetImpl<'a> {
 
     fn visit(&mut self, visit: Visit<'a>) -> VisitResult<Self::StopResult> {
         match &visit {
-            Visit::Keyword(_, _) => {}
-            Visit::Type(type_name, type_location) => {
-                if !type_location.contains(self.target) {
-                    return Skip;
-                }
-                if type_name.get_location().contains(self.target) {
-                    return Stop(self.get_type(type_name));
-                }
+            Visit::Type(_, loc) if !loc.contains(self.target) => Skip,
+            Visit::Type(type_name, _) if type_name.contains(self.target) => {
+                Stop(self.get_type(type_name))
             }
-            Visit::Dependency(dep_name, dependency_location) => {
-                if !dependency_location.contains(self.target) {
-                    return Skip;
-                }
-                if dep_name.get_location().contains(self.target) {
-                    return Stop(self.get_dependency(dep_name));
-                }
+            Visit::Dependency(_, loc) if loc.contains(self.target) => Skip,
+            Visit::Dependency(dependency, _) if dependency.contains(self.target) => {
+                Stop(self.get_dependency(dependency))
             }
-            Visit::Branch => {}
-            Visit::PatternAlias(alias) => {
-                if alias.get_location().contains(self.target) {
-                    return Stop(self.get_alias(alias));
-                }
+            Visit::PatternAlias(alias) if alias.contains(self.target) => {
+                Stop(self.get_alias(alias))
             }
-            Visit::PatternCall(constructor, loc) => {
-                if !loc.contains(self.target) {
-                    return Skip;
-                }
-                if constructor.get_location().contains(self.target) {
-                    return Stop(self.get_constructor(constructor));
-                }
+            Visit::PatternCall(_, loc) if !loc.contains(self.target) => Skip,
+            Visit::PatternCall(constructor, _) if constructor.contains(self.target) => {
+                Stop(self.get_constructor(constructor))
             }
-            Visit::PatternCallArgument(_loc_string) => {
-                panic!("constructor call argument name is not implemented");
+            Visit::PatternCallArgument(argument) if argument.contains(self.target) => {
+                Stop(self.get_argument(argument))
             }
-            Visit::PatternCallStop => {}
-            Visit::PatternLiteral(_, _) => {}
-            Visit::PatternUnderscore(_) => {}
-            Visit::Constructor(constructor) => {
-                if !constructor.loc.contains(self.target) {
-                    return Skip;
-                }
-                if constructor.name.get_location().contains(self.target) {
-                    return Stop(self.get_constructor(constructor.name));
-                }
+            Visit::Constructor(constructor) if !constructor.loc.contains(self.target) => Skip,
+            Visit::Constructor(constructor) if constructor.name.contains(self.target) => {
+                Stop(self.get_constructor(constructor.name))
             }
-            Visit::Filed(field, loc) => {
-                if !loc.contains(self.target) {
-                    return Skip;
-                }
-                if field.get_location().contains(self.target) {
-                    return Stop(self.get_field(field));
-                }
+            Visit::Filed(_, loc) if !loc.contains(self.target) => Skip,
+            Visit::Filed(field, _) if field.contains(self.target) => Stop(self.get_field(field)),
+            Visit::TypeExpression(_, loc) if !loc.contains(self.target) => Skip,
+            Visit::TypeExpression(type_name, _) if type_name.contains(self.target) => {
+                Stop(self.get_type(type_name))
             }
-            Visit::TypeExpression(type_name, loc) => {
-                if !loc.contains(self.target) {
-                    return Skip;
-                }
-                if type_name.get_location().contains(self.target) {
-                    return Stop(self.get_type(type_name));
-                }
+            Visit::Expression(loc) if !loc.contains(self.target) => Skip,
+            Visit::AccessChain(access) if access.contains(self.target) => {
+                Stop(self.get_access(access))
             }
-            Visit::Expression(loc) => {
-                if !loc.contains(self.target) {
-                    return Skip;
-                }
+            Visit::AccessChainLast(access) if access.contains(self.target) => {
+                Stop(self.get_access(access))
             }
-            Visit::AccessChainStart => {}
-            Visit::AccessChain(access) => {
-                if access.get_location().contains(self.target) {
-                    return Stop(self.get_access(access));
-                }
+            Visit::ConstructorExpr(constructor) if constructor.contains(self.target) => {
+                Stop(self.get_constructor(constructor))
             }
-            Visit::AccessDot(_) => {}
-            Visit::AccessChainLast(access) => {
-                if access.get_location().contains(self.target) {
-                    return Stop(self.get_access(access));
-                }
+            Visit::ConstructorExprArgument(argument) if argument.contains(self.target) => {
+                Stop(self.get_argument(argument))
             }
-            Visit::ConstructorExpr(constructor) => {
-                if constructor.get_location().contains(self.target) {
-                    return Stop(self.get_constructor(constructor));
-                }
+            Visit::VarAccess(access) if access.contains(self.target) => {
+                Stop(self.get_access(access))
             }
-            Visit::ConstructorExprArgument(_loc_string) => {
-                panic!("constructor call argument name is not implemented");
+            _ => {
+                assert!(matches!(self.scope.visit(visit), VisitResult::Continue));
+                Continue
             }
-            Visit::ConstructorExprStop => {}
-            Visit::VarAccess(access) => {
-                if access.get_location().contains(self.target) {
-                    return Stop(self.get_access(access));
-                }
-            }
-            Visit::Operator(_, _) => {}
-            Visit::Literal(_, _) => {}
-        };
-
-        assert!(matches!(self.scope.visit(visit), VisitResult::Continue));
-
-        Continue
+        }
     }
 }

@@ -8,6 +8,8 @@ use std::fmt;
 
 use super::location::*;
 
+use tower_lsp::lsp_types;
+
 /// String, containing location.
 /// TODO: migrate to type in dbuf-core.
 #[derive(Debug, Clone)]
@@ -30,6 +32,10 @@ pub trait LocStringHelper {
     fn len(&self) -> usize;
     /// Returns string's location.
     fn get_location(&self) -> Location;
+    /// Returns if positions in string's location.
+    fn contains(&self, p: lsp_types::Position) -> bool {
+        self.get_location().contains(p)
+    }
     /// Constructs LocString with empty location.
     /// TODO: remove such API.
     fn unsafe_new(string: &str) -> Self;
