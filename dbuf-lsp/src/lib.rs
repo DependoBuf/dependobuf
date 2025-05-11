@@ -11,9 +11,9 @@ pub(crate) mod core;
 
 pub use core::ast_access::WorkspaceAccess;
 
-pub mod handler;
+pub mod handler_box;
 
-pub mod action_handler;
-pub mod completion_handler;
-pub mod diagnostic_handler;
-pub mod navigation_handler;
+pub mod action;
+pub mod completion;
+pub mod diagnostic;
+pub mod navigation;

@@ -32,13 +32,53 @@ use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
 
+use crate::handler_box::HandlerBox;
+
 use crate::core::ast_access::WorkspaceAccess;
 use crate::core::navigator::Navigator;
-use crate::handler::{Capabilities, Handler};
 
-pub struct DiagnosticHandler {}
+#[derive(Default)]
+pub struct Handler {}
 
-impl DiagnosticHandler {
+/// Capabilities of diagnostic Handler.
+#[must_use]
+pub struct Capabilities {
+    pub document_symbol_provider: Option<OneOf<bool, DocumentSymbolOptions>>,
+    pub semantic_tokens_provider: Option<SemanticTokensServerCapabilities>,
+    pub references_provider: Option<OneOf<bool, ReferencesOptions>>,
+    pub document_highlight_provider: Option<OneOf<bool, DocumentHighlightOptions>>,
+    pub code_lens_provider: Option<CodeLensOptions>,
+}
+
+impl HandlerBox<Handler> {
+    pub fn init(&self, _init: &InitializeParams) -> Capabilities {
+        self.set(Handler {});
+
+        let legend = SemanticTokensLegend {
+            token_types: semantic_token::get_token_types(),
+            token_modifiers: semantic_token::get_token_modifiers(),
+        };
+
+        Capabilities {
+            document_symbol_provider: Some(Left(true)),
+            semantic_tokens_provider: Some(
+                SemanticTokensOptions {
+                    legend,
+                    full: Some(SemanticTokensFullOptions::Bool(true)),
+                    ..Default::default()
+                }
+                .into(),
+            ),
+            references_provider: Some(Left(true)),
+            document_highlight_provider: Some(Left(true)),
+            code_lens_provider: Some(CodeLensOptions {
+                resolve_provider: Some(false),
+            }),
+        }
+    }
+}
+
+impl Handler {
     /// `textDocument/documentSymbol` implementation.
     ///
     pub fn document_symbol(
@@ -126,63 +166,5 @@ impl DiagnosticHandler {
         let lens = code_lens::provide_code_lens(&file);
 
         Ok(Some(lens))
-    }
-}
-
-struct DiagnosticCapabilities {
-    document_symbol: bool,
-    semantic_tokens: Option<SemanticTokensLegend>,
-    references: bool,
-    document_highlight: bool,
-    code_lens: bool,
-}
-
-impl Capabilities for DiagnosticCapabilities {
-    fn apply(self, capabilities: &mut ServerCapabilities) {
-        if self.document_symbol {
-            capabilities.document_symbol_provider = Some(Left(true));
-        }
-        if let Some(legend) = self.semantic_tokens {
-            capabilities.semantic_tokens_provider = Some(
-                SemanticTokensOptions {
-                    legend,
-                    full: Some(SemanticTokensFullOptions::Bool(true)),
-                    ..Default::default()
-                }
-                .into(),
-            );
-        }
-        if self.references {
-            capabilities.references_provider = Some(Left(true));
-        }
-        if self.document_highlight {
-            capabilities.document_highlight_provider = Some(Left(true));
-        }
-        if self.code_lens {
-            capabilities.code_lens_provider = Some(CodeLensOptions {
-                resolve_provider: Some(false),
-            });
-        }
-    }
-}
-
-impl Handler for DiagnosticHandler {
-    fn new() -> Self {
-        Self {}
-    }
-
-    fn init(&self, _init: &InitializeParams) -> impl Capabilities {
-        let legend = SemanticTokensLegend {
-            token_types: semantic_token::get_token_types(),
-            token_modifiers: semantic_token::get_token_modifiers(),
-        };
-
-        DiagnosticCapabilities {
-            document_symbol: true,
-            semantic_tokens: Some(legend),
-            references: true,
-            document_highlight: true,
-            code_lens: true,
-        }
     }
 }

@@ -30,21 +30,42 @@
 
 mod hover;
 mod inlay_hint;
-mod navigation;
+mod navigation_impl;
 
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::request::*;
 use tower_lsp::lsp_types::*;
 
+use crate::handler_box::HandlerBox;
+
 use crate::core::ast_access::WorkspaceAccess;
 use crate::core::navigator::Navigator;
-use crate::handler::Capabilities;
-use crate::handler::Handler;
 
-pub struct NavigationHandler {}
+#[derive(Default)]
+pub struct Handler {}
 
-impl NavigationHandler {
+/// Capabilities of navigation Handler.
+#[must_use]
+pub struct Capabilities {
+    pub definition_provider: Option<OneOf<bool, DefinitionOptions>>,
+    pub type_definition_provider: Option<TypeDefinitionProviderCapability>,
+    pub hover_provider: Option<HoverProviderCapability>,
+}
+
+impl HandlerBox<Handler> {
+    pub fn init(&self, _init: &InitializeParams) -> Capabilities {
+        self.set(Handler {});
+
+        Capabilities {
+            definition_provider: Some(Left(true)),
+            type_definition_provider: Some(TypeDefinitionProviderCapability::Simple(true)),
+            hover_provider: Some(HoverProviderCapability::Simple(true)),
+        }
+    }
+}
+
+impl Handler {
     /// `textDocument/definition` implementation.
     ///
     pub fn goto_definition(
@@ -57,7 +78,7 @@ impl NavigationHandler {
         let navigator = Navigator::new(&file);
 
         let symbol = navigator.get_symbol(pos);
-        let range = navigation::find_definition(&navigator, &symbol);
+        let range = navigation_impl::find_definition(&navigator, &symbol);
 
         Ok(range.map(|range| {
             GotoDefinitionResponse::Scalar(Location {
@@ -79,9 +100,9 @@ impl NavigationHandler {
         let navigator = Navigator::new(&file);
 
         let symbol = navigator.get_symbol(pos);
-        let t = navigation::find_type(&navigator, symbol);
+        let t = navigation_impl::find_type(&navigator, symbol);
 
-        let range = navigation::find_definition(&navigator, &t);
+        let range = navigation_impl::find_definition(&navigator, &t);
 
         Ok(range.map(|range| {
             GotoTypeDefinitionResponse::Scalar(Location {
@@ -119,41 +140,6 @@ impl NavigationHandler {
                 contents: HoverContents::Array(strings),
                 range: None,
             }))
-        }
-    }
-}
-
-struct NavigationCapabilities {
-    definition: bool,
-    type_definition: bool,
-    hover: bool,
-}
-
-impl Capabilities for NavigationCapabilities {
-    fn apply(self, capabilities: &mut ServerCapabilities) {
-        if self.definition {
-            capabilities.definition_provider = Some(Left(true));
-        }
-        if self.type_definition {
-            capabilities.type_definition_provider =
-                Some(TypeDefinitionProviderCapability::Simple(true));
-        }
-        if self.hover {
-            capabilities.hover_provider = Some(HoverProviderCapability::Simple(true));
-        }
-    }
-}
-
-impl Handler for NavigationHandler {
-    fn new() -> Self {
-        Self {}
-    }
-
-    fn init(&self, _init: &InitializeParams) -> impl Capabilities {
-        NavigationCapabilities {
-            definition: true,
-            type_definition: true,
-            hover: true,
         }
     }
 }

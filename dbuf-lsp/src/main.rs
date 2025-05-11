@@ -4,20 +4,20 @@ use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
 use dbuf_lsp::WorkspaceAccess;
-use dbuf_lsp::handler::{Capabilities, Handler};
 
-use dbuf_lsp::action_handler::ActionHandler;
-use dbuf_lsp::completion_handler::CompletitionHandler;
-use dbuf_lsp::diagnostic_handler::DiagnosticHandler;
-use dbuf_lsp::navigation_handler::NavigationHandler;
+use dbuf_lsp::action;
+use dbuf_lsp::completion;
+use dbuf_lsp::diagnostic;
+use dbuf_lsp::handler_box::HandlerBox;
+use dbuf_lsp::navigation;
 
 struct Backend {
     client: Client,
     workspace: WorkspaceAccess,
-    action_handler: ActionHandler,
-    completition_handler: CompletitionHandler,
-    diagnostic_handler: DiagnosticHandler,
-    navigation_handler: NavigationHandler,
+    action_handler: HandlerBox<action::Handler>,
+    completition_handler: HandlerBox<completion::Handler>,
+    diagnostic_handler: HandlerBox<diagnostic::Handler>,
+    navigation_handler: HandlerBox<navigation::Handler>,
 }
 
 impl Backend {
@@ -25,10 +25,10 @@ impl Backend {
         Self {
             client,
             workspace: WorkspaceAccess::new(),
-            action_handler: ActionHandler::new(),
-            completition_handler: CompletitionHandler::new(),
-            diagnostic_handler: DiagnosticHandler::new(),
-            navigation_handler: NavigationHandler::new(),
+            action_handler: HandlerBox::default(),
+            completition_handler: Default::default(),
+            diagnostic_handler: Default::default(),
+            navigation_handler: Default::default(),
         }
     }
 }
@@ -49,12 +49,24 @@ impl LanguageServer for Backend {
             ..Default::default()
         };
 
-        self.action_handler.init(&init).apply(&mut capabilities);
-        self.completition_handler
-            .init(&init)
-            .apply(&mut capabilities);
-        self.diagnostic_handler.init(&init).apply(&mut capabilities);
-        self.navigation_handler.init(&init).apply(&mut capabilities);
+        let current_capabilities = self.action_handler.init(&init);
+        capabilities.document_formatting_provider =
+            current_capabilities.document_formatting_provider;
+        capabilities.rename_provider = current_capabilities.rename_provider;
+
+        let _current_capabilites = self.completition_handler.init(&init);
+
+        let current_capabilities = self.diagnostic_handler.init(&init);
+        capabilities.document_symbol_provider = current_capabilities.document_symbol_provider;
+        capabilities.semantic_tokens_provider = current_capabilities.semantic_tokens_provider;
+        capabilities.references_provider = current_capabilities.references_provider;
+        capabilities.document_highlight_provider = current_capabilities.document_highlight_provider;
+        capabilities.code_lens_provider = current_capabilities.code_lens_provider;
+
+        let current_capabilities = self.navigation_handler.init(&init);
+        capabilities.definition_provider = current_capabilities.definition_provider;
+        capabilities.type_definition_provider = current_capabilities.type_definition_provider;
+        capabilities.hover_provider = current_capabilities.hover_provider;
 
         Ok(InitializeResult {
             capabilities,

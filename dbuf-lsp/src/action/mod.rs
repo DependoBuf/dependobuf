@@ -24,17 +24,43 @@ use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
 
+use crate::handler_box::HandlerBox;
+
 use crate::core::ast_access::WorkspaceAccess;
 use crate::core::errors::FormatError;
 use crate::core::navigator::Navigator;
 use crate::core::pretty_printer::PrettyPrinter;
-use crate::handler::{Capabilities, Handler};
 
-pub struct ActionHandler {
+pub struct Handler {
     rename_cache: RenameCache,
 }
 
-impl ActionHandler {
+/// Capabilities of action Handler.
+#[must_use]
+pub struct Capabilities {
+    pub document_formatting_provider: Option<OneOf<bool, DocumentFormattingOptions>>,
+    pub rename_provider: Option<OneOf<bool, RenameOptions>>,
+}
+
+impl HandlerBox<Handler> {
+    pub fn init(&self, _init: &InitializeParams) -> Capabilities {
+        self.set(Handler {
+            rename_cache: RenameCache::default(),
+        });
+
+        Capabilities {
+            document_formatting_provider: Some(Left(true)),
+            rename_provider: Some(Right(RenameOptions {
+                prepare_provider: Some(true),
+                work_done_progress_options: WorkDoneProgressOptions {
+                    work_done_progress: None,
+                },
+            })),
+        }
+    }
+}
+
+impl Handler {
     /// `textDocument/formatting` implementation.
     ///
     /// Currently implementation is simple: just rewrite whole file, using pretty printer.
@@ -151,38 +177,16 @@ impl ActionHandler {
     }
 }
 
-struct ActionCapabilities {
-    formatting: bool,
-    rename: bool,
-}
-
-impl Capabilities for ActionCapabilities {
-    fn apply(self, capabilities: &mut ServerCapabilities) {
-        if self.formatting {
-            capabilities.document_formatting_provider = Some(Left(true));
-        }
-        if self.rename {
-            capabilities.rename_provider = Some(Right(RenameOptions {
+impl Handler {
+    pub fn init(&self, _init: &InitializeParams) -> Capabilities {
+        Capabilities {
+            document_formatting_provider: Some(Left(true)),
+            rename_provider: Some(Right(RenameOptions {
                 prepare_provider: Some(true),
                 work_done_progress_options: WorkDoneProgressOptions {
                     work_done_progress: None,
                 },
-            }));
-        }
-    }
-}
-
-impl Handler for ActionHandler {
-    fn new() -> ActionHandler {
-        ActionHandler {
-            rename_cache: RenameCache::default(),
-        }
-    }
-
-    fn init(&self, _init: &InitializeParams) -> impl Capabilities {
-        ActionCapabilities {
-            formatting: true,
-            rename: true,
+            })),
         }
     }
 }
