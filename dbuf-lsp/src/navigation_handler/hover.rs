@@ -11,27 +11,34 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
     let elaborated = file.get_elaborated();
 
     match symbol {
-        Symbol::Type(t) => vec![MarkedString::LanguageString(get_explicit_type(t, file))],
-        Symbol::Dependency { t, dependency } => vec![
-            MarkedString::LanguageString(get_type_header(&t, file)),
-            MarkedString::LanguageString(get_dependency_declaration(&t, &dependency, file)),
-            MarkedString::String(format!("dependency of {}", t)),
+        Symbol::Type { type_name } => vec![MarkedString::LanguageString(get_explicit_type(
+            type_name, file,
+        ))],
+        Symbol::Dependency {
+            type_name,
+            dependency,
+        } => vec![
+            MarkedString::LanguageString(get_type_header(&type_name, file)),
+            MarkedString::LanguageString(get_dependency_declaration(&type_name, &dependency, file)),
+            MarkedString::String(format!("dependency of {}", type_name)),
         ],
         Symbol::Field {
-            t,
+            type_name,
             constructor,
             field,
         } => {
             let mut strings = Vec::with_capacity(4);
 
-            strings.push(MarkedString::LanguageString(get_type_header(&t, file)));
-            if !elaborated.is_message(&t) {
+            strings.push(MarkedString::LanguageString(get_type_header(
+                &type_name, file,
+            )));
+            if !elaborated.is_message(&type_name) {
                 strings.push(MarkedString::LanguageString(get_constructor_header(
                     &constructor,
                 )));
             }
             strings.push(MarkedString::LanguageString(get_field_declaration(
-                &t,
+                &type_name,
                 &constructor,
                 &field,
                 file,
@@ -40,19 +47,26 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
             strings
         }
         Symbol::Alias {
-            t,
+            type_name,
             branch_id,
             alias,
         } => vec![
-            MarkedString::LanguageString(get_type_header(&t, file)),
-            MarkedString::LanguageString(get_explicit_branch(&t, branch_id, file)),
+            MarkedString::LanguageString(get_type_header(&type_name, file)),
+            MarkedString::LanguageString(get_explicit_branch(&type_name, branch_id, file)),
             MarkedString::String(format!("alias {}", alias)),
         ],
-        Symbol::Constructor { t, constructor } => {
+        Symbol::Constructor {
+            type_name,
+            constructor,
+        } => {
             vec![
-                MarkedString::LanguageString(get_type_header(&t, file)),
-                MarkedString::LanguageString(get_explicit_constructor(&t, &constructor, file)),
-                MarkedString::String(format!("constructor of {}", t)),
+                MarkedString::LanguageString(get_type_header(&type_name, file)),
+                MarkedString::LanguageString(get_explicit_constructor(
+                    &type_name,
+                    &constructor,
+                    file,
+                )),
+                MarkedString::String(format!("constructor of {}", type_name)),
             ]
         }
         Symbol::None => Vec::new(),

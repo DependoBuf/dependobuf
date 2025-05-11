@@ -1,8 +1,8 @@
 use tower_lsp::lsp_types::*;
 
 use crate::core::ast_access::{File, Loc, LocStringHelper, LocationHelpers, Str};
-use crate::core::navigator::Navigator;
-use crate::core::{ast_visitor::*, navigator};
+use crate::core::ast_visitor::*;
+use crate::core::navigator::{Navigator, Symbol};
 
 /// Returns all code lens of file.
 pub fn provide_code_lens(file: &File) -> Vec<CodeLens> {
@@ -27,7 +27,9 @@ impl CodeLensVisitor<'_> {
     fn calc_reference_count(&self, type_name: &Str) -> u32 {
         let navigator = Navigator::new(self.file);
 
-        let symbol = navigator::Symbol::Type(type_name.to_string());
+        let symbol = Symbol::Type {
+            type_name: type_name.to_string(),
+        };
         (navigator.find_symbols(&symbol).len() - 1) as u32
     }
 

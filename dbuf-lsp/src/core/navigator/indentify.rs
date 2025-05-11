@@ -36,14 +36,16 @@ impl GetImpl<'_> {
     fn get_type(&self, type_name: &Str) -> Symbol {
         assert!(type_name.get_location().contains(self.target));
 
-        Symbol::Type(type_name.to_string())
+        Symbol::Type {
+            type_name: type_name.to_string(),
+        }
     }
 
     fn get_dependency(&self, dependency: &Str) -> Symbol {
         assert!(dependency.get_location().contains(self.target));
 
         Symbol::Dependency {
-            t: self.scope.get_type().to_owned(),
+            type_name: self.scope.get_type().to_owned(),
             dependency: dependency.to_string(),
         }
     }
@@ -52,7 +54,7 @@ impl GetImpl<'_> {
         assert!(field.get_location().contains(self.target));
 
         Symbol::Field {
-            t: self.scope.get_type().to_owned(),
+            type_name: self.scope.get_type().to_owned(),
             constructor: self.scope.get_constructor().to_owned(),
             field: field.to_string(),
         }
@@ -62,7 +64,7 @@ impl GetImpl<'_> {
         assert!(alias.get_location().contains(self.target));
 
         Symbol::Alias {
-            t: self.scope.get_type().to_owned(),
+            type_name: self.scope.get_type().to_owned(),
             branch_id: self.scope.get_branch_id(),
             alias: alias.to_string(),
         }
@@ -72,10 +74,12 @@ impl GetImpl<'_> {
         assert!(constructor.get_location().contains(self.target));
 
         if self.elaborated.is_message(constructor.as_ref()) {
-            Symbol::Type(constructor.to_string())
+            Symbol::Type {
+                type_name: constructor.to_string(),
+            }
         } else {
             Symbol::Constructor {
-                t: self.scope.get_type().to_owned(),
+                type_name: self.scope.get_type().to_owned(),
                 constructor: constructor.to_string(),
             }
         }

@@ -14,15 +14,20 @@ fn get_type(te: &TypeExpression<String>) -> Symbol {
         name,
         dependencies: _,
     } = te;
-    Symbol::Type(name.to_string())
+    Symbol::Type {
+        type_name: name.to_string(),
+    }
 }
 
 pub fn find_type_impl(navigator: &Navigator, symbol: Symbol) -> Symbol {
     match &symbol {
-        Symbol::Type(_) => symbol,
-        Symbol::Dependency { t, dependency } => {
+        Symbol::Type { type_name: _ } => symbol,
+        Symbol::Dependency {
+            type_name,
+            dependency,
+        } => {
             let elaborated = navigator.elaborated;
-            let t = elaborated.get_type(t).unwrap_or_else(|| {
+            let t = elaborated.get_type(type_name).unwrap_or_else(|| {
                 panic!("dependency not found\n{:#?}", symbol);
             });
 
@@ -35,7 +40,7 @@ pub fn find_type_impl(navigator: &Navigator, symbol: Symbol) -> Symbol {
                 })
         }
         Symbol::Field {
-            t: _,
+            type_name: _,
             constructor,
             field,
         } => {
@@ -52,7 +57,7 @@ pub fn find_type_impl(navigator: &Navigator, symbol: Symbol) -> Symbol {
                 })
         }
         Symbol::Alias {
-            t,
+            type_name,
             branch_id,
             alias,
         } => {
@@ -60,7 +65,7 @@ pub fn find_type_impl(navigator: &Navigator, symbol: Symbol) -> Symbol {
             let elaborated = navigator.elaborated;
             let body = parsed
                 .iter()
-                .find(|d| d.name.as_ref() == t)
+                .find(|d| d.name.as_ref() == type_name)
                 .map(|d| &d.data.body);
 
             if let Some(TypeDefinition::Enum(e)) = body {
@@ -68,7 +73,10 @@ pub fn find_type_impl(navigator: &Navigator, symbol: Symbol) -> Symbol {
                     panic!("alias not found\n{:#?}", symbol);
                 });
                 let cons = b.constructors.first().unwrap_or_else(|| {
-                    panic!("alias not found\n{:#?}", symbol);
+                    todo!(
+                        "not implemented scenario: empty branch in enum \n{:#?}",
+                        symbol
+                    );
                 });
                 let cons_name = cons.name.as_ref();
 
@@ -86,14 +94,19 @@ pub fn find_type_impl(navigator: &Navigator, symbol: Symbol) -> Symbol {
                 panic!("alias not found\n{:#?}", symbol);
             }
         }
-        Symbol::Constructor { t: _, constructor } => {
+        Symbol::Constructor {
+            type_name: _,
+            constructor,
+        } => {
             let elaborated = navigator.elaborated;
             let type_name = elaborated
                 .get_constructor_type(constructor)
                 .unwrap_or_else(|| {
                     panic!("constructor not found\n{:#?}", symbol);
                 });
-            Symbol::Type(type_name.to_string())
+            Symbol::Type {
+                type_name: type_name.to_string(),
+            }
         }
         Symbol::None => Symbol::None,
     }

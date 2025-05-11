@@ -34,33 +34,41 @@ pub fn find_symbols_impl(navigator: &Navigator, symbol: &Symbol) -> Vec<Range> {
 impl FindImpl<'_> {
     fn correct_symbol(&self, str: &Str) -> bool {
         match &self.target {
-            Symbol::Type(type_name) => type_name == str.as_ref(),
-            Symbol::Dependency { t, dependency } => {
-                self.scope.has_type() && t == self.scope.get_type() && dependency == str.as_ref()
+            Symbol::Type { type_name } => type_name == str.as_ref(),
+            Symbol::Dependency {
+                type_name,
+                dependency,
+            } => {
+                self.scope.has_type()
+                    && type_name == self.scope.get_type()
+                    && dependency == str.as_ref()
             }
             Symbol::Field {
-                t,
+                type_name,
                 constructor,
                 field,
             } => {
                 self.scope.has_type()
-                    && t == self.scope.get_type()
+                    && type_name == self.scope.get_type()
                     && self.scope.has_constructor()
                     && constructor == self.scope.get_constructor()
                     && field == str.as_ref()
             }
             Symbol::Alias {
-                t,
+                type_name,
                 branch_id,
                 alias,
             } => {
                 self.scope.has_type()
-                    && t == self.scope.get_type()
+                    && type_name == self.scope.get_type()
                     && self.scope.has_branch_id()
                     && *branch_id == self.scope.get_branch_id()
                     && alias == str.as_ref()
             }
-            Symbol::Constructor { t: _, constructor } => constructor == str.as_ref(),
+            Symbol::Constructor {
+                type_name: _,
+                constructor,
+            } => constructor == str.as_ref(),
             Symbol::None => false,
         }
     }

@@ -16,23 +16,23 @@ use crate::core::navigator::Symbol;
 /// * renameable alias.
 pub fn renameable_symbol(symbol: &Symbol) -> bool {
     match symbol {
-        Symbol::Type(t) => !dbuf_language::get_builtin_types().contains(t),
+        Symbol::Type { type_name } => !dbuf_language::get_builtin_types().contains(type_name),
         Symbol::Dependency {
-            t: _,
+            type_name: _,
             dependency: _,
         } => true,
         Symbol::Field {
-            t: _,
+            type_name: _,
             constructor: _,
             field: _,
         } => true,
         Symbol::Alias {
-            t: _,
+            type_name: _,
             branch_id: _,
             alias: _,
         } => false,
         Symbol::Constructor {
-            t: _,
+            type_name: _,
             constructor: _,
         } => false,
         Symbol::None => false,
@@ -52,11 +52,11 @@ pub fn renameable_to_symbol(symbol: &Symbol, new_name: &str, ast: &ElaboratedAst
     }
 
     match symbol {
-        Symbol::Type(t) => {
-            if t == new_name {
+        Symbol::Type { type_name } => {
+            if type_name == new_name {
                 return RenameError::ToPrevious.into();
             }
-            if dbuf_language::get_builtin_types().contains(t) {
+            if dbuf_language::get_builtin_types().contains(type_name) {
                 return RenameError::OfBuiltin.into();
             }
             let new_type_name: TypeName = match new_name.try_into() {
@@ -68,7 +68,10 @@ pub fn renameable_to_symbol(symbol: &Symbol, new_name: &str, ast: &ElaboratedAst
                 return RenameError::ToExistingType(new_name.to_owned()).into();
             }
         }
-        Symbol::Dependency { t, dependency } => {
+        Symbol::Dependency {
+            type_name,
+            dependency,
+        } => {
             if dependency == new_name {
                 return RenameError::ToPrevious.into();
             }
@@ -77,16 +80,16 @@ pub fn renameable_to_symbol(symbol: &Symbol, new_name: &str, ast: &ElaboratedAst
                 Err(()) => return RenameError::ToBadDependency(new_name.to_owned()).into(),
             };
             let checker = ConflictChecker::new(ast);
-            if checker.type_has_resourse(t, new_dependency_name) {
+            if checker.type_has_resourse(type_name, new_dependency_name) {
                 return RenameError::ToExistingResource {
-                    t: t.to_owned(),
+                    t: type_name.to_owned(),
                     r: new_name.to_owned(),
                 }
                 .into();
             }
         }
         Symbol::Field {
-            t,
+            type_name,
             constructor: _,
             field,
         } => {
@@ -98,21 +101,21 @@ pub fn renameable_to_symbol(symbol: &Symbol, new_name: &str, ast: &ElaboratedAst
                 Err(_) => return RenameError::ToBadField(new_name.to_owned()).into(),
             };
             let checker = ConflictChecker::new(ast);
-            if checker.type_has_resourse(t, new_field_name) {
+            if checker.type_has_resourse(type_name, new_field_name) {
                 return RenameError::ToExistingResource {
-                    t: t.to_owned(),
+                    t: type_name.to_owned(),
                     r: new_name.to_owned(),
                 }
                 .into();
             }
         }
         Symbol::Alias {
-            t: _,
+            type_name: _,
             branch_id: _,
             alias: _,
         } => return RenameError::OfAlias.into(),
         Symbol::Constructor {
-            t: _,
+            type_name: _,
             constructor: _,
         } => return RenameError::OfConstructor.into(),
         Symbol::None => return RenameError::OfNone.into(),

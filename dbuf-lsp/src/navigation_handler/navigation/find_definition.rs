@@ -16,55 +16,67 @@ use crate::core::navigator::Symbol;
 
 pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Range> {
     match symbol {
-        Symbol::Type(t) => {
-            if get_builtin_types().contains(t) {
+        Symbol::Type { type_name } => {
+            if get_builtin_types().contains(type_name) {
                 return None;
             }
-            let mut visitor = FindTypeVisitor { t };
+            let mut visitor = FindTypeVisitor { type_name };
             visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
         }
-        Symbol::Dependency { t, dependency } => {
-            let mut visitor = FindDependencyVisitor { t, dependency };
+        Symbol::Dependency {
+            type_name,
+            dependency,
+        } => {
+            let mut visitor = FindDependencyVisitor {
+                type_name,
+                dependency,
+            };
             visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
         }
         Symbol::Field {
-            t,
+            type_name,
             constructor,
             field,
         } => {
             let mut visitor = FindFieldVisitor {
-                t,
+                type_name,
                 constructor,
                 field,
             };
             visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
         }
         Symbol::Alias {
-            t,
+            type_name,
             branch_id,
             alias,
         } => {
             let mut visitor = FindAliasVisitor {
-                t,
+                type_name,
                 branch_id: *branch_id,
                 alias,
             };
             visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
         }
-        Symbol::Constructor { t, constructor } => {
-            let mut visitor = FindConstructorVisitor { t, constructor };
+        Symbol::Constructor {
+            type_name,
+            constructor,
+        } => {
+            let mut visitor = FindConstructorVisitor {
+                type_name,
+                constructor,
+            };
             visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
         }
         Symbol::None => None,
     }
 }
 struct FindTypeVisitor<'a> {
-    t: &'a String,
+    type_name: &'a String,
 }
 
 impl FindTypeVisitor<'_> {
     fn check_type(&self, t: &Str) -> VisitResult<Range> {
-        if t.as_ref() == self.t {
+        if t.as_ref() == self.type_name {
             Stop(t.get_location().to_lsp())
         } else {
             Skip
@@ -85,13 +97,17 @@ impl<'a> Visitor<'a> for FindTypeVisitor<'a> {
 }
 
 struct FindDependencyVisitor<'a> {
-    t: &'a String,
+    type_name: &'a String,
     dependency: &'a String,
 }
 
 impl FindDependencyVisitor<'_> {
     fn check_type(&self, t: &Str) -> VisitResult<Range> {
-        if t.as_ref() == self.t { Continue } else { Skip }
+        if t.as_ref() == self.type_name {
+            Continue
+        } else {
+            Skip
+        }
     }
 
     fn check_dependency(&self, d: &Str) -> VisitResult<Range> {
@@ -117,14 +133,18 @@ impl<'a> Visitor<'a> for FindDependencyVisitor<'a> {
 }
 
 struct FindFieldVisitor<'a> {
-    t: &'a String,
+    type_name: &'a String,
     constructor: &'a String,
     field: &'a String,
 }
 
 impl FindFieldVisitor<'_> {
     fn check_type(&self, t: &Str) -> VisitResult<Range> {
-        if t.as_ref() == self.t { Continue } else { Skip }
+        if t.as_ref() == self.type_name {
+            Continue
+        } else {
+            Skip
+        }
     }
 
     fn check_constructor(&self, c: &Str) -> VisitResult<Range> {
@@ -160,14 +180,18 @@ impl<'a> Visitor<'a> for FindFieldVisitor<'a> {
 }
 
 struct FindAliasVisitor<'a> {
-    t: &'a String,
+    type_name: &'a String,
     branch_id: usize,
     alias: &'a String,
 }
 
 impl FindAliasVisitor<'_> {
     fn check_type(&self, t: &Str) -> VisitResult<Range> {
-        if t.as_ref() == self.t { Continue } else { Skip }
+        if t.as_ref() == self.type_name {
+            Continue
+        } else {
+            Skip
+        }
     }
 
     fn check_branch(&mut self) -> VisitResult<Range> {
@@ -205,13 +229,17 @@ impl<'a> Visitor<'a> for FindAliasVisitor<'a> {
 }
 
 struct FindConstructorVisitor<'a> {
-    t: &'a String,
+    type_name: &'a String,
     constructor: &'a String,
 }
 
 impl FindConstructorVisitor<'_> {
     fn check_type(&self, t: &Str) -> VisitResult<Range> {
-        if t.as_ref() == self.t { Continue } else { Skip }
+        if t.as_ref() == self.type_name {
+            Continue
+        } else {
+            Skip
+        }
     }
 
     fn check_constructor(&self, c: &Str) -> VisitResult<Range> {
