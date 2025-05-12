@@ -4,6 +4,9 @@
 mod modifier;
 mod token;
 
+#[cfg(test)]
+mod tests;
+
 use dbuf_core::ast::operators::Literal;
 use modifier::Modifier;
 use token::Token;
