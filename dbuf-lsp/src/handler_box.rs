@@ -35,8 +35,6 @@ impl<T> Deref for HandlerBox<T> {
     }
 }
 
-// Strange: cannot use #[derive(Default)] (main can't use action_handler: Default::default()). Seem like a bug in Rust for me,
-// so any explanatory comment whould be helpful.
 impl<T> Default for HandlerBox<T> {
     fn default() -> Self {
         Self {
