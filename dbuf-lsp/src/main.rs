@@ -5,10 +5,11 @@ use tower_lsp::{Client, LanguageServer, LspService, Server};
 
 use dbuf_lsp::WorkspaceAccess;
 
+use dbuf_lsp::handler_box::HandlerBox;
+
 use dbuf_lsp::action;
 use dbuf_lsp::completion;
 use dbuf_lsp::diagnostic;
-use dbuf_lsp::handler_box::HandlerBox;
 use dbuf_lsp::navigation;
 
 struct Backend {

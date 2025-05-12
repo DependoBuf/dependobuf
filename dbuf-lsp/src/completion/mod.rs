@@ -14,9 +14,9 @@
 //!
 //!
 
-use tower_lsp::lsp_types::*;
+use tower_lsp::lsp_types::InitializeParams;
 
-use crate::handler_box::HandlerBox;
+use crate::handler_box;
 
 pub struct Handler {}
 
@@ -24,15 +24,12 @@ pub struct Handler {}
 #[must_use]
 pub struct Capabilities {}
 
-impl HandlerBox<Handler> {
-    pub fn init(&self, _init: &InitializeParams) -> Capabilities {
-        self.set(Handler {});
-        Capabilities {}
+impl handler_box::Handler for Handler {
+    type Capabilities = Capabilities;
+
+    fn create(_init: &InitializeParams) -> (Self::Capabilities, Self) {
+        (Capabilities {}, Handler {})
     }
 }
 
-impl Handler {
-    pub fn init(&self, _init: &InitializeParams) -> Capabilities {
-        Capabilities {}
-    }
-}
+impl Handler {}

@@ -24,7 +24,7 @@ use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
 
-use crate::handler_box::HandlerBox;
+use crate::handler_box;
 
 use crate::core::ast_access::WorkspaceAccess;
 use crate::core::errors::FormatError;
@@ -42,21 +42,24 @@ pub struct Capabilities {
     pub rename_provider: Option<OneOf<bool, RenameOptions>>,
 }
 
-impl HandlerBox<Handler> {
-    pub fn init(&self, _init: &InitializeParams) -> Capabilities {
-        self.set(Handler {
-            rename_cache: RenameCache::default(),
-        });
+impl handler_box::Handler for Handler {
+    type Capabilities = Capabilities;
 
-        Capabilities {
-            document_formatting_provider: Some(Left(true)),
-            rename_provider: Some(Right(RenameOptions {
-                prepare_provider: Some(true),
-                work_done_progress_options: WorkDoneProgressOptions {
-                    work_done_progress: None,
-                },
-            })),
-        }
+    fn create(_init: &InitializeParams) -> (Self::Capabilities, Self) {
+        (
+            Capabilities {
+                document_formatting_provider: Some(Left(true)),
+                rename_provider: Some(Right(RenameOptions {
+                    prepare_provider: Some(true),
+                    work_done_progress_options: WorkDoneProgressOptions {
+                        work_done_progress: None,
+                    },
+                })),
+            },
+            Handler {
+                rename_cache: RenameCache::default(),
+            },
+        )
     }
 }
 
@@ -174,19 +177,5 @@ impl Handler {
             }])),
             change_annotations: None,
         }))
-    }
-}
-
-impl Handler {
-    pub fn init(&self, _init: &InitializeParams) -> Capabilities {
-        Capabilities {
-            document_formatting_provider: Some(Left(true)),
-            rename_provider: Some(Right(RenameOptions {
-                prepare_provider: Some(true),
-                work_done_progress_options: WorkDoneProgressOptions {
-                    work_done_progress: None,
-                },
-            })),
-        }
     }
 }

@@ -37,7 +37,7 @@ use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::request::*;
 use tower_lsp::lsp_types::*;
 
-use crate::handler_box::HandlerBox;
+use crate::handler_box;
 
 use crate::core::ast_access::WorkspaceAccess;
 use crate::core::navigator::Navigator;
@@ -53,15 +53,18 @@ pub struct Capabilities {
     pub hover_provider: Option<HoverProviderCapability>,
 }
 
-impl HandlerBox<Handler> {
-    pub fn init(&self, _init: &InitializeParams) -> Capabilities {
-        self.set(Handler {});
+impl handler_box::Handler for Handler {
+    type Capabilities = Capabilities;
 
-        Capabilities {
-            definition_provider: Some(Left(true)),
-            type_definition_provider: Some(TypeDefinitionProviderCapability::Simple(true)),
-            hover_provider: Some(HoverProviderCapability::Simple(true)),
-        }
+    fn create(_init: &InitializeParams) -> (Self::Capabilities, Self) {
+        (
+            Capabilities {
+                definition_provider: Some(Left(true)),
+                type_definition_provider: Some(TypeDefinitionProviderCapability::Simple(true)),
+                hover_provider: Some(HoverProviderCapability::Simple(true)),
+            },
+            Handler {},
+        )
     }
 }
 

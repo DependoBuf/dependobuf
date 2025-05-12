@@ -1,20 +1,29 @@
 use std::ops::Deref;
 use std::sync::OnceLock;
 
+use tower_lsp::lsp_types::InitializeParams;
+
 /// Box for all handlers.
 ///
 /// Each handler should implement
-/// HandlerBox<Handler> with method init, which:
-/// * uses HandlerBox.set() to init state.
-/// * returns capabilities of handler.
+/// trait Handler with function create,
+/// that returns Capabilities and instance
+/// of handler.
 pub struct HandlerBox<T> {
     handler: OnceLock<T>,
 }
 
-impl<T> HandlerBox<T> {
-    pub(crate) fn set(&self, state: T) {
+pub trait Handler {
+    type Capabilities;
+    fn create(init: &InitializeParams) -> (Self::Capabilities, Self);
+}
+
+impl<T: Handler> HandlerBox<T> {
+    pub fn init(&self, init: &InitializeParams) -> T::Capabilities {
+        let (capabilities, state) = T::create(init);
         let res = self.handler.set(state);
-        assert!(res.is_ok(), "set should be called once");
+        assert!(res.is_ok(), "init should be called once");
+        capabilities
     }
 }
 

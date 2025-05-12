@@ -32,7 +32,7 @@ use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
 
-use crate::handler_box::HandlerBox;
+use crate::handler_box;
 
 use crate::core::ast_access::WorkspaceAccess;
 use crate::core::navigator::Navigator;
@@ -50,31 +50,33 @@ pub struct Capabilities {
     pub code_lens_provider: Option<CodeLensOptions>,
 }
 
-impl HandlerBox<Handler> {
-    pub fn init(&self, _init: &InitializeParams) -> Capabilities {
-        self.set(Handler {});
+impl handler_box::Handler for Handler {
+    type Capabilities = Capabilities;
 
+    fn create(_init: &InitializeParams) -> (Self::Capabilities, Self) {
         let legend = SemanticTokensLegend {
             token_types: semantic_token::get_token_types(),
             token_modifiers: semantic_token::get_token_modifiers(),
         };
-
-        Capabilities {
-            document_symbol_provider: Some(Left(true)),
-            semantic_tokens_provider: Some(
-                SemanticTokensOptions {
-                    legend,
-                    full: Some(SemanticTokensFullOptions::Bool(true)),
-                    ..Default::default()
-                }
-                .into(),
-            ),
-            references_provider: Some(Left(true)),
-            document_highlight_provider: Some(Left(true)),
-            code_lens_provider: Some(CodeLensOptions {
-                resolve_provider: Some(false),
-            }),
-        }
+        (
+            Capabilities {
+                document_symbol_provider: Some(Left(true)),
+                semantic_tokens_provider: Some(
+                    SemanticTokensOptions {
+                        legend,
+                        full: Some(SemanticTokensFullOptions::Bool(true)),
+                        ..Default::default()
+                    }
+                    .into(),
+                ),
+                references_provider: Some(Left(true)),
+                document_highlight_provider: Some(Left(true)),
+                code_lens_provider: Some(CodeLensOptions {
+                    resolve_provider: Some(false),
+                }),
+            },
+            Handler {},
+        )
     }
 }
 
