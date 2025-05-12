@@ -84,3 +84,9 @@ impl From<FormatError> for jsonrpc::Error {
         Error::from(value).into()
     }
 }
+
+impl From<RenameError> for jsonrpc::Error {
+    fn from(value: RenameError) -> Self {
+        Error::from(value).into()
+    }
+}

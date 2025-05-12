@@ -28,7 +28,6 @@ use tower_lsp::lsp_types::*;
 use crate::handler_box;
 
 use crate::core::ast_access::WorkspaceAccess;
-use crate::core::errors::Error;
 use crate::core::navigator::Navigator;
 use crate::core::pretty_printer::PrettyPrinter;
 
@@ -76,7 +75,7 @@ impl Handler {
         options: FormattingOptions,
         document: &Url,
     ) -> Result<Option<Vec<TextEdit>>> {
-        format::valid_options(&options).map_err(|e| Error::from(e).to_jsonrpc_error())?;
+        format::valid_options(&options)?;
 
         let mut edit = TextEdit {
             range: Range::new(Position::new(0, 0), Position::new(2e9 as u32, 0)),
@@ -141,8 +140,7 @@ impl Handler {
             .get(document, file.get_version(), pos)
             .map_or_else(|| navigator.get_symbol(pos), |cached| cached);
 
-        rename::renameable_to_symbol(&symbol, &new_name, file.get_elaborated())
-            .map_err(|e| Error::from(e).to_jsonrpc_error())?;
+        rename::renameable_to_symbol(&symbol, &new_name, file.get_elaborated())?;
 
         let ranges = navigator.find_symbols(&symbol);
 
