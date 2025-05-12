@@ -16,6 +16,7 @@
 //! These methods are also about action, but there no need to implement them:
 //!
 
+mod format;
 mod rename;
 mod rename_cache;
 
@@ -27,7 +28,7 @@ use tower_lsp::lsp_types::*;
 use crate::handler_box;
 
 use crate::core::ast_access::WorkspaceAccess;
-use crate::core::errors::FormatError;
+use crate::core::errors::Error;
 use crate::core::navigator::Navigator;
 use crate::core::pretty_printer::PrettyPrinter;
 
@@ -75,21 +76,7 @@ impl Handler {
         options: FormattingOptions,
         document: &Url,
     ) -> Result<Option<Vec<TextEdit>>> {
-        if !options.insert_spaces {
-            return FormatError::InsertSpaces.into();
-        }
-        if !options.properties.is_empty() {
-            return FormatError::Properties.into();
-        }
-        if options.trim_trailing_whitespace.is_some() {
-            return FormatError::TrimTrailingWhitespace.into();
-        }
-        if options.insert_final_newline.is_some() {
-            return FormatError::InsertFinalNewLine.into();
-        }
-        if options.trim_final_newlines.is_some() {
-            return FormatError::TrimFinalNewLines.into();
-        }
+        format::valid_options(&options).map_err(|e| Error::from(e).to_jsonrpc_error())?;
 
         let mut edit = TextEdit {
             range: Range::new(Position::new(0, 0), Position::new(2e9 as u32, 0)),
@@ -154,7 +141,8 @@ impl Handler {
             .get(document, file.get_version(), pos)
             .map_or_else(|| navigator.get_symbol(pos), |cached| cached);
 
-        rename::renameable_to_symbol(&symbol, &new_name, file.get_elaborated())?;
+        rename::renameable_to_symbol(&symbol, &new_name, file.get_elaborated())
+            .map_err(|e| Error::from(e).to_jsonrpc_error())?;
 
         let ranges = navigator.find_symbols(&symbol);
 

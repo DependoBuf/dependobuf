@@ -133,7 +133,7 @@ impl<'a> Visitor<'a> for GetImpl<'a> {
             Visit::Type(type_name, _) if type_name.contains(self.target) => {
                 Stop(self.get_type(type_name))
             }
-            Visit::Dependency(_, loc) if loc.contains(self.target) => Skip,
+            Visit::Dependency(_, loc) if !loc.contains(self.target) => Skip,
             Visit::Dependency(dependency, _) if dependency.contains(self.target) => {
                 Stop(self.get_dependency(dependency))
             }

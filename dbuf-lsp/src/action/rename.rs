@@ -2,7 +2,6 @@
 //!
 
 use dbuf_core::ast::elaborated::{Constructor, ConstructorNames};
-use tower_lsp::jsonrpc::Result;
 
 use crate::core::ast_access::{ElaboratedAst, ElaboratedHelper};
 use crate::core::dbuf_language::{self, FieldName, TypeName};
@@ -39,89 +38,103 @@ pub fn renameable_symbol(symbol: &Symbol) -> bool {
     }
 }
 
+trait BoolIfTrue {
+    fn if_true(self, err: RenameError) -> Result<(), RenameError>;
+}
+
+impl BoolIfTrue for bool {
+    fn if_true(self, err: RenameError) -> Result<(), RenameError> {
+        (!self).then_some(()).ok_or(err)
+    }
+}
+
 /// Check if symbol can be renamed to new_name without conflicts.
-pub fn renameable_to_symbol(symbol: &Symbol, new_name: &str, ast: &ElaboratedAst) -> Result<()> {
-    if new_name.is_empty() {
-        return RenameError::ToEmpty.into();
-    }
-    if dbuf_language::get_builtin_types().contains(new_name) {
-        return RenameError::ToBuiltin.into();
-    }
-    if dbuf_language::get_keywords().contains(new_name) {
-        return RenameError::ToKeyword.into();
-    }
+pub fn renameable_to_symbol(
+    symbol: &Symbol,
+    new_name: &str,
+    ast: &ElaboratedAst,
+) -> Result<(), RenameError> {
+    new_name.is_empty().if_true(RenameError::ToEmpty)?;
+
+    dbuf_language::get_builtin_types()
+        .contains(new_name)
+        .if_true(RenameError::ToBuiltin)?;
+
+    dbuf_language::get_keywords()
+        .contains(new_name)
+        .if_true(RenameError::ToKeyword)?;
 
     match symbol {
         Symbol::Type { type_name } => {
-            if type_name == new_name {
-                return RenameError::ToPrevious.into();
-            }
-            if dbuf_language::get_builtin_types().contains(type_name) {
-                return RenameError::OfBuiltin.into();
-            }
-            let new_type_name: TypeName = match new_name.try_into() {
-                Ok(type_name) => type_name,
-                Err(_) => return RenameError::ToBadType(new_name.to_owned()).into(),
-            };
+            (type_name == new_name).if_true(RenameError::ToPrevious)?;
+
+            dbuf_language::get_builtin_types()
+                .contains(type_name)
+                .if_true(RenameError::OfBuiltin)?;
+
+            let new_type_name = new_name
+                .try_into()
+                .map_err(|_| RenameError::ToBadType(new_name.to_owned()))?;
+
             let checker = ConflictChecker::new(ast);
-            if checker.has_type_or_constructor(new_type_name) {
-                return RenameError::ToExistingType(new_name.to_owned()).into();
-            }
+
+            checker
+                .has_type_or_constructor(new_type_name)
+                .if_true(RenameError::ToExistingType(new_name.to_owned()))?;
+            Ok(())
         }
         Symbol::Dependency {
             type_name,
             dependency,
         } => {
-            if dependency == new_name {
-                return RenameError::ToPrevious.into();
-            }
-            let new_dependency_name: FieldName = match new_name.try_into() {
-                Ok(dependency) => dependency,
-                Err(()) => return RenameError::ToBadDependency(new_name.to_owned()).into(),
-            };
+            (dependency == new_name).if_true(RenameError::ToPrevious)?;
+
+            let new_dependency_name = new_name
+                .try_into()
+                .map_err(|_| RenameError::ToBadDependency(new_name.to_owned()))?;
+
             let checker = ConflictChecker::new(ast);
-            if checker.type_has_resourse(type_name, new_dependency_name) {
-                return RenameError::ToExistingResource {
+
+            checker
+                .type_has_resourse(type_name, new_dependency_name)
+                .if_true(RenameError::ToExistingResource {
                     t: type_name.to_owned(),
                     r: new_name.to_owned(),
-                }
-                .into();
-            }
+                })?;
+            Ok(())
         }
         Symbol::Field {
             type_name,
             constructor: _,
             field,
         } => {
-            if field == new_name {
-                return RenameError::ToPrevious.into();
-            }
-            let new_field_name: FieldName = match new_name.try_into() {
-                Ok(field_name) => field_name,
-                Err(_) => return RenameError::ToBadField(new_name.to_owned()).into(),
-            };
+            (field == new_name).if_true(RenameError::ToPrevious)?;
+
+            let new_field_name = new_name
+                .try_into()
+                .map_err(|_| RenameError::ToBadField(new_name.to_owned()))?;
+
             let checker = ConflictChecker::new(ast);
-            if checker.type_has_resourse(type_name, new_field_name) {
-                return RenameError::ToExistingResource {
+
+            checker
+                .type_has_resourse(type_name, new_field_name)
+                .if_true(RenameError::ToExistingResource {
                     t: type_name.to_owned(),
                     r: new_name.to_owned(),
-                }
-                .into();
-            }
+                })?;
+            Ok(())
         }
         Symbol::Alias {
             type_name: _,
             branch_id: _,
             alias: _,
-        } => return RenameError::OfAlias.into(),
+        } => Err(RenameError::OfAlias),
         Symbol::Constructor {
             type_name: _,
             constructor: _,
-        } => return RenameError::OfConstructor.into(),
-        Symbol::None => return RenameError::OfNone.into(),
-    };
-
-    Ok(())
+        } => Err(RenameError::OfConstructor),
+        Symbol::None => Err(RenameError::OfNone),
+    }
 }
 
 struct ConflictChecker<'a> {

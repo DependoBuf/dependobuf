@@ -1,80 +1,40 @@
-use std::borrow::Cow;
+use strum::IntoDiscriminant;
+use strum_macros::{EnumDiscriminants, EnumIter};
 
-use tower_lsp::jsonrpc::Error;
-use tower_lsp::jsonrpc::ErrorCode::ServerError;
-use tower_lsp::jsonrpc::Result;
+use thiserror::Error;
 
-use strum_macros::EnumIter;
-
-#[derive(EnumIter)]
+#[derive(EnumIter, EnumDiscriminants, Error, Debug)]
 pub enum RenameError {
+    #[error("rename to empty string is forbidden")]
     ToEmpty,
+    #[error("rename to builtin type is forbidden")]
     ToBuiltin,
+    #[error("rename to keyword is forbidden")]
     ToKeyword,
+    #[error("builtin type can't be renamed")]
     OfBuiltin,
+    #[error("rename to previous name is useless")]
     ToPrevious,
+    #[error("none symbol can't be renamed")]
     OfNone,
+    #[error("'{0}' is not correct type name")]
     ToBadType(String),
+    #[error("'{0}' is not correct dependency name")]
     ToBadDependency(String),
+    #[error("'{0}' is not correct field name")]
     ToBadField(String),
+    #[error("constructor or type '{0}' exists")]
     ToExistingType(String),
+    #[error("constructor or type '{t}' already contains '{r}'")]
     ToExistingResource { t: String, r: String },
+    #[error("alias rename is not supported yet")]
     OfAlias,
+    #[error("constructors rename is not supported yet")]
     OfConstructor,
 }
 
-/// Returns rename error.
-fn error<T>(text: &'static str, code: i64) -> Result<T> {
-    assert!((0..100).contains(&code));
-    Err(Error {
-        code: ServerError(10200 + code),
-        message: Cow::Borrowed(text),
-        data: None,
-    })
-}
-
-/// Returns rename error from string.
-fn error_from_string<T>(text: String, code: i64) -> Result<T> {
-    assert!((0..100).contains(&code));
-    Err(Error {
-        code: ServerError(10200 + code),
-        message: Cow::Owned(text),
-        data: None,
-    })
-}
-
 impl RenameError {
-    pub fn to_jsonrpc_error<T>(&self) -> Result<T> {
-        match self {
-            RenameError::ToEmpty => error("rename to empty string", 0),
-            RenameError::ToBuiltin => error("rename to builtin type is forbidden", 1),
-            RenameError::ToKeyword => error("rename to keyword is forbidden", 2),
-            RenameError::OfBuiltin => error("builtin type can't be renamed", 3),
-            RenameError::ToPrevious => error("rename to old name is useless", 4),
-            RenameError::OfNone => error("none symbol can't be renamed", 5),
-            RenameError::ToBadType(t) => {
-                error_from_string(format!("'{t}'is not correct type name"), 10)
-            }
-            RenameError::ToBadDependency(d) => {
-                error_from_string(format!("'{d}'is not correct dependency name"), 11)
-            }
-            RenameError::ToBadField(f) => {
-                error_from_string(format!("'{f}'is not correct field name"), 12)
-            }
-            RenameError::ToExistingType(t) => {
-                error_from_string(format!("constructor or type '{t}' exist"), 20)
-            }
-            RenameError::ToExistingResource { t, r } => {
-                error_from_string(format!("type '{t}' already contains '{r}'"), 21)
-            }
-            RenameError::OfAlias => error("alias rename is not supported yet", 98),
-            RenameError::OfConstructor => error("constructors rename is not supported yet", 99),
-        }
-    }
-}
-
-impl<T> From<RenameError> for Result<T> {
-    fn from(value: RenameError) -> Self {
-        value.to_jsonrpc_error()
+    pub fn get_code(&self) -> i64 {
+        self.discriminant() as i64
     }
 }
