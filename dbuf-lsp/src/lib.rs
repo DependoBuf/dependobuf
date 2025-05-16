@@ -7,6 +7,9 @@
 
 pub(crate) mod core;
 
+#[cfg(test)]
+pub(crate) mod testing;
+
 pub use core::ast_access::WorkspaceAccess;
 
 pub mod handler_box;
