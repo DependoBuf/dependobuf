@@ -4,7 +4,7 @@
 //! result in reviewing all other handlers tests (FIXME when parser is ready).
 //!
 
-use crate::testing::*;
+use crate::common::*;
 
 use std::collections::HashMap;
 use std::fs::read_to_string;
@@ -13,7 +13,7 @@ use tower_lsp::lsp_types::FormattingOptions;
 
 use super::get_handler;
 
-const CANON_FILE_PATH: &str = "./src/core/default_ast/sample.dbuf";
+const CANON_FILE_PATH: &str = "./tests/sample.dbuf";
 
 fn get_canon_strign() -> String {
     read_to_string(CANON_FILE_PATH).expect("file is exist")

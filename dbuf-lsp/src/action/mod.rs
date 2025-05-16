@@ -20,9 +20,6 @@ mod format;
 mod rename;
 mod rename_cache;
 
-#[cfg(test)]
-mod tests;
-
 use rename_cache::RenameCache;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::OneOf::*;

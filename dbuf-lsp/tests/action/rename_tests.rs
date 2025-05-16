@@ -1,17 +1,16 @@
-//! Tests for `textDocument/rename` and `textDocument/prepare_rename`.
+//! Tests for `textDocument/rename` and `textDocument/prepareRename`.
 //!
 
-use crate::testing::*;
+use crate::common::*;
 
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 
+use super::HandlerType;
 use super::get_handler;
-use crate::action::Handler;
-use crate::handler_box::HandlerBox;
 
 struct Scenario {
-    h: HandlerBox<Handler>,
+    h: HandlerType,
 }
 
 impl Scenario {

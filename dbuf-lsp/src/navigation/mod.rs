@@ -5,7 +5,7 @@
 //! * (✓) `textDocument/definition`
 //! * (✓) `textDocument/typeDefinition`
 //! * (✓) `textDocument/hover
-//! * (✗!!) `textDocument/inlayHint` // for constructors type
+//! * (✓) `textDocument/inlayHint`
 //!  
 //! Also it might be good idea to handle such requests:
 //!

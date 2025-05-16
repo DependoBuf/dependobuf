@@ -9,7 +9,7 @@ use std::sync::LazyLock;
 
 use tower_lsp::lsp_types::Url;
 
-use crate::WorkspaceAccess;
+use dbuf_lsp::WorkspaceAccess;
 
 pub const TEST_URL: LazyLock<Url> = LazyLock::new(|| Url::from_file_path("/testing.dbuf").unwrap());
 pub const TEST_WORKSPACE: LazyLock<WorkspaceAccess> = LazyLock::new(|| {
