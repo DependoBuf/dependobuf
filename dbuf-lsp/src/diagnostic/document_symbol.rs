@@ -91,23 +91,6 @@ impl Builder<Empty> {
     }
 }
 impl Builder<Message> {
-    fn push_dependency(mut self, dep_name: &Str, loc: &Loc) -> Builder<Message> {
-        let s = get_symbol(
-            dep_name.to_string(),
-            SymbolKind::VARIABLE,
-            loc.to_lsp(),
-            dep_name.get_location().to_lsp(),
-            None,
-        );
-        self.extra
-            .type_symbol
-            .children
-            .as_mut()
-            .expect("message symbol have children")
-            .push(s);
-        self
-    }
-
     fn push_field(mut self, field_name: &Str, loc: &Loc) -> Builder<Message> {
         let s = get_symbol(
             field_name.to_string(),
@@ -135,27 +118,10 @@ impl Builder<Message> {
 }
 
 impl Builder<Enum> {
-    fn push_dependency(mut self, dep_name: &Str, loc: &Loc) -> Builder<Enum> {
-        let s = get_symbol(
-            dep_name.to_string(),
-            SymbolKind::VARIABLE,
-            loc.to_lsp(),
-            dep_name.get_location().to_lsp(),
-            None,
-        );
-        self.extra
-            .type_symbol
-            .children
-            .as_mut()
-            .expect("enum symbol have children")
-            .push(s);
-        self
-    }
-
     fn push_constructor(self, cons_name: &Str, loc: &Loc) -> Builder<Constructor> {
         let s = get_symbol(
             cons_name.to_string(),
-            SymbolKind::CONSTRUCTOR,
+            SymbolKind::ENUM_MEMBER,
             loc.to_lsp(),
             cons_name.get_location().to_lsp(),
             Some(Vec::new()),
@@ -302,16 +268,6 @@ impl SymbolVisitor<'_> {
         }
     }
 
-    fn push_dependency(&mut self, dep_name: &Str, loc: &Loc) {
-        let builder = std::mem::take(&mut self.builder);
-
-        self.builder = match builder {
-            SymbolBuilder::MessageBuilder(builder) => builder.push_dependency(dep_name, loc).into(),
-            SymbolBuilder::EnumBuilder(builder) => builder.push_dependency(dep_name, loc).into(),
-            _ => panic!("bad builder state"),
-        };
-    }
-
     fn push_field(&mut self, field_name: &Str, loc: &Loc) {
         let builder = std::mem::take(&mut self.builder);
 
@@ -343,7 +299,7 @@ impl<'a> Visitor<'a> for SymbolVisitor<'a> {
         match &visit {
             Visit::Keyword(_, _) => {}
             Visit::Type(type_name, location) => self.push_type_symbol(type_name, location),
-            Visit::Dependency(dep_name, location) => self.push_dependency(dep_name, location),
+            Visit::Dependency(_, _) => return VisitResult::Skip,
             Visit::Branch => {}
             Visit::PatternAlias(_) => {}
             Visit::PatternCall(_, _) => return VisitResult::Skip,

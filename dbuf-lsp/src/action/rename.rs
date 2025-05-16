@@ -29,11 +29,11 @@ pub fn renameable_symbol(symbol: &Symbol) -> bool {
             type_name: _,
             branch_id: _,
             alias: _,
-        } => false,
+        } => true,
         Symbol::Constructor {
             type_name: _,
             constructor: _,
-        } => false,
+        } => true,
         Symbol::None => false,
     }
 }
@@ -125,14 +125,44 @@ pub fn renameable_to_symbol(
             Ok(())
         }
         Symbol::Alias {
-            type_name: _,
+            type_name,
             branch_id: _,
-            alias: _,
-        } => Err(RenameError::OfAlias),
+            alias,
+        } => {
+            (alias == new_name).if_true(RenameError::ToPrevious)?;
+
+            let new_alias_name = new_name
+                .try_into()
+                .map_err(|_| RenameError::ToBadAlias(new_name.to_owned()))?;
+
+            let checker = ConflictChecker::new(ast);
+
+            checker
+                .type_has_resourse(type_name, new_alias_name)
+                .if_true(RenameError::ToExistingResource {
+                    t: type_name.to_owned(),
+                    r: new_name.to_owned(),
+                })?;
+
+            Ok(())
+        }
         Symbol::Constructor {
             type_name: _,
-            constructor: _,
-        } => Err(RenameError::OfConstructor),
+            constructor,
+        } => {
+            (constructor == new_name).if_true(RenameError::ToPrevious)?;
+
+            let new_constructor_name = new_name
+                .try_into()
+                .map_err(|_| RenameError::ToBadConstructor(new_name.to_owned()))?;
+
+            let checker = ConflictChecker::new(ast);
+            checker
+                .has_type_or_constructor(new_constructor_name)
+                .if_true(RenameError::ToExistingType(new_name.to_owned()))?;
+
+            Ok(())
+        }
         Symbol::None => Err(RenameError::OfNone),
     }
 }

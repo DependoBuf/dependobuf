@@ -99,6 +99,25 @@ impl GetImpl<'_> {
         }
     }
 
+    fn get_constructor_call(&self, constructor: &Str) -> Symbol {
+        assert!(constructor.contains(self.target));
+
+        if self.elaborated.is_message(constructor.as_ref()) {
+            Symbol::Type {
+                type_name: constructor.to_string(),
+            }
+        } else {
+            Symbol::Constructor {
+                type_name: self
+                    .elaborated
+                    .get_constructor_type(constructor.as_ref())
+                    .expect("correct constructor")
+                    .to_string(),
+                constructor: constructor.to_string(),
+            }
+        }
+    }
+
     fn get_access(&self, access: &Str) -> Symbol {
         assert!(access.contains(self.target));
 
@@ -142,7 +161,7 @@ impl<'a> Visitor<'a> for GetImpl<'a> {
             }
             Visit::PatternCall(_, loc) if !loc.contains(self.target) => Skip,
             Visit::PatternCall(constructor, _) if constructor.contains(self.target) => {
-                Stop(self.get_constructor(constructor))
+                Stop(self.get_constructor_call(constructor))
             }
             Visit::PatternCallArgument(argument) if argument.contains(self.target) => {
                 Stop(self.get_argument(argument))
@@ -165,7 +184,7 @@ impl<'a> Visitor<'a> for GetImpl<'a> {
                 Stop(self.get_access(access))
             }
             Visit::ConstructorExpr(constructor) if constructor.contains(self.target) => {
-                Stop(self.get_constructor(constructor))
+                Stop(self.get_constructor_call(constructor))
             }
             Visit::ConstructorExprArgument(argument) if argument.contains(self.target) => {
                 Stop(self.get_argument(argument))

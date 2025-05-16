@@ -73,6 +73,21 @@ impl FindImpl<'_> {
         }
     }
 
+    fn correct_argument_symbol(&self, str: &Str) -> bool {
+        match &self.target {
+            Symbol::Field {
+                type_name: _,
+                constructor,
+                field,
+            } => {
+                self.scope.has_constructor_expr()
+                    && self.scope.get_constructor_expr() == constructor
+                    && field == str.as_ref()
+            }
+            _ => false,
+        }
+    }
+
     fn push(&mut self, str: &Str) {
         self.ans.push(str.get_location().to_lsp());
     }
@@ -87,7 +102,7 @@ impl<'a> Visitor<'a> for FindImpl<'a> {
             Visit::Dependency(str, _) if self.correct_symbol(str) => self.push(str),
             Visit::PatternAlias(str) if self.correct_symbol(str) => self.push(str),
             Visit::PatternCall(str, _) if self.correct_symbol(str) => self.push(str),
-            Visit::PatternCallArgument(str) if self.correct_symbol(str) => todo!(),
+            Visit::PatternCallArgument(str) if self.correct_argument_symbol(str) => self.push(str),
             Visit::Constructor(cons) if !cons.of_message && self.correct_symbol(cons.name) => {
                 self.push(cons.name)
             }
@@ -96,7 +111,9 @@ impl<'a> Visitor<'a> for FindImpl<'a> {
             Visit::AccessChain(str) if self.correct_symbol(str) => self.push(str),
             Visit::AccessChainLast(str) if self.correct_symbol(str) => self.push(str),
             Visit::ConstructorExpr(str) if self.correct_symbol(str) => self.push(str),
-            Visit::ConstructorExprArgument(str) if self.correct_symbol(str) => todo!(),
+            Visit::ConstructorExprArgument(str) if self.correct_argument_symbol(str) => {
+                self.push(str)
+            }
             Visit::VarAccess(str) if self.correct_symbol(str) => self.push(str),
             _ => {}
         }

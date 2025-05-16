@@ -61,6 +61,18 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         self
     }
 
+    /// Sets flag to print only header
+    pub fn header_only(mut self) -> Self {
+        self.header_only = true;
+        self
+    }
+
+    /// Sets flag to not print dependencies
+    pub fn no_dependencies(mut self) -> Self {
+        self.with_dependencies = false;
+        self
+    }
+
     fn new_line(&mut self) {
         self.cursor.line += 1;
         self.cursor.column = 0;
@@ -104,10 +116,13 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             self.print_type_definition(definition);
             first = false;
         }
+        if !first {
+            self.new_line();
+        }
     }
 
     /// Prints type of ast.
-    pub fn print_type(&mut self, ast: &ParsedAst, type_name: &str) {
+    pub fn print_selected_type(&mut self, ast: &ParsedAst, type_name: &str) {
         let t = ast.iter().find(|d| d.name.as_ref() == type_name);
         if let Some(td) = t {
             self.print_type_definition(td);
@@ -155,7 +170,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             let b = e.get(branch_id);
             if let Some(b) = b {
                 self.print_all_patterns(&b.patterns);
-                self.write("=> {}");
+                self.write(" => {}");
             }
         }
     }

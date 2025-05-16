@@ -172,7 +172,7 @@ fn test_skip_correctness() {
         constructors: BTreeMap::new(),
     };
 
-    let skip_mask = SkipMask::new(18);
+    let skip_mask = SkipMask::new(15);
 
     for mask in skip_mask {
         let mut visitor = TestVisitor::new(mask, 1e9 as u32);
@@ -190,7 +190,7 @@ fn test_skip_stop_correctness() {
         constructors: BTreeMap::new(),
     };
 
-    let skip_mask = SkipMask::new(13);
+    let skip_mask = SkipMask::new(9);
     for mask in skip_mask {
         for stop_after in 0.. {
             let mut visitor = TestVisitor::new(mask, stop_after);

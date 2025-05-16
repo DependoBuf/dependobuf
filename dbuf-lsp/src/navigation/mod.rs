@@ -5,7 +5,7 @@
 //! * (✓) `textDocument/definition`
 //! * (✓) `textDocument/typeDefinition`
 //! * (✓) `textDocument/hover
-//! * (✗!!) `textDocument/inlayHint` // for constructors type
+//! * (✓) `textDocument/inlayHint`
 //!  
 //! Also it might be good idea to handle such requests:
 //!
@@ -51,6 +51,7 @@ pub struct Capabilities {
     pub definition_provider: Option<OneOf<bool, DefinitionOptions>>,
     pub type_definition_provider: Option<TypeDefinitionProviderCapability>,
     pub hover_provider: Option<HoverProviderCapability>,
+    pub inlay_hint_provider: Option<OneOf<bool, InlayHintServerCapabilities>>,
 }
 
 impl handler_box::Handler for Handler {
@@ -62,6 +63,7 @@ impl handler_box::Handler for Handler {
                 definition_provider: Some(Left(true)),
                 type_definition_provider: Some(TypeDefinitionProviderCapability::Simple(true)),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
+                inlay_hint_provider: Some(Left(true)),
             },
             Handler {},
         )
@@ -144,5 +146,19 @@ impl Handler {
                 range: None,
             }))
         }
+    }
+
+    /// `textDocument/inlayHint` implementation.
+    ///
+    /// Provides type of constructor call arguments in view range.
+    pub fn inlay_hint(
+        &self,
+        access: &WorkspaceAccess,
+        range: Range,
+        document: &Url,
+    ) -> Result<Option<Vec<InlayHint>>> {
+        let file = access.read(document);
+
+        Ok(Some(inlay_hint::get_inlay_hint(range, &file)))
     }
 }

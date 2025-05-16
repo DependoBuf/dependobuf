@@ -210,6 +210,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
                 let mut first = true;
                 for f in fields.iter_mut() {
+                    f.loc.reset_start(self.cursor.into());
                     if !first {
                         self.write(", ")?;
                     }
@@ -217,6 +218,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                     self.write(": ")?;
                     self.parse_pattern(&mut f.data)?;
                     first = false;
+                    f.loc.set_end(self.cursor.into());
                 }
 
                 self.write("}")?;
@@ -307,7 +309,6 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
-    // TODO: change logic: distinguish variable from empty constructor
     fn parse_expression(&mut self, expression: &mut Expression<Loc, Str>) -> Result {
         expression.loc.reset_start(self.cursor.into());
 
@@ -318,6 +319,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
                 let mut first = true;
                 for f in fields.iter_mut() {
+                    f.loc.reset_start(self.cursor.into());
                     if !first {
                         self.write(", ")?;
                     }
@@ -325,6 +327,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                     self.write(": ")?;
                     self.parse_expression(&mut f.data)?;
                     first = false;
+                    f.loc.set_end(self.cursor.into());
                 }
 
                 self.write("}")?;

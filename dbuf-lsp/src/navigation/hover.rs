@@ -18,9 +18,9 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
             type_name,
             dependency,
         } => vec![
-            MarkedString::LanguageString(get_type_header(&type_name, file)),
+            MarkedString::LanguageString(get_type_header(&type_name, file, false)),
             MarkedString::LanguageString(get_dependency_declaration(&type_name, &dependency, file)),
-            MarkedString::String(format!("dependency of {}", type_name)),
+            MarkedString::String(format!("dependency of `{}`", type_name)),
         ],
         Symbol::Field {
             type_name,
@@ -30,7 +30,7 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
             let mut strings = Vec::with_capacity(4);
 
             strings.push(MarkedString::LanguageString(get_type_header(
-                &type_name, file,
+                &type_name, file, false,
             )));
             if !elaborated.is_message(&type_name) {
                 strings.push(MarkedString::LanguageString(get_constructor_header(
@@ -43,7 +43,7 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
                 &field,
                 file,
             )));
-            strings.push(MarkedString::String(format!("field of {}", constructor)));
+            strings.push(MarkedString::String(format!("field of `{}`", constructor)));
             strings
         }
         Symbol::Alias {
@@ -51,22 +51,22 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
             branch_id,
             alias,
         } => vec![
-            MarkedString::LanguageString(get_type_header(&type_name, file)),
+            MarkedString::LanguageString(get_type_header(&type_name, file, true)),
             MarkedString::LanguageString(get_explicit_branch(&type_name, branch_id, file)),
-            MarkedString::String(format!("alias {}", alias)),
+            MarkedString::String(format!("alias `{}`", alias)),
         ],
         Symbol::Constructor {
             type_name,
             constructor,
         } => {
             vec![
-                MarkedString::LanguageString(get_type_header(&type_name, file)),
+                MarkedString::LanguageString(get_type_header(&type_name, file, false)),
                 MarkedString::LanguageString(get_explicit_constructor(
                     &type_name,
                     &constructor,
                     file,
                 )),
-                MarkedString::String(format!("constructor of {}", type_name)),
+                MarkedString::String(format!("constructor of `{}`", type_name)),
             ]
         }
         Symbol::None => Vec::new(),
@@ -82,7 +82,7 @@ fn get_explicit_type(type_name: String, file: &File) -> LanguageString {
     } else {
         let mut code = String::new();
         let mut printer = PrettyPrinter::new(&mut code);
-        printer.print_type(file.get_parsed(), type_name.as_ref());
+        printer.print_selected_type(file.get_parsed(), type_name.as_ref());
 
         LanguageString {
             language: "dbuf".to_owned(),
@@ -103,14 +103,13 @@ fn get_explicit_constructor(type_name: &str, constructor: &str, file: &File) -> 
     }
 }
 
-fn get_type_header(type_name: &str, file: &File) -> LanguageString {
-    let elaborated = file.get_elaborated();
-
-    let header = if elaborated.is_message(type_name) {
-        "message ".to_owned() + type_name
-    } else {
-        "enum ".to_owned() + type_name
-    };
+fn get_type_header(type_name: &str, file: &File, dependencies: bool) -> LanguageString {
+    let mut header = String::new();
+    let mut printer = PrettyPrinter::new(&mut header).header_only();
+    if !dependencies {
+        printer = printer.no_dependencies()
+    }
+    printer.print_selected_type(file.get_parsed(), type_name);
 
     LanguageString {
         language: "dbuf".to_owned(),

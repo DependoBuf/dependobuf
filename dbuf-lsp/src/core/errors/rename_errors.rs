@@ -19,18 +19,18 @@ pub enum RenameError {
     OfNone,
     #[error("'{0}' is not correct type name")]
     ToBadType(String),
+    #[error("'{0}' is not correct constructor name")]
+    ToBadConstructor(String),
     #[error("'{0}' is not correct dependency name")]
     ToBadDependency(String),
+    #[error("'{0}' is not correct alias name")]
+    ToBadAlias(String),
     #[error("'{0}' is not correct field name")]
     ToBadField(String),
     #[error("constructor or type '{0}' exists")]
     ToExistingType(String),
     #[error("constructor or type '{t}' already contains '{r}'")]
     ToExistingResource { t: String, r: String },
-    #[error("alias rename is not supported yet")]
-    OfAlias,
-    #[error("constructors rename is not supported yet")]
-    OfConstructor,
 }
 
 impl RenameError {
