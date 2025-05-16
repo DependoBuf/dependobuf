@@ -2,8 +2,8 @@
 //! * LocationHelpers, helpers for Location type.
 //!
 
-use tower_lsp::lsp_types;
 use tower_lsp::lsp_types::Range;
+use tower_lsp::lsp_types::{self};
 
 use dbuf_core::ast::parsed::location::{self, Offset};
 
@@ -48,6 +48,13 @@ impl PositionHelpers for Position {
     }
 }
 
+fn to_position(p: lsp_types::Position) -> Position {
+    Position {
+        columns: p.character as usize,
+        lines: p.line as usize,
+    }
+}
+
 /// Helpers for dbuf-core::Location type.
 pub trait LocationHelpers {
     /// Returns empty location. Typically ((0, 0), (0, 0))
@@ -61,6 +68,8 @@ pub trait LocationHelpers {
     /// If `p == self.end`, returns true, corresponding
     /// to lsp_type::Range specification.
     fn contains(&self, p: lsp_types::Position) -> bool;
+    /// Checks if location intersects with range.
+    fn intersects(&self, r: Range) -> bool;
     /// Get start of location.
     fn get_start(&self) -> Position;
     /// Get end of location.
@@ -100,11 +109,18 @@ impl LocationHelpers for Location {
     }
 
     fn contains(&self, p: lsp_types::Position) -> bool {
-        let target = Position {
-            lines: p.line as usize,
-            columns: p.character as usize,
-        };
+        let target = to_position(p);
         self.start <= target && target <= self.end()
+    }
+
+    fn intersects(&self, r: Range) -> bool {
+        if self.contains(r.start) || self.contains(r.end) {
+            true
+        } else {
+            let start = to_position(r.start);
+            let end = to_position(r.end);
+            start <= self.start && self.end() <= end
+        }
     }
 
     fn get_start(&self) -> Position {

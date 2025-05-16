@@ -1,5 +1,4 @@
 //! TODO:
-//! * `textDocument/InlayHint`
 //! * common utils tests
 //! * e2e server tests
 //! * re-read files to fill documentation.

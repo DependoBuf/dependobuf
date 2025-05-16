@@ -68,6 +68,7 @@ impl LanguageServer for Backend {
         capabilities.definition_provider = current_capabilities.definition_provider;
         capabilities.type_definition_provider = current_capabilities.type_definition_provider;
         capabilities.hover_provider = current_capabilities.hover_provider;
+        capabilities.inlay_hint_provider = current_capabilities.inlay_hint_provider;
 
         Ok(InitializeResult {
             capabilities,
@@ -185,6 +186,14 @@ impl LanguageServer for Backend {
         let uri = doc_pos.text_document.uri;
 
         self.navigation_handler.hover(&self.workspace, pos, &uri)
+    }
+
+    async fn inlay_hint(&self, params: InlayHintParams) -> Result<Option<Vec<InlayHint>>> {
+        let range = params.range;
+        let uri = params.text_document.uri;
+
+        self.navigation_handler
+            .inlay_hint(&self.workspace, range, &uri)
     }
 
     async fn document_highlight(
