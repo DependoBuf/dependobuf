@@ -2,6 +2,11 @@
 //!
 //! TODO: remove such API when parsers are ready.
 //!
+//! Current sample:
+//! ```dbuf
+#![doc = include_str!("sample.dbuf")]
+//! ```
+//!
 
 mod ast_builder;
 mod ast_fix_locations;

@@ -220,14 +220,14 @@ impl<'a> Visitor<'a> for SemanticTokenVisitor<'a> {
             Visit::Dependency(dep_name, _) => self.push_string(dep_name, Token::Parameter, true),
             Visit::Branch => {}
             Visit::PatternAlias(alias) => {
-                self.push_string(alias, Token::Property, false);
+                self.push_string(alias, Token::Property, true);
             }
             Visit::PatternCall(call_name, _) => {
                 let token = self.get_constructor_token(call_name);
                 self.push_string(call_name, token, false);
             }
-            Visit::PatternCallArgument(_arg_name) => {
-                panic!("constructor call argument name is not implemented");
+            Visit::PatternCallArgument(arg_name) => {
+                self.push_string(arg_name, Token::Property, false);
             }
             Visit::PatternCallStop => {}
             Visit::PatternLiteral(literal, location) => self.push_literal(literal, location),
@@ -257,8 +257,8 @@ impl<'a> Visitor<'a> for SemanticTokenVisitor<'a> {
                 let token = self.get_constructor_token(cons_name);
                 self.push_string(cons_name, token, false);
             }
-            Visit::ConstructorExprArgument(_arg_name) => {
-                panic!("constructor call argument name is not implemented")
+            Visit::ConstructorExprArgument(arg_name) => {
+                self.push_string(arg_name, Token::Property, false);
             }
             Visit::ConstructorExprStop => {}
             Visit::VarAccess(access) => {

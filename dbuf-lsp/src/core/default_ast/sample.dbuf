@@ -1,0 +1,59 @@
+message M1 (d1 Int) (d2 String) {
+    f1 Int;
+    f2 Int;
+    f3 String;
+}
+
+message M2 (d1 Int) (d2 M1 d1 "kek") {
+    f1 Int;
+    f2 String;
+    f3 M1 d1 f2;
+    f4 M1 f3.f1 "funny";
+}
+
+message M3 (d1 String) {
+    f1 Int;
+    f2 String;
+    f3 M1 f1 "kek";
+    f4 M2 f1 f3;
+    f5 M1 f4.f4.f2 f4.f3.f3;
+}
+
+message Constructed {
+    f1 M2 0 M1{f1: 0, f2: 1, f3: "kek"};
+}
+
+enum Simple (d1 Int) {
+    alias => {
+        Aliased {
+            f1 M1 alias "kek";
+        }
+    }
+    0 => {
+        Literaled {
+            f1 M1 1 "kek";
+        }
+    }
+    * => {
+        Wild {
+        }
+    }
+}
+
+message SimpleDepended (d1 Simple 0) {
+}
+
+message EnumConstructed {
+    f1 M1 0 "kek";
+    f2 SimpleDepended Aliased{f1: f1};
+    f3 SimpleDepended Literaled{f1: M1{f1: 0, f2: 1, f3: "kek"}};
+    f4 SimpleDepended Wild{};
+}
+
+enum PatternMatch (d1 M1 0 "kek") {
+    M1{f1: alias, f2: 1, f3: "literal"} => {
+        PatternMatched {
+            f1 M1 alias "kek";
+        }
+    }
+}

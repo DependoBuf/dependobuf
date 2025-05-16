@@ -63,10 +63,13 @@ impl<'a> ScopeVisitor<'a> {
         self.scope.get_constructor()
     }
 
+    /// Checks if constructors calls is not empty.
+    pub fn has_constructor_expr(&self) -> bool {
+        !self.cons_stack.is_empty()
+    }
     /// Returns last constructor in constructors calls.
     ///
     /// Panics if there is no constructor calls.
-    #[allow(dead_code, reason = "not using yet")]
     pub fn get_constructor_expr(&self) -> &'a str {
         self.cons_stack.get_last()
     }

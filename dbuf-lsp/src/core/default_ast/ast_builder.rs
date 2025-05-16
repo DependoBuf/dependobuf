@@ -2,8 +2,6 @@
 //!
 //!
 
-#![allow(dead_code, reason = "simple example")]
-
 use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 
@@ -97,9 +95,6 @@ impl MessageBuilder {
         }
     }
 
-    pub fn dependencies(&mut self) -> &mut DependencyBuilder {
-        &mut self.dependencies
-    }
     pub fn with_huge_dependency(
         &mut self,
         name: &str,
@@ -114,9 +109,6 @@ impl MessageBuilder {
         self
     }
 
-    pub fn fields(&mut self) -> &mut ConstructorBuilder {
-        &mut self.fields
-    }
     pub fn with_huge_field(
         &mut self,
         name: &str,
@@ -211,9 +203,6 @@ impl EnumBuilder {
         }
     }
 
-    pub fn dependencies(&mut self) -> &mut DependencyBuilder {
-        &mut self.dependencies
-    }
     pub fn with_huge_dependency(
         &mut self,
         name: &str,
@@ -253,31 +242,42 @@ impl EnumBuilder {
     }
 }
 
+enum Structure {
+    Message(MessageBuilder),
+    Enum(EnumBuilder),
+}
+
+impl Structure {
+    fn construct(self) -> Definition<Loc, Str, TypeDeclaration<Loc, Str>> {
+        match self {
+            Structure::Message(builder) => builder.construct(),
+            Structure::Enum(builder) => builder.construct(),
+        }
+    }
+}
+
 /// Builder for ast
 pub struct AstBuilder {
-    messages: Vec<MessageBuilder>,
-    enums: Vec<EnumBuilder>,
+    data: Vec<Structure>,
 }
 
 impl AstBuilder {
     pub fn new() -> AstBuilder {
-        AstBuilder {
-            messages: vec![],
-            enums: vec![],
-        }
+        AstBuilder { data: vec![] }
     }
 
     pub fn with_message(&mut self, name: &str) -> &mut MessageBuilder {
-        self.messages.push(MessageBuilder::new(name));
-        if let Some(last) = self.messages.last_mut() {
+        self.data
+            .push(Structure::Message(MessageBuilder::new(name)));
+        if let Some(Structure::Message(last)) = self.data.last_mut() {
             return last;
         }
         panic!("just pushed element vanished");
     }
 
     pub fn with_enum(&mut self, name: &str) -> &mut EnumBuilder {
-        self.enums.push(EnumBuilder::new(name));
-        if let Some(last) = self.enums.last_mut() {
+        self.data.push(Structure::Enum(EnumBuilder::new(name)));
+        if let Some(Structure::Enum(last)) = self.data.last_mut() {
             return last;
         }
         panic!("just pushed element vanished");
@@ -286,10 +286,7 @@ impl AstBuilder {
     pub fn construct(self) -> Module<Loc, Str> {
         let mut ast = vec![];
 
-        for m in self.messages.into_iter() {
-            ast.push(m.construct());
-        }
-        for e in self.enums.into_iter() {
+        for e in self.data.into_iter() {
             ast.push(e.construct());
         }
 
