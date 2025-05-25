@@ -89,9 +89,5 @@ pub fn parse<'src>(input: &'src str) -> Result<Module<Span, String>, Vec<Rich<'s
     let token_stream =
         Stream::from_iter(token_iter.clone()).map((0..input.len()).into(), |(t, s): (_, _)| (t, s));
 
-    for (t, s) in token_iter {
-        println!("token: {:?}, span: {:?}", t, s);
-    }
-
     create_parser().parse(token_stream).into_result()
 }
