@@ -1,6 +1,6 @@
 mod tests {
     mod basic {
-        include!("./canon/basic.rs");
+        include!("./canon-rust/basic.rs");
     }
 
     #[test]
@@ -30,7 +30,7 @@ mod tests {
     }
 
     mod nat_vec {
-        include!("./canon/nat_vec.rs");
+        include!("./canon-rust/nat_vec.rs");
     }
 
     #[test]
