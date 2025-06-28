@@ -2,8 +2,7 @@ mod common;
 
 mod tests {
     use crate::common;
-    use dbuf_core::ast::elaborated as e;
-    use dbuf_gen::{codegen, kotlin_gen};
+    use dbuf_gen::kotlin_gen;
     use pretty_assertions::assert_eq;
 
     #[test]
@@ -12,7 +11,7 @@ mod tests {
         let code = kotlin_gen::generate_module(module);
 
         println!("{}", code);
-        let expected = include_str!("./canon-kotlin/basic.kt");
+        let expected = include_str!("./canon/basic.kt");
         assert_eq!(code, expected);
     }
 
@@ -22,7 +21,7 @@ mod tests {
         let code = kotlin_gen::generate_module(module);
 
         println!("{}", code);
-        let expected = include_str!("./canon-kotlin/nat_vec.kt");
+        let expected = include_str!("./canon/nat_vec.kt");
         assert_eq!(code, expected);
     }
 

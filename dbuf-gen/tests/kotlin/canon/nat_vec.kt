@@ -1,18 +1,17 @@
 sealed class Nat {
     private constructor() {
         // constructor asserts
-        
     }
     class Suc: Nat {
-        constructor(pred: Nat): super( ) {
+        val pred: Nat;
+        constructor(pred: Nat): super() {
             // inner class asserts
             this.pred = pred;
         }
     }
     class Zero: Nat {
-        constructor(): super( ) {
+        constructor(): super() {
             // inner class asserts
-            
         }
     }
 }
@@ -23,16 +22,17 @@ sealed class Vec {
         this.n = n;
     }
     class Cons: Vec {
-        constructor(value: Nat, tail: Vec): super( ) {
+        val value: Nat;
+        val tail: Vec;
+        constructor(p: Nat, value: Nat, tail: Vec): super(Nat.Suc(p)) {
             // inner class asserts
             this.value = value;
             this.tail = tail;
         }
     }
     class Nil: Vec {
-        constructor(): super( ) {
+        constructor(): super(Nat.Zero()) {
             // inner class asserts
-            
         }
     }
 }

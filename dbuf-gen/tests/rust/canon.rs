@@ -2,7 +2,6 @@ mod common;
 
 mod tests {
     use crate::common;
-    use dbuf_core::ast::elaborated as e;
     use dbuf_gen::codegen;
     use pretty_assertions::assert_eq;
 
@@ -14,7 +13,7 @@ mod tests {
         assert!(codegen::generate_module(module, &mut writer).is_ok());
 
         let code = String::from_utf8(writer).expect("generated code must be correct utf8");
-        let expected = include_str!("./canon-rust/basic.rs");
+        let expected = include_str!("./canon/basic.rs");
 
         assert_eq!(code, expected);
     }
@@ -27,7 +26,7 @@ mod tests {
         assert!(codegen::generate_module(module, &mut writer).is_ok());
 
         let code = String::from_utf8(writer).expect("generated code must be correct utf8");
-        let expected = include_str!("./canon-rust/nat_vec.rs");
+        let expected = include_str!("./canon/nat_vec.rs");
 
         assert_eq!(code, expected);
     }
