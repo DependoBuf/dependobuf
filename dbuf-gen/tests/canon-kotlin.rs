@@ -1,12 +1,11 @@
 mod common;
 
-
 mod tests {
+    use crate::common;
     use dbuf_core::ast::elaborated as e;
     use dbuf_gen::{codegen, kotlin_gen};
     use pretty_assertions::assert_eq;
-    use crate::common;
-    
+
     #[test]
     fn basic() {
         let module = common::get_basic_module();

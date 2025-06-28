@@ -179,5 +179,3 @@ pub fn get_nat_vec_module() -> e::Module<String> {
         .collect(),
     }
 }
-
-
