@@ -1,75 +1,78 @@
 use pretty::{BoxAllocator, BoxDoc, Doc, DocAllocator};
 
-use crate::ast::{Module, Type, TypeKind};
+use crate::ast::{Module, Symbol, Type, TypeKind};
 
 mod kotlin {
     use pretty::{BoxAllocator, BoxDoc, DocAllocator, DocBuilder};
 
     use crate::{ast, format};
 
-    pub struct Param(ast::Symbol);
+    pub struct Field(ast::Symbol);
 
     /// Kotlin's sealed class resembles enum in rust
     pub struct SealedClass {
         pub name: String,
-        pub params: Vec<Param>,
+        pub fields: Vec<Field>,
         pub constructors: Vec<InnerClass>,
     }
 
     /// Inner class of a sealed class resembles enum constructor in rust
     pub struct InnerClass {
         pub name: String,
+        pub fields: Vec<Field>,
+        pub result_type: ast::TypeExpression,
     }
 
     impl SealedClass {
         pub fn generate<'a>(&self, alloc: &'a BoxAllocator) -> BoxDoc<'a> {
-            let build_param_declarations = |params: &Vec<Param>| {
-                alloc.concat(params.iter().map(|param| {
+            let build_field_declarations = |fields: &Vec<Field>| {
+                alloc.concat(fields.iter().map(|field| {
                     alloc
                         .text("val")
                         .append(alloc.space())
-                        .append(param.generate(alloc))
+                        .append(field.generate(alloc))
                         .append(";")
                         .append(alloc.hardline())
                 }))
             };
 
-            let build_constructor = |params: &Vec<Param>| {
+            let build_constructor = |fields: &Vec<Field>| {
                 let constructor_params = alloc.intersperse(
-                    params.iter().map(|param| param.generate(alloc)),
+                    fields.iter().map(|field| field.generate(alloc)),
                     alloc.text(", "),
                 );
+
+                let assignments = (|| {
+                    let build_assignment = |name: &String| {
+                        alloc
+                            .text("this.")
+                            .append(name.clone())
+                            .append(alloc.space())
+                            .append("=")
+                            .append(alloc.space())
+                            .append(name.clone())
+                            .append(";")
+                    };
+                    alloc.intersperse(
+                        fields.iter().map(|field| build_assignment(&field.0.name)),
+                        alloc.hardline(),
+                    )
+                })();
 
                 alloc
                     .text("private constructor")
                     .append(constructor_params.parens())
                     .append(alloc.space())
-                    .append((|| {
-                        let build_assignment = |name: &String| {
-                            alloc
-                                .text("this.")
-                                .append(name.clone())
-                                .append(alloc.space())
-                                .append("=")
-                                .append(alloc.space())
-                                .append(name.clone())
-                                .append(";")
-                        };
-
-                        let assignments = alloc.intersperse(
-                            params.iter().map(|param| build_assignment(&param.0.name)),
-                            alloc.hardline(),
-                        );
-
+                    .append(
                         alloc
                             .hardline()
+                            .append("// constructor asserts")
+                            .append(alloc.hardline())
                             .append(assignments)
                             .append(alloc.hardline())
-                            .append("// constructor body")
-                            .append(alloc.hardline())
                             .nest(format::NEST_UNIT)
-                            .braces()
-                    })())
+                            .braces(),
+                    )
                     .append(alloc.hardline())
             };
 
@@ -82,8 +85,8 @@ mod kotlin {
                 )
             };
 
-            let build_class_body = |param_declarations, constructor, inner_classes| {
-                alloc.concat(vec![param_declarations, constructor, inner_classes])
+            let build_class_body = |field_declarations, constructor, inner_classes| {
+                alloc.concat(vec![field_declarations, constructor, inner_classes])
             };
 
             let build_class = |name: &String, body| {
@@ -105,8 +108,8 @@ mod kotlin {
             build_class(
                 &self.name,
                 build_class_body(
-                    build_param_declarations(&self.params),
-                    build_constructor(&self.params),
+                    build_field_declarations(&self.fields),
+                    build_constructor(&self.fields),
                     build_inner_classes(&self.constructors),
                 ),
             )
@@ -135,29 +138,61 @@ mod kotlin {
                     )
             };
 
-            let build_constructor = || {
+            let build_constructor = |fields: &Vec<Field>, result_type: &ast::TypeExpression| {
+                let constructor_params = alloc.intersperse(
+                    fields.iter().map(|field| field.generate(alloc)),
+                    alloc.text(", "),
+                );
+
+                let parent_params = alloc.intersperse(vec![alloc.space()], alloc.text(", "));
+
+                let assignments = (|| {
+                    let build_assignment = |name: &String| {
+                        alloc
+                            .text("this.")
+                            .append(name.clone())
+                            .append(alloc.space())
+                            .append("=")
+                            .append(alloc.space())
+                            .append(name.clone())
+                            .append(";")
+                    };
+
+                    alloc.intersperse(
+                        fields.iter().map(|field| build_assignment(&field.0.name)),
+                        alloc.hardline(),
+                    )
+                })();
+
                 alloc
                     .text("constructor")
-                    .append(alloc.text("").parens())
+                    .append(constructor_params.parens())
                     .append(":")
                     .append(alloc.space())
                     .append("super")
-                    .append(alloc.text("").parens())
+                    .append(parent_params.parens())
                     .append(alloc.space())
                     .append(
                         alloc
                             .hardline()
-                            .append("// inner class constructor")
+                            .append("// inner class asserts")
                             .append(alloc.hardline())
+                            .append(assignments)
+                            .append(alloc.hardline())
+                            .nest(format::NEST_UNIT)
                             .braces(),
                     )
             };
 
-            build_class(&self.name, build_constructor()).into_doc()
+            build_class(
+                &self.name,
+                build_constructor(&self.fields, &self.result_type),
+            )
+            .into_doc()
         }
     }
 
-    impl Param {
+    impl Field {
         pub fn new(symbol: &ast::Symbol) -> Self {
             Self(symbol.clone())
         }
@@ -178,16 +213,22 @@ fn generate_class<'a>(t: &Type, alloc: &'a BoxAllocator) -> BoxDoc<'a> {
     }
     let class = kotlin::SealedClass {
         name: t.name.clone(),
-        params: t
+        fields: t
             .dependencies
             .iter()
-            .map(|dep| kotlin::Param::new(dep))
+            .map(|dep| kotlin::Field::new(dep))
             .collect(),
         constructors: t
             .constructors
             .iter()
             .map(|constructor| kotlin::InnerClass {
                 name: constructor.name.clone(),
+                fields: constructor
+                    .fields
+                    .iter()
+                    .map(|field| kotlin::Field::new(field))
+                    .collect(),
+                result_type: constructor.result_type.clone(),
             })
             .collect(),
     };

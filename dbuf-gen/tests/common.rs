@@ -134,7 +134,7 @@ pub fn get_nat_vec_module() -> e::Module<String> {
                     )],
                     fields: vec![
                         (
-                            "val".to_owned(),
+                            "value".to_owned(),
                             e::TypeExpression::TypeExpression {
                                 name: "Nat".to_owned(),
                                 dependencies: e::Rec::new([]),

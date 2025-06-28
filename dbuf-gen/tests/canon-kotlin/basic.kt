@@ -1,16 +1,18 @@
 sealed class Nat {
     private constructor() {
+        // constructor asserts
         
-        // constructor body
     }
     class Suc: Nat {
-        constructor(): super() {
-        // inner class constructor
+        constructor(pred: Nat): super( ) {
+            // inner class asserts
+            this.pred = pred;
         }
     }
     class Zero: Nat {
-        constructor(): super() {
-        // inner class constructor
+        constructor(): super( ) {
+            // inner class asserts
+            
         }
     }
 }

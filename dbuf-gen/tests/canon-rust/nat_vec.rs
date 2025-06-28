@@ -88,7 +88,7 @@ pub mod vec {
     #[serde(crate = "self::serde")]
     pub enum Body {
         Cons {
-            val: deps::Box<deps::nat::Nat>,
+            value: deps::Box<deps::nat::Nat>,
             tail: deps::Box<Vec>
         },
         Nil {
@@ -110,12 +110,12 @@ pub mod vec {
     }
     
     impl Vec {
-        pub fn cons(p: deps::Box<deps::nat::Nat>, val: deps::Box<deps::nat::Nat>, tail: deps::Box<Vec>) -> Result<Self, deps::ConstructorError> {
+        pub fn cons(p: deps::Box<deps::nat::Nat>, value: deps::Box<deps::nat::Nat>, tail: deps::Box<Vec>) -> Result<Self, deps::ConstructorError> {
             let body = if ((),
             (&p)) == ((),
             (&tail.dependencies.n)) {
                 Ok(Body::Cons {
-                    val: val,
+                    value: value,
                     tail: tail
                 })
             } else {
