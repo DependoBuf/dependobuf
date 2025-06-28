@@ -449,13 +449,13 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     fn parse_binary(&mut self, op: &BinaryOp) -> Result {
         match op {
             BinaryOp::And => {
-                self.write("&&")?;
+                self.write("&")?;
             }
             BinaryOp::Minus => {
                 self.write("-")?;
             }
             BinaryOp::Or => {
-                self.write("||")?;
+                self.write("|")?;
             }
             BinaryOp::Plus => {
                 self.write("+")?;

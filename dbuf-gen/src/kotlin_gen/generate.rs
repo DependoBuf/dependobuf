@@ -52,8 +52,8 @@ mod kotlin {
                         ast::BinaryOp::Minus => alloc.text("-"),
                         ast::BinaryOp::Star => alloc.text("*"),
                         ast::BinaryOp::Slash => alloc.text("/"),
-                        ast::BinaryOp::And => alloc.text("&&"),
-                        ast::BinaryOp::Or => alloc.text("||"),
+                        ast::BinaryOp::And => alloc.text("&"),
+                        ast::BinaryOp::Or => alloc.text("|"),
                     };
 
                     left.append(op_str).append(right)
