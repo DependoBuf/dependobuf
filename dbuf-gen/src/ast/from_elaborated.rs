@@ -16,7 +16,7 @@ type ElaboratedContext = elaborated::Context<Str>;
 type ElaboratedConstructor = elaborated::Constructor<Str>;
 
 // This implementation has one huge downside:
-// It uses Rc and Weak in order to have references to associated objects smarter then strings (which also requires
+// It uses Rc and Weak in order to have references to associated objects smarter than strings (which also requires
 // global hashmap). For example codegen::ast::Expression::Constructor stores weak reference to the corresponding
 // codegen::ast::Constructor while ast::elaborated::Expression::Constructor stores just the name of the constructor
 // which then must be located in constructor list
