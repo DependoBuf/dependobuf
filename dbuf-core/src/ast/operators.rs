@@ -35,16 +35,16 @@ pub enum UnaryOp<S> {
 /// Binary operators used in DependoBuf expressions.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BinaryOp {
-    /// Binary plus.
+    /// Addition
     Plus,
-    /// Binary minus.
+    /// Subtraction
     Minus,
-    /// Binary star (multiplication).types
+    /// Multiplication
     Star,
-    /// Binary slash (division).
+    /// Division
     Slash,
     /// Binary and.
-    And,
+    BinaryAnd,
     /// Binary or.
-    Or,
+    BinaryOr,
 }

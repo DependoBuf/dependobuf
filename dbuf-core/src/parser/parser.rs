@@ -392,7 +392,7 @@ where
                     Expression {
                         loc: span.into(),
                         node: ExpressionNode::OpCall(OpCall::Binary(
-                            BinaryOp::And,
+                            BinaryOp::BinaryAnd,
                             Rec::new(lhs),
                             Rec::new(rhs),
                         )),
@@ -403,7 +403,7 @@ where
                     Expression {
                         loc: span.into(),
                         node: ExpressionNode::OpCall(OpCall::Binary(
-                            BinaryOp::Or,
+                            BinaryOp::BinaryOr,
                             Rec::new(lhs),
                             Rec::new(rhs),
                         )),

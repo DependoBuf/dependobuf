@@ -513,13 +513,13 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
     fn print_binary(&mut self, op: &BinaryOp) {
         match op {
-            BinaryOp::And => {
+            BinaryOp::BinaryAnd => {
                 self.write("&");
             }
             BinaryOp::Minus => {
                 self.write("-");
             }
-            BinaryOp::Or => {
+            BinaryOp::BinaryOr => {
                 self.write("|");
             }
             BinaryOp::Plus => {

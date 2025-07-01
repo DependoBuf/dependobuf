@@ -1207,8 +1207,8 @@ mod value_from_expression {
                     BinaryOp::Minus => alloc.text("-"),
                     BinaryOp::Star => alloc.text("*"),
                     BinaryOp::Slash => alloc.text("/"),
-                    BinaryOp::And => alloc.text("&"),
-                    BinaryOp::Or => alloc.text("|"),
+                    BinaryOp::BinaryAnd => alloc.text("&"),
+                    BinaryOp::BinaryOr => alloc.text("|"),
                 };
                 alloc
                     .text("(")
