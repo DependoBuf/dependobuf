@@ -266,9 +266,8 @@ mod kotlin {
                         )
                 };
 
-            let build_class_body = |field_declarations, constructor| {
-                alloc.concat([field_declarations, constructor])
-            };
+            let build_class_body =
+                |field_declarations, constructor| alloc.concat([field_declarations, constructor]);
 
             let build_class = |name: &String, body| {
                 alloc
