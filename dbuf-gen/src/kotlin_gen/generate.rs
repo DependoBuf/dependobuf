@@ -165,7 +165,7 @@ mod kotlin {
             };
 
             let build_class_body = |field_declarations, constructor, inner_classes| {
-                alloc.concat(vec![field_declarations, constructor, inner_classes])
+                alloc.concat([field_declarations, constructor, inner_classes])
             };
 
             let build_class = |name: &String, body| {
@@ -267,7 +267,7 @@ mod kotlin {
                 };
 
             let build_class_body = |field_declarations, constructor| {
-                alloc.concat(vec![field_declarations, constructor])
+                alloc.concat([field_declarations, constructor])
             };
 
             let build_class = |name: &String, body| {
