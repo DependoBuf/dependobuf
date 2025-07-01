@@ -60,8 +60,7 @@ fn compile_value_expression<'a>(
                     ast::UnaryOp::Bang => alloc.text("!").append(arg),
                     ast::UnaryOp::Minus => alloc.text("-").append(arg),
                     ast::UnaryOp::Access { to: _, field } => {
-                        let field_name =
-                            field.upgrade().expect("value to be present").name.clone();
+                        let field_name = field.upgrade().expect("value to be present").name.clone();
 
                         arg.append(".").append(field_name)
                     }
@@ -204,9 +203,7 @@ impl InnerClass {
         };
 
         let build_constructor =
-            |fields: &Vec<Field>,
-              parent_params: &Vec<Field>,
-              result_type: &ast::TypeExpression| {
+            |fields: &Vec<Field>, parent_params: &Vec<Field>, result_type: &ast::TypeExpression| {
                 let constructor_params = alloc.intersperse(
                     parent_params
                         .iter()
