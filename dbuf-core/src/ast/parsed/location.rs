@@ -84,9 +84,7 @@ where
         }
     }
 
-    fn context(&self) -> Self::Context {
-        ()
-    }
+    fn context(&self) -> Self::Context {}
 
     fn start(&self) -> Self::Offset {
         self.start
@@ -109,11 +107,6 @@ where
         Self::Offset: Ord,
         Self: Sized,
     {
-        std::assert_eq!(
-            self.context(),
-            other.context(),
-            "tried to union two spans with different contexts"
-        );
         Self::new(
             self.context(),
             self.start().min(other.start())..self.end().max(other.end()),
