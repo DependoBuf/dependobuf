@@ -1,8 +1,10 @@
-use chumsky::span::SimpleSpan;
-use logos::Logos;
+use std::{cell::RefCell, rc::Rc};
+
+use logos::{Lexer, Logos, Skip};
 use unescape::unescape;
 
 #[derive(Logos, Debug, PartialEq, Clone)]
+#[logos(extras = Rc<RefCell<Vec<usize>>>)]
 pub enum Token {
     #[token("message")]
     Message,
@@ -60,10 +62,18 @@ pub enum Token {
     #[token("!")]
     Bang,
 
-    #[regex(r"[ \t\r\n\f]+", logos::skip)]
+    #[regex(r"\n", newline_callback)]
+    Newline,
+
+    #[regex(r"[ \t\r\f]+", logos::skip)]
     #[regex(r"//[^\n]*", logos::skip)]
     #[regex(r"/\*([^*]|\*+[^*/])*\*+/", logos::skip)]
     Error,
+}
+
+fn newline_callback(lex: &mut Lexer<Token>) -> Skip {
+    lex.extras.borrow_mut().push(lex.span().end);
+    Skip
 }
 
 fn parse_string(s: &str) -> Option<String> {
@@ -73,20 +83,4 @@ fn parse_string(s: &str) -> Option<String> {
 
 fn parse_uint(s: &str) -> Option<u64> {
     s[..s.len() - 1].parse().ok() // remove 'u' suffix
-}
-
-#[derive(Clone, Copy, Debug)]
-#[allow(dead_code)]
-pub struct Span {
-    start: usize,
-    end: usize,
-}
-
-impl<C> From<SimpleSpan<usize, C>> for Span {
-    fn from(value: SimpleSpan<usize, C>) -> Self {
-        Span {
-            start: value.start,
-            end: value.end,
-        }
-    }
 }

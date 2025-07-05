@@ -69,25 +69,57 @@
 //! VarIdentifier = 'LC_IDENTIFIER_token'
 //! ```
 
-use chumsky::{error::Rich, input::*, Parser};
-use lexer::{Span, Token};
+use std::{cell::RefCell, rc::Rc};
+
+use chumsky::{error::Rich, input::*, span::Span as _, Parser};
+use lexer::Token;
 use logos::Logos;
 use parser::create_parser;
 
-use crate::ast::parsed::*;
+use crate::ast::parsed::{
+    location::{Location, Offset},
+    *,
+};
 
 pub mod lexer;
 pub mod parser;
 
-pub fn parse<'src>(input: &'src str) -> Result<Module<Span, String>, Vec<Rich<'src, Token>>> {
-    let lexer = Token::lexer(input);
-    let token_iter = lexer.spanned().map(|(tok, span)| match tok {
-        Ok(tok) => (tok, span.into()),
-        Err(()) => (Token::Error, span.into()),
+pub fn parse<'src>(
+    input: &'src str,
+) -> Result<Module<Location<Offset>, String>, Vec<Rich<'src, Token, Location<Offset>>>> {
+    let extra = Rc::new(RefCell::new(vec![0]));
+
+    let lexer = Token::lexer_with_extras(input, extra.clone());
+
+    let extra_clone = extra.clone();
+    let token_iter = lexer.spanned().map(move |(tok, span)| {
+        let start = calc_offset(extra_clone.clone(), span.start);
+        let end = calc_offset(extra_clone.clone(), span.end);
+        let loc = Location::new((), start..end);
+
+        match tok {
+            Ok(tok) => (tok, loc),
+            Err(()) => (Token::Error, loc),
+        }
     });
 
-    let token_stream =
-        Stream::from_iter(token_iter.clone()).map((0..input.len()).into(), |(t, s): (_, _)| (t, s));
+    let token_stream = Stream::from_iter(token_iter.clone()).map(
+        Location::new(
+            (),
+            calc_offset(extra.clone(), input.len())..calc_offset(extra.clone(), input.len()),
+        ),
+        |(t, s): (_, _)| (t, s),
+    );
 
     create_parser().parse(token_stream).into_result()
+}
+
+fn calc_offset(newlines: Rc<RefCell<Vec<usize>>>, pos: usize) -> Offset {
+    let newlines = newlines.borrow();
+
+    let lines = newlines.binary_search(&pos).unwrap_or_else(|i| i - 1);
+    Offset {
+        lines,
+        columns: pos - newlines[lines],
+    }
 }
