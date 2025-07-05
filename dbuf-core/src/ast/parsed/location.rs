@@ -59,6 +59,16 @@ pub struct Location<Pos> {
     pub length: Offset,
 }
 
+impl<Pos> Location<Pos>
+where
+    Pos: Add<Offset, Output = Pos>,
+{
+    /// Ending position of an entity.
+    pub fn end(self) -> Pos {
+        self.start + self.length
+    }
+}
+
 impl<Pos: Copy> Span for Location<Pos>
 where
     Pos: Add<Offset, Output = Pos>,
