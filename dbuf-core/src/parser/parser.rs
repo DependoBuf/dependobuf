@@ -35,7 +35,7 @@ where
     choice((message_def, enum_def)).labelled("type declaration")
 }
 
-pub fn parser_message_def<'src, I>() -> impl Parser<
+fn parser_message_def<'src, I>() -> impl Parser<
     'src,
     I,
     Definition<Location<Offset>, String, TypeDeclaration<Location<Offset>, String>>,
@@ -62,7 +62,7 @@ where
         .labelled("message definition")
 }
 
-pub fn parser_enum_def<'src, I>() -> impl Parser<
+fn parser_enum_def<'src, I>() -> impl Parser<
     'src,
     I,
     Definition<Location<Offset>, String, TypeDeclaration<Location<Offset>, String>>,
@@ -77,7 +77,7 @@ where
     choice((dependent, independent)).labelled("enum definition")
 }
 
-pub fn parser_dependent_enum_def<'src, I>() -> impl Parser<
+fn parser_dependent_enum_def<'src, I>() -> impl Parser<
     'src,
     I,
     Definition<Location<Offset>, String, TypeDeclaration<Location<Offset>, String>>,
@@ -109,7 +109,7 @@ where
         .labelled("dependent enum definition")
 }
 
-pub fn parser_independent_enum_def<'src, I>() -> impl Parser<
+fn parser_independent_enum_def<'src, I>() -> impl Parser<
     'src,
     I,
     Definition<Location<Offset>, String, TypeDeclaration<Location<Offset>, String>>,
@@ -136,7 +136,7 @@ where
         .labelled("independent enum definition")
 }
 
-pub fn parser_depencies<'src, I>(
+fn parser_depencies<'src, I>(
     at_least: usize,
 ) -> impl Parser<
     'src,
@@ -157,7 +157,7 @@ where
         .labelled("dependencies")
 }
 
-pub fn parser_enum_branch<'src, I>() -> impl Parser<
+fn parser_enum_branch<'src, I>() -> impl Parser<
     'src,
     I,
     EnumBranch<Location<Offset>, String>,
@@ -184,7 +184,7 @@ where
         .labelled("enum branch")
 }
 
-pub fn parser_constructors_block<'src, I>() -> impl Parser<
+fn parser_constructors_block<'src, I>() -> impl Parser<
     'src,
     I,
     Definitions<Location<Offset>, String, ConstructorBody<Location<Offset>, String>>,
@@ -209,7 +209,7 @@ where
         .labelled("constructors block")
 }
 
-pub fn parser_constructor_body<'src, I>() -> impl Parser<
+fn parser_constructor_body<'src, I>() -> impl Parser<
     'src,
     I,
     ConstructorBody<Location<Offset>, String>,
@@ -226,7 +226,7 @@ where
         .labelled("constructor body")
 }
 
-pub fn parser_typed_variable<'src, I>() -> impl Parser<
+fn parser_typed_variable<'src, I>() -> impl Parser<
     'src,
     I,
     Definition<Location<Offset>, String, Expression<Location<Offset>, String>>,
@@ -246,7 +246,7 @@ where
         .labelled("typed variable")
 }
 
-pub fn parser_pattern<'src, I>() -> impl Parser<
+fn parser_pattern<'src, I>() -> impl Parser<
     'src,
     I,
     Pattern<Location<Offset>, String>,
@@ -301,7 +301,7 @@ where
     .labelled("pattern")
 }
 
-pub fn parser_type_expression<'src, I>() -> impl Parser<
+fn parser_type_expression<'src, I>() -> impl Parser<
     'src,
     I,
     Expression<Location<Offset>, String>,
@@ -315,7 +315,7 @@ where
     parser_type_expression_with_primary(primary)
 }
 
-pub fn parser_expression<'src, I>() -> impl Parser<
+fn parser_expression<'src, I>() -> impl Parser<
     'src,
     I,
     Expression<Location<Offset>, String>,
