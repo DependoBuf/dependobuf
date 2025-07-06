@@ -44,7 +44,7 @@ impl Sub<Offset> for Offset {
         } else {
             Some(Self {
                 lines: self.lines - rhs.lines,
-                columns: rhs.columns,
+                columns: self.columns,
             })
         }
     }
