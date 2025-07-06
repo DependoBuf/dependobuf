@@ -71,7 +71,7 @@
 
 use std::{cell::RefCell, rc::Rc};
 
-use chumsky::{error::Rich, input::*, span::Span as _, Parser};
+use chumsky::{error::Rich, input::*, span::SimpleSpan, Parser};
 use lexer::Token;
 use logos::Logos;
 use parser::create_parser;
@@ -86,7 +86,7 @@ pub mod parser;
 
 pub fn parse<'src>(
     input: &'src str,
-) -> Result<Module<Location<Offset>, String>, Vec<Rich<'src, Token, Location<Offset>>>> {
+) -> Result<Module<Location<Offset>, String>, Vec<Rich<'src, Token, SimpleSpan<Offset>>>> {
     let extra = Rc::new(RefCell::new(vec![0]));
 
     let lexer = Token::lexer_with_extras(input, extra.clone());
@@ -95,7 +95,7 @@ pub fn parse<'src>(
     let token_iter = lexer.spanned().map(move |(tok, span)| {
         let start = calc_offset(extra_clone.clone(), span.start);
         let end = calc_offset(extra_clone.clone(), span.end);
-        let loc = Location::new((), start..end);
+        let loc = (start..end).into();
 
         match tok {
             Ok(tok) => (tok, loc),
@@ -103,13 +103,10 @@ pub fn parse<'src>(
         }
     });
 
-    let token_stream = Stream::from_iter(token_iter.clone()).map(
-        Location::new(
-            (),
-            calc_offset(extra.clone(), input.len())..calc_offset(extra.clone(), input.len()),
-        ),
-        |(t, s): (_, _)| (t, s),
-    );
+    let end_offset = calc_offset(extra.clone(), input.len());
+    let eoi_loc = (end_offset..end_offset).into();
+
+    let token_stream = Stream::from_iter(token_iter).map(eoi_loc, |(t, s): (_, _)| (t, s));
 
     create_parser().parse(token_stream).into_result()
 }

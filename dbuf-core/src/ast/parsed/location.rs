@@ -2,8 +2,6 @@
 
 use std::ops::{Add, Range, Sub};
 
-use chumsky::span::Span;
-
 /// Offset in a file.
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Default)]
 pub struct Offset {
@@ -32,20 +30,22 @@ impl Add<Offset> for Offset {
 }
 
 impl Sub<Offset> for Offset {
-    type Output = Self;
+    type Output = Option<Self>;
 
     // For calculating length
     fn sub(self, rhs: Offset) -> Self::Output {
-        if self.lines == rhs.lines {
-            Self {
+        if self < rhs {
+            None
+        } else if self.lines == rhs.lines {
+            Some(Self {
                 lines: 0,
                 columns: self.columns - rhs.columns,
-            }
+            })
         } else {
-            Self {
+            Some(Self {
                 lines: self.lines - rhs.lines,
                 columns: rhs.columns,
-            }
+            })
         }
     }
 }
@@ -69,47 +69,19 @@ where
     }
 }
 
-impl<Pos: Copy> Span for Location<Pos>
+#[derive(Debug, Clone, Copy)]
+pub struct IncorrectRange;
+
+impl<Pos: Copy> TryFrom<Range<Pos>> for Location<Pos>
 where
-    Pos: Add<Offset, Output = Pos>,
-    Pos: Sub<Pos, Output = Offset>,
+    Pos: Sub<Pos, Output = Option<Offset>>,
 {
-    type Context = ();
-    type Offset = Pos;
+    type Error = IncorrectRange;
 
-    fn new(_context: Self::Context, range: Range<Self::Offset>) -> Self {
-        Location {
+    fn try_from(range: Range<Pos>) -> Result<Self, Self::Error> {
+        Ok(Location {
             start: range.start,
-            length: range.end - range.start,
-        }
-    }
-
-    fn context(&self) -> Self::Context {}
-
-    fn start(&self) -> Self::Offset {
-        self.start
-    }
-
-    fn end(&self) -> Self::Offset {
-        self.start + self.length
-    }
-
-    fn to_end(&self) -> Self
-    where
-        Self: Sized,
-    {
-        Self::new(self.context(), self.end()..self.end())
-    }
-
-    fn union(&self, other: Self) -> Self
-    where
-        Self::Context: PartialEq + core::fmt::Debug,
-        Self::Offset: Ord,
-        Self: Sized,
-    {
-        Self::new(
-            self.context(),
-            self.start().min(other.start())..self.end().max(other.end()),
-        )
+            length: (range.end - range.start).ok_or(Self::Error {})?,
+        })
     }
 }
