@@ -72,9 +72,9 @@ where
 #[derive(Debug, Clone, Copy)]
 pub struct IncorrectRange;
 
-impl<Pos: Copy> TryFrom<Range<Pos>> for Location<Pos>
+impl<Pos> TryFrom<Range<Pos>> for Location<Pos>
 where
-    Pos: Sub<Pos, Output = Option<Offset>>,
+    Pos: Sub<Pos, Output = Option<Offset>> + Copy,
 {
     type Error = IncorrectRange;
 

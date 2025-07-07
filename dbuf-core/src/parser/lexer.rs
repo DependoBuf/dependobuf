@@ -1,10 +1,8 @@
-use std::{cell::RefCell, rc::Rc};
-
 use logos::{Lexer, Logos, Skip};
 use unescape::unescape;
 
 #[derive(Logos, Debug, PartialEq, Clone)]
-#[logos(extras = Rc<RefCell<Vec<usize>>>)]
+#[logos(extras = (usize, usize))]
 pub enum Token {
     #[token("message")]
     Message,
@@ -68,11 +66,12 @@ pub enum Token {
     #[regex(r"[ \t\r\f]+", logos::skip)]
     #[regex(r"//[^\n]*", logos::skip)]
     #[regex(r"/\*([^*]|\*+[^*/])*\*+/", logos::skip)]
-    Error,
+    Err,
 }
 
 fn newline_callback(lex: &mut Lexer<Token>) -> Skip {
-    lex.extras.borrow_mut().push(lex.span().end);
+    lex.extras.0 += 1;
+    lex.extras.1 = lex.span().end;
     Skip
 }
 

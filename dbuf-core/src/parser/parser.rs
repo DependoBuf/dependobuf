@@ -1,8 +1,8 @@
-use super::lexer::*;
 use crate::ast::parsed::definition::*;
 use crate::ast::parsed::location::Offset;
 use crate::ast::parsed::*;
 use crate::ast::{operators::*, parsed::location::Location};
+use crate::parser::Token;
 use chumsky::{input::*, pratt::*, prelude::*};
 
 pub fn create_parser<'src, I>() -> impl Parser<
