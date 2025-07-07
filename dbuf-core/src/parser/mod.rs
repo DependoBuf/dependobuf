@@ -72,7 +72,7 @@
 use chumsky::{error::Rich, input::*, span::SimpleSpan, Parser};
 use lexer::Token;
 use logos::Logos;
-use parser::create_parser;
+use parser_impl::create_parser;
 
 use located_iter::*;
 
@@ -83,12 +83,13 @@ use crate::ast::parsed::{
 
 pub mod lexer;
 pub mod located_iter;
-pub mod parser;
+pub mod parser_impl;
 
-pub fn parse<'src>(
-    input: &'src str,
-) -> Result<Module<Location<Offset>, String>, Vec<Rich<'src, Token, SimpleSpan<Offset>>>> {
-    let lexer = Token::lexer_with_extras(input, (0, 0));
+type ParsedModule = Module<Location<Offset>, String>;
+type ParseError<'src> = Rich<'src, Token, SimpleSpan<Offset>>;
+
+pub fn parse<'src>(input: &'src str) -> Result<ParsedModule, Vec<ParseError<'src>>> {
+    let lexer = Token::lexer(input);
 
     let token_iter = lexer.located().map(move |(tok, span)| match tok {
         Ok(tok) => (tok, span.into()),
