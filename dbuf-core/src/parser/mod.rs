@@ -69,32 +69,40 @@
 //! VarIdentifier = 'LC_IDENTIFIER_token'
 //! ```
 
-use chumsky::{error::Rich, input::*, Parser};
-use lexer::{Span, Token};
+use chumsky::{error::Rich, input::*, span::SimpleSpan, Parser};
+use lexer::Token;
 use logos::Logos;
-use parser::create_parser;
+use parser_impl::create_parser;
 
-use crate::ast::parsed::*;
+use located_iter::*;
+
+use crate::ast::parsed::{
+    location::{Location, Offset},
+    *,
+};
 
 pub mod lexer;
-#[allow(
-    clippy::module_inception,
-    reason = "??? (module has the same name as its containing module"
-)]
-pub mod parser;
+pub mod located_iter;
+pub mod parser_impl;
 
-/// # Errors
-///
-/// TODO: explain when `Err` is returned.
-pub fn parse(input: &str) -> Result<Module<Span, String>, Vec<Rich<'_, Token>>> {
+type ParsedModule = Module<Location<Offset>, String>;
+type ParseError<'src> = Rich<'src, Token, SimpleSpan<Offset>>;
+
+pub fn parse<'src>(input: &'src str) -> Result<ParsedModule, Vec<ParseError<'src>>> {
     let lexer = Token::lexer(input);
-    let token_iter = lexer.spanned().map(|(tok, span)| match tok {
+
+    let token_iter = lexer.located().map(move |(tok, span)| match tok {
         Ok(tok) => (tok, span.into()),
-        Err(()) => (Token::Error, span.into()),
+        Err(()) => (Token::Err, span.into()),
     });
 
-    let token_stream =
-        Stream::from_iter(token_iter.clone()).map((0..input.len()).into(), |(t, s): (_, _)| (t, s));
+    let end_offset = Offset {
+        lines: input.lines().count() + 1,
+        columns: 0,
+    };
+    let eoi_loc = (end_offset..end_offset).into();
+
+    let token_stream = Stream::from_iter(token_iter).map(eoi_loc, |(t, s): (_, _)| (t, s));
 
     create_parser().parse(token_stream).into_result()
 }
