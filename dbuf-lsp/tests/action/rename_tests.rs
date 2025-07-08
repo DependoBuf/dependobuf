@@ -149,7 +149,7 @@ fn test_valid_rename() {
 fn test_invalid_rename() {
     let s = Scenario::new();
 
-    for p in VALID_FIELD_RENAME {
+    for p in VALID_TYPE_RENAME {
         s.expect_invalid_rename(*p, ""); // to empty
         s.expect_invalid_rename(*p, "Int"); // to builtin
         s.expect_invalid_rename(*p, "M1"); // to existing / old
