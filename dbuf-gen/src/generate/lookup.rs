@@ -2,6 +2,7 @@ use std::{hash::Hash, marker::PhantomData};
 
 use super::node::Node;
 
+#[allow(dead_code, reason = "??? (GoNext never constructed)")]
 pub enum LookupResult<Key, Result> {
     GoBack,
     GoNext(Key),

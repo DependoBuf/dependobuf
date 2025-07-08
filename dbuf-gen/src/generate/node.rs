@@ -6,6 +6,7 @@ pub struct Node<Key, Value> {
     pub(super) detail: Value,
 }
 
+#[allow(dead_code, reason = "??? (some methods are never used)")]
 impl<Key: Eq + Hash, Value> Node<Key, Value> {
     pub(super) fn new(detail: Value) -> Self {
         Node {

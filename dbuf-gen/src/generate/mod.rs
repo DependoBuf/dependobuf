@@ -9,6 +9,7 @@ pub struct GlobalContext<'a> {
     pub alloc: &'a BoxAllocator,
 }
 
+#[cfg(test)]
 mod tests {
     use super::{lookup::Cursor, namespace::NamespaceTree};
 

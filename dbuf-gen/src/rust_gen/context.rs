@@ -43,12 +43,14 @@ where
     _key: PhantomData<&'cursor ObjectId<'id>>,
 }
 
+#[allow(dead_code, reason = "??? (object is never read)")]
 #[derive(Clone)]
 pub struct Name {
     object: RustObject,
     tag: u64,
 }
 
+#[allow(dead_code, reason = "??? (some methods are never used)")]
 impl<'id, 'parent> NamingContext<'id, 'parent> {
     fn wrap_namespace_tree<'a>(
         namespace_tree: NamespaceTree<'a, ObjectId<'id>, Container>,

@@ -8,10 +8,12 @@ use std::rc::{Rc, Weak};
 pub use dbuf_core::ast::{elaborated, operators};
 
 // maybe temporary
+#[allow(dead_code, reason = "maybe temporary")]
 type ElaboratedType = elaborated::Type<Str>;
 type ElaboratedValueExpression = elaborated::ValueExpression<Str>;
 type ElaboratedTypeExpression = elaborated::TypeExpression<Str>;
 type ElaboratedModule = elaborated::Module<Str>;
+#[allow(dead_code, reason = "maybe temporary")]
 type ElaboratedContext = elaborated::Context<Str>;
 type ElaboratedConstructor = elaborated::Constructor<Str>;
 

@@ -11,6 +11,7 @@ pub use serde;
 
 pub use serde_json::{from_slice, to_vec};
 
+#[allow(dead_code, reason = "Deserialization is not ready")]
 pub struct DeserializeError(serde_json::Error);
 
 impl From<serde_json::Error> for DeserializeError {

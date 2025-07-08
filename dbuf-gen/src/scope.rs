@@ -15,6 +15,7 @@ where
     map: HashMap<Key, Value>,
 }
 
+#[allow(dead_code, reason = "??? (some methods are never used)")]
 impl<'a, Key, Value> Scope<'a, Key, Value>
 where
     Key: Hash + Eq,

@@ -10,8 +10,10 @@ use crate::{ast::NodeId, generate::lookup::Cursor};
 
 pub use function::{Function, GeneratedFunction};
 pub use module::{GeneratedModule, Module};
+#[allow(unused_imports, reason = "scopes currently are not generated ?")]
 pub use scope::{GeneratedScope, Scope};
 pub use ty::{GeneratedType, Type};
+#[allow(unused_imports, reason = "variable currently are not generated ?")]
 pub use variable::{GeneratedVariable, Variable};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
@@ -39,6 +41,7 @@ pub struct GeneratedRustObject {
     tag: u64,
 }
 
+#[allow(dead_code, reason = "??? (some items are never used)")]
 pub trait Object<'id>: Sized {
     type Generated: for<'me> GeneratedObject<'me>;
 
@@ -65,6 +68,7 @@ pub trait Object<'id>: Sized {
     fn generate_tagged(self, tag: u64) -> Self::Generated;
 }
 
+#[allow(dead_code, reason = "??? (trait never used)")]
 pub trait GeneratedObject<'me>:
     Into<GeneratedRustObject>
     + TryFrom<GeneratedRustObject, Error = ()>
@@ -73,6 +77,7 @@ pub trait GeneratedObject<'me>:
 {
 }
 
+#[allow(dead_code, reason = "??? (Number never constructed)")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Tag {
     None,
@@ -83,6 +88,7 @@ pub enum Tag {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ObjectId<'id>(pub NodeId<'id>, pub Tag);
 
+#[allow(dead_code, reason = "??? (some methods are never used)")]
 impl<'id> ObjectId<'id> {
     pub fn from_name(name: String) -> Self {
         ObjectId(NodeId::owned(name), Tag::None)

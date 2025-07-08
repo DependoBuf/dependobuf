@@ -33,6 +33,7 @@ enum TreeCursorImpl<'me, Key, Value> {
 #[derive(Clone, Copy)]
 pub struct NamespaceCursor<'me, Key, Value>(TreeCursorImpl<'me, Key, Value>);
 
+#[allow(dead_code, reason = "??? (some methods are never used)")]
 impl<'parent, Key: Eq + Hash + Clone, Value: Clone> NamespaceTree<'parent, Key, Value> {
     pub fn root(detail: Value) -> Self {
         NamespaceTree {
