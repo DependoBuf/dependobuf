@@ -209,6 +209,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "dbuf-typecheck"
+version = "0.1.0"
+dependencies = [
+ "dbuf-core",
+ "thiserror",
+]
+
+[[package]]
 name = "diff"
 version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
