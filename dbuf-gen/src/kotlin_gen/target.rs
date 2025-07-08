@@ -119,7 +119,7 @@ impl SealedClass {
                 alloc.text(", "),
             );
 
-            let assignments = (|| {
+            let assignments = {
                 let build_assignment = |name: &String| {
                     alloc
                         .text("this.")
@@ -132,7 +132,7 @@ impl SealedClass {
                         .append(alloc.hardline())
                 };
                 alloc.concat(fields.iter().map(|field| build_assignment(&field.0.name)))
-            })();
+            };
 
             alloc
                 .text("private constructor")
@@ -190,7 +190,7 @@ impl SealedClass {
 }
 
 impl InnerClass {
-    pub fn generate<'a>(&self, parent_name: &String, alloc: &'a BoxAllocator) -> BoxDoc<'a> {
+    pub fn generate<'a>(&self, parent_name: &str, alloc: &'a BoxAllocator) -> BoxDoc<'a> {
         let build_field_declarations = |fields: &Vec<Field>| {
             alloc.concat(fields.iter().map(|field| {
                 alloc
@@ -224,7 +224,7 @@ impl InnerClass {
                     ),
                 };
 
-                let assignments = (|| {
+                let assignments = {
                     let build_assignment = |name: &String| {
                         alloc
                             .text("this.")
@@ -237,7 +237,7 @@ impl InnerClass {
                             .append(alloc.hardline())
                     };
                     alloc.concat(fields.iter().map(|field| build_assignment(&field.0.name)))
-                })();
+                };
 
                 alloc
                     .text("constructor")
@@ -268,7 +268,7 @@ impl InnerClass {
                 .append(name.clone())
                 .append(":")
                 .append(alloc.space())
-                .append(parent_name.clone())
+                .append(parent_name.to_owned())
                 .append(alloc.space())
                 .append(
                     alloc

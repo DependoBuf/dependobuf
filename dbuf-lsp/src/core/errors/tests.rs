@@ -17,7 +17,7 @@ fn test_unique_codes() {
         .chain(RenameError::iter().map(Into::into))
         .for_each(|e: Error| {
             let c = e.get_code();
-            if codes.get(&c).is_some() {
+            if codes.contains(&c) {
                 panic!("dublicate code: {c}");
             }
             codes.insert(c);

@@ -192,6 +192,10 @@ impl<'id, 'parent> NamingContext<'id, 'parent> {
         }
     }
 
+    #[allow(
+        clippy::type_complexity,
+        reason = "type TypeName<'lifetime> = ... is unstable"
+    )]
     pub fn get_generated<'cursor, O: Object<'id>>(
         &'cursor self,
         id: ObjectId<'id>,
@@ -263,14 +267,10 @@ where
 
     pub fn lookup_module_root(self) -> Self {
         self.lookup(|cursor, generated| {
-            if generated.kind() == Kind::Module {
+            if generated.kind() == Kind::Module || cursor.clone().go_back().is_none() {
                 LookupResult::Stop(cursor.clone())
             } else {
-                if cursor.clone().go_back().is_none() {
-                    LookupResult::Stop(cursor.clone())
-                } else {
-                    LookupResult::GoBack
-                }
+                LookupResult::GoBack
             }
         })
         .expect("should be impossible")

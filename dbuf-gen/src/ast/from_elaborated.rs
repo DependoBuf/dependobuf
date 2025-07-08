@@ -227,13 +227,7 @@ impl ValueExpression {
                                 let field = ty.constructors[0]
                                     .fields
                                     .iter()
-                                    .find_map(|field| {
-                                        if field.name == name {
-                                            Some(field)
-                                        } else {
-                                            None
-                                        }
-                                    })
+                                    .find(|field| field.name == name)
                                     .expect("couldn't find field to access");
                                 UnaryOp::Access {
                                     to: Rc::downgrade(&ty),

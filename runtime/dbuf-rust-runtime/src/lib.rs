@@ -1,5 +1,3 @@
-use serde_json;
-
 #[derive(Debug)]
 pub enum ConstructorError {
     MismatchedDependencies,
@@ -25,5 +23,5 @@ pub trait Serialize {
 }
 
 pub trait Deserialize: Sized {
-    fn deserialize<'a>(slice: &'a [u8]) -> Result<Self, DeserializeError>;
+    fn deserialize(slice: &[u8]) -> Result<Self, DeserializeError>;
 }

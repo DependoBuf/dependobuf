@@ -11,8 +11,9 @@ use tower_lsp::lsp_types::Url;
 
 use dbuf_lsp::WorkspaceAccess;
 
-pub const TEST_URL: LazyLock<Url> = LazyLock::new(|| Url::from_file_path("/testing.dbuf").unwrap());
-pub const TEST_WORKSPACE: LazyLock<WorkspaceAccess> = LazyLock::new(|| {
+pub static TEST_URL: LazyLock<Url> =
+    LazyLock::new(|| Url::from_file_path("/testing.dbuf").unwrap());
+pub static TEST_WORKSPACE: LazyLock<WorkspaceAccess> = LazyLock::new(|| {
     let ans = WorkspaceAccess::new();
     ans.open(TEST_URL.clone(), 0, "");
     ans

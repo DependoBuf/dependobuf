@@ -77,6 +77,10 @@ use parser::create_parser;
 use crate::ast::parsed::*;
 
 pub mod lexer;
+#[allow(
+    clippy::module_inception,
+    reason = "??? (module has the same name as its containing module"
+)]
 pub mod parser;
 
 pub fn parse<'src>(input: &'src str) -> Result<Module<Span, String>, Vec<Rich<'src, Token>>> {

@@ -16,11 +16,11 @@ impl<Key: Eq + Hash, Value> Node<Key, Value> {
     }
 
     pub(super) fn try_insert(&mut self, key: Key, node: Self) -> bool {
-        if self.nested.contains_key(&key) {
-            false
-        } else {
-            self.nested.insert(key, node);
+        if let std::collections::hash_map::Entry::Vacant(e) = self.nested.entry(key) {
+            e.insert(node);
             true
+        } else {
+            false
         }
     }
 

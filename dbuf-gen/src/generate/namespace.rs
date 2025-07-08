@@ -121,8 +121,8 @@ impl<'me, Key: Eq + Hash, Value> TreeCursorImpl<'me, Key, Value> {
             TreeCursorImpl::InTree {
                 object,
                 associated_with: _,
-            } => &object,
-            TreeCursorImpl::OnStack { object, edge: _ } => &object,
+            } => object,
+            TreeCursorImpl::OnStack { object, edge: _ } => object,
         }
     }
 
