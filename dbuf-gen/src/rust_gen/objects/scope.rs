@@ -39,7 +39,7 @@ impl<'id> Object<'id> for Scope<'id> {
     where
         C: Cursor<(&'c HashMap<RustObject, u64>, &'c GeneratedRustObject), ObjectId<'id>>,
     {
-        cursor.value().0.get(object).cloned()
+        cursor.value().0.get(object).copied()
     }
 
     fn lookup_visible<'cursor, C>(cursor: C, id: ObjectId<'id>) -> Option<C>
@@ -87,4 +87,4 @@ impl TryFrom<&GeneratedRustObject> for GeneratedScope {
     }
 }
 
-impl<'me> GeneratedObject<'me> for GeneratedScope {}
+impl GeneratedObject<'_> for GeneratedScope {}

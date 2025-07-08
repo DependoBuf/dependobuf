@@ -126,6 +126,7 @@ mod type_dependencies_import {
     use std::{collections::HashSet, iter, rc::Rc};
 
     impl<'a> Type {
+        #[allow(clippy::too_many_lines, reason = "??? (144/100)")]
         pub(super) fn generate_dependencies_import(
             &self,
             (ctx, namespace): MutContext<'a, '_, '_>,
@@ -255,11 +256,11 @@ mod type_dependencies_import {
                         drop(message_type);
 
                         namespace.insert_tree(
-                            ObjectId(node_id.clone(), Tag::String("module")),
+                            &ObjectId(node_id.clone(), Tag::String("module")),
                             message_module_node,
                         );
                         namespace.insert_tree(
-                            ObjectId(node_id.clone(), Tag::String("type")),
+                            &ObjectId(node_id.clone(), Tag::String("type")),
                             message_type_node,
                         );
 
@@ -369,14 +370,14 @@ mod type_declaration {
                 self.name.clone(),
             );
             let name = namespace.name_object(&message_type_object);
-            let (_, _) = namespace.insert_object(message_type_object.clone(), name.clone());
+            let (_, _) = namespace.insert_object(message_type_object.clone(), &name);
 
             let body = self.generate_body((ctx, namespace));
             let dependencies = self.generate_dependencies((ctx, namespace));
 
-            let _ = namespace.remove_tree(ObjectId(NodeId::id(self), Tag::String("type")));
+            let _ = namespace.remove_tree(&ObjectId(NodeId::id(self), Tag::String("type")));
             let (message_type_name, mut message_type_namespace) =
-                namespace.insert_object(message_type_object, name);
+                namespace.insert_object(message_type_object, &name);
 
             let (body_field, _) = message_type_namespace
                 .insert_object_preserve_name(objects::Variable::from_name("body".to_owned()))
@@ -521,7 +522,7 @@ mod type_declaration {
                 .append(alloc.hardline())
                 .append("#[serde(crate = \"self::serde\")]")
                 .append(alloc.hardline())
-                .append(format!("pub {}", holder))
+                .append(format!("pub {holder}"))
                 .append(alloc.space())
                 .append(body_type.to_doc(ctx))
                 .append(alloc.space())
@@ -692,6 +693,7 @@ mod type_inherent_impl {
     }
 
     impl<'a> Constructor {
+        #[allow(clippy::too_many_lines, reason = "??? (128/100)")]
         pub fn generate_constructor_declaration(
             &self,
             (ctx, namespace): MutContext<'a, '_, '_>,
@@ -1257,7 +1259,7 @@ mod value_from_expression {
                                 .expect("expected function")
                                 .to_doc(ctx),
                         ),
-                    )
+                    );
                 });
 
             constructor_func
@@ -1433,7 +1435,7 @@ impl<'a> Type {
                         objects::GeneratedModule::try_from(generated)
                             .expect("expected module")
                             .to_doc(ctx),
-                    )
+                    );
                 })
                 .lookup_generated::<objects::Module>(ObjectId(
                     NodeId::id(self),
@@ -1446,7 +1448,7 @@ impl<'a> Type {
                                 .expect("expected module")
                                 .to_doc(ctx),
                         ),
-                    )
+                    );
                 });
             Some((path.unwrap().append("::"), cursor))
         }

@@ -23,5 +23,8 @@ pub trait Serialize {
 }
 
 pub trait Deserialize: Sized {
+    /// # Errors
+    ///
+    /// TODO: explain when `DeserializeError` is returned.
     fn deserialize(slice: &[u8]) -> Result<Self, DeserializeError>;
 }

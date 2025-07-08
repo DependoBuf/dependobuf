@@ -37,7 +37,7 @@ fn generate_class<'a>(t: &Type, alloc: &'a BoxAllocator) -> BoxDoc<'a> {
     class.generate(alloc)
 }
 
-pub fn generate_module(module: Module) -> String {
+pub fn generate_module(module: &Module) -> String {
     let alloc = &BoxAllocator;
     let mut writer = Vec::new();
     for t in &module.types {

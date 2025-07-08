@@ -5,6 +5,7 @@ use super::{
     node::Node,
 };
 
+#[allow(clippy::struct_field_names, reason = "??? (edge field in Edge struct)")]
 #[derive(Debug)]
 struct Edge<'parent, Key, Value> {
     associated_with: Key,
@@ -34,7 +35,7 @@ enum TreeCursorImpl<'me, Key, Value> {
 pub struct NamespaceCursor<'me, Key, Value>(TreeCursorImpl<'me, Key, Value>);
 
 #[allow(dead_code, reason = "??? (some methods are never used)")]
-impl<'parent, Key: Eq + Hash + Clone, Value: Clone> NamespaceTree<'parent, Key, Value> {
+impl<Key: Eq + Hash + Clone, Value: Clone> NamespaceTree<'_, Key, Value> {
     pub fn root(detail: Value) -> Self {
         NamespaceTree {
             generated: Node::new(detail),
@@ -50,15 +51,11 @@ impl<'parent, Key: Eq + Hash + Clone, Value: Clone> NamespaceTree<'parent, Key, 
         self.generated.insert(key, node);
     }
 
-    pub fn remove_tree(&mut self, key: Key) -> Option<Node<Key, Value>> {
+    pub fn remove_tree(&mut self, key: &Key) -> Option<Node<Key, Value>> {
         self.generated.remove(key)
     }
 
-    pub fn try_insert<'child>(
-        &'child mut self,
-        key: Key,
-        detail: Value,
-    ) -> Option<NamespaceTree<'child, Key, Value>> {
+    pub fn try_insert(&mut self, key: Key, detail: Value) -> Option<NamespaceTree<'_, Key, Value>> {
         let parent = &mut self.generated;
         if parent.nested.contains_key(&key) {
             None
@@ -74,11 +71,7 @@ impl<'parent, Key: Eq + Hash + Clone, Value: Clone> NamespaceTree<'parent, Key, 
         }
     }
 
-    pub fn insert<'child>(
-        &'child mut self,
-        key: Key,
-        detail: Value,
-    ) -> NamespaceTree<'child, Key, Value> {
+    pub fn insert(&mut self, key: Key, detail: Value) -> NamespaceTree<'_, Key, Value> {
         self.try_insert(key, detail).expect("could not insert")
     }
 
@@ -100,7 +93,7 @@ impl<'parent, Key: Eq + Hash + Clone, Value: Clone> NamespaceTree<'parent, Key, 
         &mut self.generated.detail
     }
 
-    pub fn cursor<'me>(&'me self) -> NamespaceCursor<'me, Key, Value> {
+    pub fn cursor(&self) -> NamespaceCursor<'_, Key, Value> {
         NamespaceCursor(TreeCursorImpl::OnStack {
             object: &self.generated,
             edge: self.edge.as_ref(),
@@ -180,8 +173,8 @@ impl<'me, Key: Eq + Hash + Clone, Value: Clone> Cursor<&'me Value, Key>
     }
 }
 
-impl<'me, Key: Eq + Hash + Clone, Value: Clone> NodeCursor<Value, Key>
-    for NamespaceCursor<'me, Key, Value>
+impl<Key: Eq + Hash + Clone, Value: Clone> NodeCursor<Value, Key>
+    for NamespaceCursor<'_, Key, Value>
 {
     fn node(&self) -> &Node<Key, Value> {
         self.0.node()

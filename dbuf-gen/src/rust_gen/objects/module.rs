@@ -168,4 +168,4 @@ impl TryFrom<&GeneratedRustObject> for GeneratedModule {
     }
 }
 
-impl<'me> GeneratedObject<'me> for GeneratedModule {}
+impl GeneratedObject<'_> for GeneratedModule {}

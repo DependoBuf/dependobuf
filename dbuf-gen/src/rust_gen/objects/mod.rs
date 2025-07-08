@@ -89,7 +89,7 @@ pub enum Tag {
 pub struct ObjectId<'id>(pub NodeId<'id>, pub Tag);
 
 #[allow(dead_code, reason = "??? (some methods are never used)")]
-impl<'id> ObjectId<'id> {
+impl ObjectId<'_> {
     pub fn from_name(name: String) -> Self {
         ObjectId(NodeId::owned(name), Tag::None)
     }

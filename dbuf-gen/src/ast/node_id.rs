@@ -8,7 +8,7 @@ use std::{
 // just marker trait
 pub trait Node {}
 
-/// This enum is expected to used in order to find semantically equal object comparing its ObjectIds.
+/// This enum is expected to used in order to find semantically equal object comparing its `ObjectIds`.
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 enum NodeIdStorage<'a> {
     Pointer {
@@ -24,7 +24,7 @@ enum NodeIdStorage<'a> {
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct NodeId<'a>(NodeIdStorage<'a>);
 
-impl<'a> NodeId<'a> {
+impl NodeId<'_> {
     pub fn owned(name: String) -> NodeId<'static> {
         NodeId(NodeIdStorage::Owned { name })
     }

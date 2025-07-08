@@ -41,7 +41,7 @@ impl Module {
         let mut all_constructors = Scope::<String, Rc<Constructor>>::empty();
         let mut types = Vec::with_capacity(module.types.len());
         let mut known_types = Scope::<String, Weak<Type>>::empty();
-        for (name, ty) in module.types.into_iter() {
+        for (name, ty) in module.types {
             // all this scope constructs Rc<Type> and can be become Type::from_elaborated
             // but I do not really want this, because I do not feel like it will simplify logic
             let mut variables = Scope::<String, Rc<Symbol>>::empty();
@@ -65,12 +65,12 @@ impl Module {
             let variables = variables;
 
             let ty = Rc::new_cyclic(|me| {
+                use elaborated::ConstructorNames;
                 assert!(
                     known_types.try_insert(name.clone(), me.clone()),
                     "codegen expects valid elaborated ast: two types can not have same name"
                 );
 
-                use elaborated::ConstructorNames;
                 let (constructors, kind) = match ty.constructor_names {
                     ConstructorNames::OfMessage(name) => (vec![name], TypeKind::Message),
                     ConstructorNames::OfEnum(constructors) => {
@@ -116,8 +116,8 @@ impl Module {
 }
 
 impl Constructor {
-    fn from_elaborated<'a>(
-        type_context: ASTContext<'a>,
+    fn from_elaborated(
+        type_context: ASTContext<'_>,
         name: Str,
         ElaboratedConstructor {
             implicits,
@@ -177,7 +177,7 @@ impl Constructor {
 }
 
 impl ValueExpression {
-    fn from_elaborated<'a>(context: ASTContext<'a>, expr: ElaboratedValueExpression) -> Self {
+    fn from_elaborated(context: ASTContext<'_>, expr: ElaboratedValueExpression) -> Self {
         match expr {
             ElaboratedValueExpression::OpCall {
                 op_call,
@@ -293,7 +293,7 @@ impl ValueExpression {
 }
 
 impl TypeExpression {
-    fn from_elaborated<'a>(context: ASTContext<'a>, expr: ElaboratedTypeExpression) -> Self {
+    fn from_elaborated(context: ASTContext<'_>, expr: ElaboratedTypeExpression) -> Self {
         match expr {
             ElaboratedTypeExpression::TypeExpression { name, dependencies } => {
                 // types in module must be in top sorted order (top sort over types and theirs dependencies)
@@ -317,8 +317,8 @@ impl TypeExpression {
 }
 
 impl Symbol {
-    fn from_elaborated<'a>(
-        context: ASTContext<'a>,
+    fn from_elaborated(
+        context: ASTContext<'_>,
         name: Str,
         type_expr: ElaboratedTypeExpression,
     ) -> Self {

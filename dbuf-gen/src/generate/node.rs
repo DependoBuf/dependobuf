@@ -25,11 +25,11 @@ impl<Key: Eq + Hash, Value> Node<Key, Value> {
     }
 
     pub(super) fn insert(&mut self, key: Key, node: Self) {
-        assert!(self.try_insert(key, node), "could not insert")
+        assert!(self.try_insert(key, node), "could not insert");
     }
 
-    pub(super) fn remove(&mut self, key: Key) -> Option<Self> {
-        self.nested.remove(&key)
+    pub(super) fn remove(&mut self, key: &Key) -> Option<Self> {
+        self.nested.remove(key)
     }
 
     pub(super) fn detail(&self) -> &Value {

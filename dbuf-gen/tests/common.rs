@@ -1,5 +1,6 @@
 use dbuf_core::ast::elaborated as e;
 
+#[must_use]
 pub fn get_basic_module() -> e::Module<String> {
     e::Module {
         types: vec![(
@@ -7,7 +8,10 @@ pub fn get_basic_module() -> e::Module<String> {
             e::Type {
                 dependencies: Vec::new(),
                 constructor_names: e::ConstructorNames::OfEnum(
-                    ["Zero", "Suc"].into_iter().map(|s| s.to_owned()).collect(),
+                    ["Zero", "Suc"]
+                        .into_iter()
+                        .map(std::borrow::ToOwned::to_owned)
+                        .collect(),
                 ),
             },
         )],
@@ -46,6 +50,8 @@ pub fn get_basic_module() -> e::Module<String> {
     }
 }
 
+#[allow(clippy::too_many_lines, reason = "??? (131/100)")]
+#[must_use]
 pub fn get_nat_vec_module() -> e::Module<String> {
     e::Module {
         types: vec![
@@ -54,7 +60,10 @@ pub fn get_nat_vec_module() -> e::Module<String> {
                 e::Type {
                     dependencies: Vec::new(),
                     constructor_names: e::ConstructorNames::OfEnum(
-                        ["Zero", "Suc"].into_iter().map(|s| s.to_owned()).collect(),
+                        ["Zero", "Suc"]
+                            .into_iter()
+                            .map(std::borrow::ToOwned::to_owned)
+                            .collect(),
                     ),
                 },
             ),
@@ -69,7 +78,10 @@ pub fn get_nat_vec_module() -> e::Module<String> {
                         },
                     )],
                     constructor_names: e::ConstructorNames::OfEnum(
-                        ["Nil", "Cons"].into_iter().map(|s| s.to_owned()).collect(),
+                        ["Nil", "Cons"]
+                            .into_iter()
+                            .map(std::borrow::ToOwned::to_owned)
+                            .collect(),
                     ),
                 },
             ),

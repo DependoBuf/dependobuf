@@ -168,4 +168,4 @@ impl TryFrom<&GeneratedRustObject> for GeneratedType {
     }
 }
 
-impl<'me> GeneratedObject<'me> for GeneratedType {}
+impl GeneratedObject<'_> for GeneratedType {}

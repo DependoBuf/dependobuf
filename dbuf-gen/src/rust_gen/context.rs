@@ -51,7 +51,7 @@ pub struct Name {
 }
 
 #[allow(dead_code, reason = "??? (some methods are never used)")]
-impl<'id, 'parent> NamingContext<'id, 'parent> {
+impl<'id> NamingContext<'id, '_> {
     fn wrap_namespace_tree<'a>(
         namespace_tree: NamespaceTree<'a, ObjectId<'id>, Container>,
     ) -> NamingContext<'id, 'a> {
@@ -93,7 +93,7 @@ impl<'id, 'parent> NamingContext<'id, 'parent> {
 
     pub fn insert_tree<'cursor>(
         &'cursor mut self,
-        id: ObjectId<'id>,
+        id: &ObjectId<'id>,
         tree: Node<'id>,
     ) -> GeneratedCursor<
         'cursor,
@@ -105,14 +105,14 @@ impl<'id, 'parent> NamingContext<'id, 'parent> {
         GeneratedCursor {
             cursor: self
                 .cursor()
-                .next(&id)
+                .next(id)
                 .expect("newly inserted tree couldn't be accessed"),
             _value: PhantomData,
             _key: PhantomData,
         }
     }
 
-    pub fn remove_tree(&mut self, id: ObjectId<'id>) -> Option<Node<'id>> {
+    pub fn remove_tree(&mut self, id: &ObjectId<'id>) -> Option<Node<'id>> {
         self.0.remove_tree(id)
     }
 
@@ -134,7 +134,7 @@ impl<'id, 'parent> NamingContext<'id, 'parent> {
     pub fn insert_object<'child, O: Object<'id>>(
         &'child mut self,
         object: O,
-        name: Name,
+        name: &Name,
     ) -> (O::Generated, NamingContext<'id, 'child>) {
         let id = object.object_id();
         let generated = object.generate_tagged(name.tag);
@@ -162,7 +162,7 @@ impl<'id, 'parent> NamingContext<'id, 'parent> {
             Some(_) => None,
             None => Some(self.insert_object(
                 object,
-                Name {
+                &Name {
                     object: rust_object,
                     tag: 0,
                 },
@@ -175,7 +175,7 @@ impl<'id, 'parent> NamingContext<'id, 'parent> {
         object: O,
     ) -> (O::Generated, NamingContext<'id, 'child>) {
         let name = self.name_object(&object);
-        self.insert_object(object, name)
+        self.insert_object(object, &name)
     }
 
     pub fn cursor<'cursor>(
@@ -277,7 +277,7 @@ where
     }
 }
 
-impl<'id, 'parent> Drop for NamingContext<'id, 'parent> {
+impl Drop for NamingContext<'_, '_> {
     fn drop(&mut self) {
         // SAFETY: we are in drop so there will be no usage after
         unsafe { ManuallyDrop::take(&mut self.0) }.finish();
