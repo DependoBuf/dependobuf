@@ -13,3 +13,6 @@ pretty.workspace = true
 strum.workspace = true
 strum_macros.workspace = true
 thiserror.workspace = true
+
+[lints]
+workspace = true

@@ -7,3 +7,6 @@ version.workspace = true
 chumsky.workspace = true
 logos.workspace = true
 unescape.workspace = true
+
+[lints]
+workspace = true

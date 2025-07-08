@@ -10,3 +10,6 @@ pretty.workspace = true
 [dev-dependencies]
 pretty_assertions.workspace = true
 dbuf-rust-runtime.workspace = true
+
+[lints]
+workspace = true

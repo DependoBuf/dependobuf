@@ -24,4 +24,5 @@ pretty_assertions = "1.4.1"
 thiserror = "2.0.12"
 
 [workspace.lints.clippy]
+pedantic = "deny"
 # clippy configs
