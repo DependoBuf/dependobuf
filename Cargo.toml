@@ -23,5 +23,5 @@ strum_macros = "0.27"
 pretty_assertions = "1.4.1"
 thiserror = "2.0.12"
 
-[lints.clippy]
+[workspace.lints.clippy]
 # clippy configs
