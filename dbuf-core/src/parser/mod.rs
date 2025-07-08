@@ -88,6 +88,9 @@ pub mod parser_impl;
 type ParsedModule = Module<Location<Offset>, String>;
 type ParseError<'src> = Rich<'src, Token, SimpleSpan<Offset>>;
 
+/// # Errors
+///
+/// TODO: explain when `Err` is returned.
 pub fn parse(input: &str) -> Result<ParsedModule, Vec<ParseError<'_>>> {
     let lexer = Token::lexer(input);
 
