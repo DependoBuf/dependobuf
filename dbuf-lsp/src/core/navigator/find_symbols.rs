@@ -104,7 +104,7 @@ impl<'a> Visitor<'a> for FindImpl<'a> {
             Visit::PatternCall(str, _) if self.correct_symbol(str) => self.push(str),
             Visit::PatternCallArgument(str) if self.correct_argument_symbol(str) => self.push(str),
             Visit::Constructor(cons) if !cons.of_message && self.correct_symbol(cons.name) => {
-                self.push(cons.name)
+                self.push(cons.name);
             }
             Visit::Filed(str, _) if self.correct_symbol(str) => self.push(str),
             Visit::TypeExpression(str, _) if self.correct_symbol(str) => self.push(str),
@@ -112,7 +112,7 @@ impl<'a> Visitor<'a> for FindImpl<'a> {
             Visit::AccessChainLast(str) if self.correct_symbol(str) => self.push(str),
             Visit::ConstructorExpr(str) if self.correct_symbol(str) => self.push(str),
             Visit::ConstructorExprArgument(str) if self.correct_argument_symbol(str) => {
-                self.push(str)
+                self.push(str);
             }
             Visit::VarAccess(str) if self.correct_symbol(str) => self.push(str),
             _ => {}

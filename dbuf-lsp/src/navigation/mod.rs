@@ -4,7 +4,7 @@
 //! Module should help with such requests:
 //! * (✓) `textDocument/definition`
 //! * (✓) `textDocument/typeDefinition`
-//! * (✓) `textDocument/hover
+//! * (✓) `textDocument/hover`
 //! * (✓) `textDocument/inlayHint`
 //!  
 //! Also it might be good idea to handle such requests:
@@ -73,6 +73,9 @@ impl handler_box::Handler for Handler {
 impl Handler {
     /// `textDocument/definition` implementation.
     ///
+    /// # Errors
+    ///
+    /// Errors are never return.
     pub fn goto_definition(
         &self,
         access: &WorkspaceAccess,
@@ -95,6 +98,9 @@ impl Handler {
 
     /// `textDocument/typeDefintion` implementation.
     ///
+    /// # Errors
+    ///
+    /// Errors are never return.
     pub fn goto_type_definition(
         &self,
         access: &WorkspaceAccess,
@@ -126,6 +132,9 @@ impl Handler {
     /// * For constructors: Type name ('enum Enum'), Constructor declaration without pattern
     /// * For aliases: Type name ('enum Enum') with dependencies, enum branch
     ///
+    /// # Errors
+    ///
+    /// Errors are never return.
     pub fn hover(
         &self,
         access: &WorkspaceAccess,
@@ -151,6 +160,10 @@ impl Handler {
     /// `textDocument/inlayHint` implementation.
     ///
     /// Provides type of constructor call arguments in view range.
+    ///
+    /// # Errors
+    ///
+    /// Errors are never return.
     pub fn inlay_hint(
         &self,
         access: &WorkspaceAccess,

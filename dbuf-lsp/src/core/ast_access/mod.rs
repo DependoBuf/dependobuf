@@ -1,11 +1,11 @@
 //! Helps with controlling access to ast.
 //!
 //! Exports ast types:
-//! * ParsedAst.
-//! * ElaboratedAst.
+//! * `ParsedAst`.
+//! * `ElaboratedAst`.
 //!
 //! Exports controll access:
-//! * WorkspaceAccess.
+//! * `WorkspaceAccess`.
 //!
 
 mod elaborated_ast;
@@ -26,13 +26,13 @@ pub use file::*;
 pub use location::*;
 pub use string::*;
 
-/// String for ParsedAst
+/// String for `ParsedAst`
 pub type Str = LocString;
-/// Location for ParsedAst
+/// Location for `ParsedAst`
 pub type Loc = Location;
-/// Alias for ElaboratedAst
+/// Alias for `ElaboratedAst`
 pub use elaborated_ast::ElaboratedAst;
-/// Alias for ParsedAst
+/// Alias for `ParsedAst`
 pub use parsed_ast::ParsedAst;
 
 /// Guards multicore access to files in workspace.
@@ -47,6 +47,7 @@ impl Default for WorkspaceAccess {
 }
 
 impl WorkspaceAccess {
+    #[must_use]
     pub fn new() -> WorkspaceAccess {
         WorkspaceAccess {
             files: DashMap::new(),
@@ -64,6 +65,10 @@ impl WorkspaceAccess {
     }
 
     /// Builds asts for text and change File's asts.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if version is not monotonic (old file version is higher than current).
     pub fn change(&self, url: &Url, version: i32, text: &str) {
         let parsed: ParsedAst = get_parsed(text);
         let elaborated: ElaboratedAst = get_elaborated(text);
@@ -78,12 +83,21 @@ impl WorkspaceAccess {
         assert!(old.get_version() < version, "versions shoud be monotonic");
     }
 
-    /// Returns File by `url`. Panics if file was not opened.
+    /// Returns File by `url`.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if `open` method is not called with `url`.
+    #[must_use]
     pub fn read(&self, url: &Url) -> Ref<'_, Url, File> {
         self.files.get(url).expect("file should be opened")
     }
 
-    /// Removes File from opened files. Panics if file was not opened.
+    /// Removes File from opened files.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if `open` method is not called with `url`.
     pub fn close(&self, url: &Url) {
         self.files.remove(url).expect("file should be opened");
     }

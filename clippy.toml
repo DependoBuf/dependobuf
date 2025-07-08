@@ -1,0 +1,2 @@
+# clippy::doc_markdown ignores DependoBuf
+doc-valid-idents = ["DependoBuf", ".."]

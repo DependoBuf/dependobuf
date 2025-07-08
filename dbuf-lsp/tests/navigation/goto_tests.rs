@@ -21,9 +21,8 @@ fn get_range(line: u32, character: u32, len: u32) -> Range {
 }
 
 fn get_definition_length(name: &str) -> u32 {
-    name.rfind(':')
-        .map(|p| name.len() - p - 1)
-        .unwrap_or(name.len()) as u32
+    let length = name.rfind(':').map_or(name.len(), |p| name.len() - p - 1);
+    u32::try_from(length).unwrap()
 }
 
 fn get_definition(name: &'static str, line: u32, character: u32) -> (&'static str, Range) {

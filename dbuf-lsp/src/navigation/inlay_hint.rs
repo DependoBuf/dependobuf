@@ -94,7 +94,7 @@ impl<'a> Visitor<'a> for InlayVisitor<'a> {
             Visit::TypeExpression(_, location) if !location.intersects(self.range) => return Skip,
             Visit::Expression(location) if !location.intersects(self.range) => return Skip,
             _ => {}
-        };
+        }
 
         match &visit {
             Visit::PatternCallArgument(arg) => self.save_hint(arg),

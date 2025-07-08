@@ -227,7 +227,7 @@ impl EnumBuilder {
 
     pub fn construct(self) -> Definition<Loc, Str, TypeDeclaration<Loc, Str>> {
         let mut branches = vec![];
-        for b in self.branches.into_iter() {
+        for b in self.branches {
             branches.push(b.construct());
         }
 
@@ -286,7 +286,7 @@ impl AstBuilder {
     pub fn construct(self) -> Module<Loc, Str> {
         let mut ast = vec![];
 
-        for e in self.data.into_iter() {
+        for e in self.data {
             ast.push(e.construct());
         }
 

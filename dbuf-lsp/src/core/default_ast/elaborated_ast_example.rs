@@ -26,7 +26,7 @@ fn simple_type(name: &str) -> TypeExpression<Str> {
     }
 }
 
-fn get_literal_type(l: Literal) -> TypeExpression<Str> {
+fn get_literal_type(l: &Literal) -> TypeExpression<Str> {
     match l {
         Literal::Bool(_) => simple_type("Bool"),
         Literal::Double(_) => simple_type("Double"),
@@ -37,9 +37,10 @@ fn get_literal_type(l: Literal) -> TypeExpression<Str> {
 }
 
 fn literal_expr(l: Literal) -> ValueExpression<Str> {
+    let result_type = get_literal_type(&l);
     ValueExpression::OpCall {
-        op_call: OpCall::Literal(l.to_owned()),
-        result_type: get_literal_type(l),
+        op_call: OpCall::Literal(l),
+        result_type,
     }
 }
 
@@ -65,7 +66,7 @@ fn access_expr(acc: &[&str]) -> ValueExpression<Str> {
 
     for access in acc.iter().skip(1) {
         basic_expr = ValueExpression::OpCall {
-            op_call: OpCall::Unary(UnaryOp::Access(access.to_string()), Rec::new(basic_expr)),
+            op_call: OpCall::Unary(UnaryOp::Access((*access).to_string()), Rec::new(basic_expr)),
             result_type: empty_type(),
         }
     }
@@ -98,15 +99,15 @@ fn message_type(name: &str, dependencies: Vec<(Str, TypeExpression<Str>)>) -> Ty
 #[allow(dead_code, reason = "simple example")]
 fn enum_type(dependencies: Vec<(Str, TypeExpression<Str>)>, constructors: &[&str]) -> Type<Str> {
     let mut ctrs = BTreeSet::new();
-    for c in constructors.iter() {
-        ctrs.insert(c.to_string());
+    for c in constructors {
+        ctrs.insert((*c).to_string());
     }
     Type {
         dependencies,
         constructor_names: ConstructorNames::OfEnum(ctrs),
     }
 }
-
+#[expect(clippy::too_many_lines, reason = "temporary code, no need to refactor")]
 pub fn rename_elaborated_ast() -> ElaboratedAst {
     let mut elaborated = ElaboratedAst {
         types: vec![],

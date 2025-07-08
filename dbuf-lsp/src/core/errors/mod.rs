@@ -1,4 +1,4 @@
-//! Contains errors for LanguageServer.
+//! Contains errors for Language Server.
 //!
 
 /// `textDocument/formatting` errors

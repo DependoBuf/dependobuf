@@ -29,7 +29,7 @@ impl Position {
 /// * use pretty lib (?)
 /// * make configuration
 /// * TODO resolutions in code
-/// * rewrite using ast_visitor?
+/// * rewrite using `ast_visitor`?
 ///   * Pros: easier to write selected
 ///   * Cons: harder to put symbols correctly (bad whitespaces might occur). Fixes with pretty lib.
 pub struct PrettyPrinter<'a, W: Write> {
@@ -88,7 +88,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     fn write(&mut self, s: impl AsRef<str>) {
         let r = s.as_ref();
         self.cursor.column += r.len();
-        write!(self.writer, "{}", r).expect("write! considered to be infallible");
+        write!(self.writer, "{r}").expect("write! considered to be infallible");
     }
 
     fn write_if(&mut self, predicate: bool, s: impl AsRef<str>) {
@@ -101,14 +101,14 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         let spaces = self.tab_size * tab_count;
         self.cursor.column += spaces;
         let to_write = " ".repeat(spaces);
-        write!(self.writer, "{}", to_write).expect("write! considered to be infallible");
+        write!(self.writer, "{to_write}").expect("write! considered to be infallible");
     }
 
     /// Prints whole ast.
     pub fn print_ast(&mut self, ast: &ParsedAst) {
         let mut first = true;
 
-        for definition in ast.iter() {
+        for definition in ast {
             if !first {
                 self.new_line();
                 self.new_line();
@@ -143,7 +143,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
         if let Some(TypeDefinition::Enum(e)) = t {
             for b in e {
-                for c in b.constructors.iter() {
+                for c in &b.constructors {
                     if c.name.as_ref() != consructor {
                         continue;
                     }
@@ -219,8 +219,8 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                 }
             }
             Some(TypeDefinition::Enum(e)) => {
-                for b in e.iter() {
-                    for ct in b.constructors.iter() {
+                for b in e {
+                    for ct in &b.constructors {
                         if ct.name.as_ref() == constructor {
                             let f = ct.iter().find(|f| f.name.as_ref() == field);
                             if let Some(field) = f {
@@ -258,7 +258,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
     fn print_type_declaration(&mut self, type_declaration: &TypeDeclaration<Loc, Str>) {
         if self.with_dependencies {
-            for dependency in type_declaration.dependencies.iter() {
+            for dependency in &type_declaration.dependencies {
                 self.print_dependency(dependency);
                 self.write(" ");
             }
@@ -273,7 +273,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                     self.print_constructor(constructor, 1);
                 }
                 TypeDefinition::Enum(branches) => {
-                    for branch in branches.iter() {
+                    for branch in branches {
                         self.new_line();
                         self.print_enum_bracnh(branch);
                     }
@@ -299,7 +299,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         self.print_all_patterns(&branch.patterns);
         self.write(" => {");
 
-        for c in branch.constructors.iter() {
+        for c in &branch.constructors {
             self.new_line();
             self.print_enum_constructor(c);
         }
@@ -311,7 +311,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
     fn print_all_patterns(&mut self, patterns: &[Pattern<Loc, Str>]) {
         let mut first = true;
-        for p in patterns.iter() {
+        for p in patterns {
             if !first {
                 self.write(", ");
             }
@@ -326,7 +326,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                 self.write(name);
                 self.write("{");
                 let mut first = true;
-                for f in fields.iter() {
+                for f in fields {
                     if !first {
                         self.write(", ");
                     }
@@ -366,7 +366,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
     fn print_constructor(&mut self, constructor: &ConstructorBody<Loc, Str>, offset: usize) {
         let mut first = true;
-        for definition in constructor.iter() {
+        for definition in constructor {
             if !first {
                 self.new_line();
             }
@@ -406,7 +406,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                 self.write(name);
                 self.write("{");
                 let mut first = true;
-                for f in fields.iter() {
+                for f in fields {
                     if !first {
                         self.write(", ");
                     }
@@ -432,7 +432,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                     self.cursor.line, self.cursor.column
                 )
             }
-        };
+        }
     }
 
     fn print_opcall(&mut self, operation: &OpCall<Str, Rec<Expression<Loc, Str>>>) {
@@ -449,7 +449,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                 self.print_expression(expr_left);
 
                 self.write(" ");
-                self.print_binary(op);
+                self.print_binary(*op);
                 self.write(" ");
 
                 self.print_expression(expr_right);
@@ -511,7 +511,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         }
     }
 
-    fn print_binary(&mut self, op: &BinaryOp) {
+    fn print_binary(&mut self, op: BinaryOp) {
         match op {
             BinaryOp::BinaryAnd => {
                 self.write("&");

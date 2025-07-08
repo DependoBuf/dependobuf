@@ -1,4 +1,4 @@
-//! Module provides AstConstructorStack - simple
+//! Module provides `AstConstructorStack` - simple
 //! stack for constructor calls.
 //!
 

@@ -20,7 +20,7 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
         } => vec![
             MarkedString::LanguageString(get_type_header(&type_name, file, false)),
             MarkedString::LanguageString(get_dependency_declaration(&type_name, &dependency, file)),
-            MarkedString::String(format!("dependency of `{}`", type_name)),
+            MarkedString::String(format!("dependency of `{type_name}`")),
         ],
         Symbol::Field {
             type_name,
@@ -43,7 +43,7 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
                 &field,
                 file,
             )));
-            strings.push(MarkedString::String(format!("field of `{}`", constructor)));
+            strings.push(MarkedString::String(format!("field of `{constructor}`")));
             strings
         }
         Symbol::Alias {
@@ -53,7 +53,7 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
         } => vec![
             MarkedString::LanguageString(get_type_header(&type_name, file, true)),
             MarkedString::LanguageString(get_explicit_branch(&type_name, branch_id, file)),
-            MarkedString::String(format!("alias `{}`", alias)),
+            MarkedString::String(format!("alias `{alias}`")),
         ],
         Symbol::Constructor {
             type_name,
@@ -66,7 +66,7 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
                     &constructor,
                     file,
                 )),
-                MarkedString::String(format!("constructor of `{}`", type_name)),
+                MarkedString::String(format!("constructor of `{type_name}`")),
             ]
         }
         Symbol::None => Vec::new(),
@@ -107,7 +107,7 @@ fn get_type_header(type_name: &str, file: &File, dependencies: bool) -> Language
     let mut header = String::new();
     let mut printer = PrettyPrinter::new(&mut header).header_only();
     if !dependencies {
-        printer = printer.no_dependencies()
+        printer = printer.no_dependencies();
     }
     printer.print_selected_type(file.get_parsed(), type_name);
 

@@ -24,5 +24,7 @@ pretty_assertions = "1.4.1"
 thiserror = "2.0.12"
 
 [workspace.lints.clippy]
-pedantic = "deny"
-# clippy configs
+pedantic = { level = "warn", priority = -1 }
+wildcard_imports = "allow"
+enum_glob_use = "allow"
+match_same_arms = "allow"

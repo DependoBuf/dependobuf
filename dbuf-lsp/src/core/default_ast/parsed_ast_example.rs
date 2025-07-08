@@ -100,6 +100,7 @@ fn pattern_definition(
     }
 }
 
+#[expect(clippy::too_many_lines, reason = "temporary code, no need to refactor")]
 pub fn rename_parsed_ast() -> ParsedAst {
     let mut builder = AstBuilder::new();
 

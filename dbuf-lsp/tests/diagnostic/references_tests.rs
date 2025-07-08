@@ -70,7 +70,7 @@ const RANGES: &[&[Range]] = &[
     ALIAS_RANGES,
 ];
 
-fn check(target: &[Range], got: &[Range], comment: String) {
+fn check(target: &[Range], got: &[Range], comment: &str) {
     for (exp, cur) in target.iter().zip(got) {
         assert!(
             exp == cur,
@@ -99,7 +99,7 @@ fn check_ranges(ranges: &[Range]) {
             check(
                 ranges,
                 resp.as_ref(),
-                format!("highlight mismatch at {p:?}").to_string(),
+                &format!("highlight mismatch at {p:?}"),
             );
 
             let resp = h.references(&TEST_WORKSPACE, p, &TEST_URL);
@@ -113,7 +113,7 @@ fn check_ranges(ranges: &[Range]) {
             check(
                 ranges,
                 resp.as_ref(),
-                format!("references mismatch at {p:?}").to_string(),
+                &format!("references mismatch at {p:?}"),
             );
         }
     }

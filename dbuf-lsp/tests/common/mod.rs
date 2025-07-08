@@ -1,8 +1,8 @@
 //! Module with helpfull tools for testing.
 //!
 //! While the parses is not ready contains only:
-//! * TEST_URL - url to virtual parsed dbuf file in workspace.
-//! * TEST_WORKSPACE - workspace, containing only one file: /src/core/default_ast/sample.dbuf at /testing.dbuf
+//! * `TEST_URL` - url to virtual parsed dbuf file in workspace.
+//! * `TEST_WORKSPACE` - workspace, containing only one file: `/src/core/default_ast/sample.dbuf` at `/testing.dbuf`
 //!
 
 use std::sync::LazyLock;

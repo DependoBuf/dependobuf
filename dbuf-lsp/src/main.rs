@@ -27,9 +27,9 @@ impl Backend {
             client,
             workspace: WorkspaceAccess::new(),
             action_handler: HandlerBox::default(),
-            completition_handler: Default::default(),
-            diagnostic_handler: Default::default(),
-            navigation_handler: Default::default(),
+            completition_handler: HandlerBox::default(),
+            diagnostic_handler: HandlerBox::default(),
+            navigation_handler: HandlerBox::default(),
         }
     }
 }
@@ -211,7 +211,7 @@ impl LanguageServer for Backend {
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
         let uri = params.text_document.uri;
         self.action_handler
-            .formatting(&self.workspace, params.options, &uri)
+            .formatting(&self.workspace, &params.options, &uri)
     }
 
     async fn prepare_rename(
@@ -231,7 +231,7 @@ impl LanguageServer for Backend {
         let uri = doc_pos.text_document.uri;
 
         self.action_handler
-            .rename(&self.workspace, params.new_name, pos, &uri)
+            .rename(&self.workspace, &params.new_name, pos, &uri)
     }
 }
 

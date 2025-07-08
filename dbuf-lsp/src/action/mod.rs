@@ -69,16 +69,19 @@ impl Handler {
     /// Currently implementation is simple: just rewrite whole file, using pretty printer.
     /// Thats why function returns error on non default option.
     ///
+    /// # Errors
+    ///
+    /// Errors are never return.
     pub fn formatting(
         &self,
         access: &WorkspaceAccess,
-        options: FormattingOptions,
+        options: &FormattingOptions,
         document: &Url,
     ) -> Result<Option<Vec<TextEdit>>> {
-        format::valid_options(&options)?;
+        format::valid_options(options)?;
 
         let mut edit = TextEdit {
-            range: Range::new(Position::new(0, 0), Position::new(2e9 as u32, 0)),
+            range: Range::new(Position::new(0, 0), Position::new(2_000_000_000, 0)),
             new_text: String::new(),
         };
 
@@ -97,6 +100,9 @@ impl Handler {
     /// Currently checks if symbol can be renamed and,
     /// if so, caches it.
     ///
+    /// # Errors
+    ///
+    /// Errors are never return.
     pub fn prepare_rename(
         &self,
         access: &WorkspaceAccess,
@@ -125,10 +131,13 @@ impl Handler {
     /// Renames symbol if possible. Checks that
     /// there is no conflicts after rename.
     ///
+    /// # Errors
+    ///
+    /// Errors are never return.
     pub fn rename(
         &self,
         access: &WorkspaceAccess,
-        new_name: String,
+        new_name: &str,
         pos: Position,
         document: &Url,
     ) -> Result<Option<WorkspaceEdit>> {
@@ -140,7 +149,7 @@ impl Handler {
             .get(document, file.get_version(), pos)
             .map_or_else(|| navigator.get_symbol(pos), |cached| cached);
 
-        rename::renameable_to_symbol(&symbol, &new_name, file.get_elaborated())?;
+        rename::renameable_to_symbol(&symbol, new_name, file.get_elaborated())?;
 
         let ranges = navigator.find_symbols(&symbol);
 

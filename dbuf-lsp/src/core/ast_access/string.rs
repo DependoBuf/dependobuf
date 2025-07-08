@@ -1,7 +1,7 @@
 //! Module exports
-//! * ConvertibleToString trait, wich allows any type conversation to LocString.
-//! * LocStringHelper trait with helpfull funtions for LocString.
-//! * 'temporary' LocString, since there is no one in dbuf-core.
+//! * `ConvertibleToString` trait, wich allows any type conversation to `LocString`.
+//! * `LocStringHelper` trait with helpfull funtions for `LocString`.
+//! * 'temporary' `LocString`, since there is no one in dbuf-core.
 //!
 
 use std::fmt;
@@ -18,15 +18,15 @@ pub struct LocString {
     location: Location,
 }
 
-/// Trait for types, that can be converted to LocString.
+/// Trait for types, that can be converted to `LocString`.
 /// TODO: remove such API.
 pub trait ConvertibleToString {
     fn to_loc_string(&self) -> LocString;
 }
 
-/// Helpers for dbuf-core::LocString (in future).
+/// Helpers for `dbuf-core::LocString` (in future).
 pub trait LocStringHelper {
-    /// Constructs LocString.
+    /// Constructs `LocString`.
     fn new(string: &str, location: Location) -> Self;
     /// Returns string's len.
     fn len(&self) -> usize;
@@ -36,7 +36,7 @@ pub trait LocStringHelper {
     fn contains(&self, p: lsp_types::Position) -> bool {
         self.get_location().contains(p)
     }
-    /// Constructs LocString with empty location.
+    /// Constructs `LocString` with empty location.
     /// TODO: remove such API.
     fn unsafe_new(string: &str) -> Self;
     /// Sets begin of string's location.

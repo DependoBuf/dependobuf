@@ -1,5 +1,5 @@
 //! Module exports:
-//! * LocationHelpers, helpers for Location type.
+//! * `LocationHelpers`, helpers for Location type.
 //!
 
 use tower_lsp::lsp_types::Range;
@@ -10,40 +10,37 @@ use dbuf_core::ast::parsed::location::{self, Offset};
 pub type Position = location::Offset;
 pub type Location = location::Location<Position>;
 
-/// Helpers for dbuf-core::Position type.
+/// Helpers for `dbuf-core::Position` type.
 pub trait PositionHelpers {
     /// Creates new position.
-    fn new(lines: u32, columns: u32) -> Self;
+    fn new(lines: usize, columns: usize) -> Self;
     /// Get line of position.
-    fn get_line(&self) -> u32;
+    fn get_line(&self) -> usize;
     /// Get column of position.
-    fn get_column(&self) -> u32;
+    fn get_column(&self) -> usize;
     /// Get column as mutable.
     fn get_column_mut(&mut self) -> &mut usize;
-    /// Convers Position to lsp_types::Position;
+    /// Convers Position to `lsp_types::Position`;
     fn to_lsp(&self) -> lsp_types::Position;
 }
 
 impl PositionHelpers for Position {
-    fn new(lines: u32, columns: u32) -> Self {
-        Position {
-            lines: lines as usize,
-            columns: columns as usize,
-        }
+    fn new(lines: usize, columns: usize) -> Self {
+        Position { lines, columns }
     }
-    fn get_line(&self) -> u32 {
-        self.lines as u32
+    fn get_line(&self) -> usize {
+        self.lines
     }
-    fn get_column(&self) -> u32 {
-        self.columns as u32
+    fn get_column(&self) -> usize {
+        self.columns
     }
     fn get_column_mut(&mut self) -> &mut usize {
         &mut self.columns
     }
     fn to_lsp(&self) -> lsp_types::Position {
         lsp_types::Position {
-            line: self.lines as u32,
-            character: self.columns as u32,
+            line: u32::try_from(self.lines).unwrap(),
+            character: u32::try_from(self.columns).unwrap(),
         }
     }
 }
@@ -55,18 +52,18 @@ fn to_position(p: lsp_types::Position) -> Position {
     }
 }
 
-/// Helpers for dbuf-core::Location type.
+/// Helpers for `dbuf-core::Location` type.
 pub trait LocationHelpers {
     /// Returns empty location. Typically ((0, 0), (0, 0))
     fn new_empty() -> Self;
     /// Returns location with start and end.
     fn new(start: Position, end: Position) -> Self;
-    /// Convers Location to lsp_types::Range;
+    /// Convers Location to `lsp_types::Range`;
     fn to_lsp(&self) -> Range;
     /// Check if cursor position in location.
     ///
     /// If `p == self.end`, returns true, corresponding
-    /// to lsp_type::Range specification.
+    /// to `lsp_type::Range` specification.
     fn contains(&self, p: lsp_types::Position) -> bool;
     /// Checks if location intersects with range.
     fn intersects(&self, r: Range) -> bool;
@@ -142,7 +139,7 @@ impl LocationHelpers for Location {
             self.length.columns = end.columns - self.start.columns;
         } else {
             self.length.lines = end.lines - self.start.lines;
-            self.length.columns = end.columns
+            self.length.columns = end.columns;
         }
     }
 }

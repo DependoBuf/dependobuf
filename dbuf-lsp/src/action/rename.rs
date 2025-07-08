@@ -48,7 +48,7 @@ impl BoolIfTrue for bool {
     }
 }
 
-/// Check if symbol can be renamed to new_name without conflicts.
+/// Check if symbol can be renamed to `new_name` without conflicts.
 pub fn renameable_to_symbol(
     symbol: &Symbol,
     new_name: &str,
@@ -74,7 +74,7 @@ pub fn renameable_to_symbol(
 
             let new_type_name = new_name
                 .try_into()
-                .map_err(|_| RenameError::ToBadType(new_name.to_owned()))?;
+                .map_err(|()| RenameError::ToBadType(new_name.to_owned()))?;
 
             let checker = ConflictChecker::new(ast);
 
@@ -91,7 +91,7 @@ pub fn renameable_to_symbol(
 
             let new_dependency_name = new_name
                 .try_into()
-                .map_err(|_| RenameError::ToBadDependency(new_name.to_owned()))?;
+                .map_err(|()| RenameError::ToBadDependency(new_name.to_owned()))?;
 
             let checker = ConflictChecker::new(ast);
 
@@ -112,7 +112,7 @@ pub fn renameable_to_symbol(
 
             let new_field_name = new_name
                 .try_into()
-                .map_err(|_| RenameError::ToBadField(new_name.to_owned()))?;
+                .map_err(|()| RenameError::ToBadField(new_name.to_owned()))?;
 
             let checker = ConflictChecker::new(ast);
 
@@ -133,7 +133,7 @@ pub fn renameable_to_symbol(
 
             let new_alias_name = new_name
                 .try_into()
-                .map_err(|_| RenameError::ToBadAlias(new_name.to_owned()))?;
+                .map_err(|()| RenameError::ToBadAlias(new_name.to_owned()))?;
 
             let checker = ConflictChecker::new(ast);
 
@@ -154,7 +154,7 @@ pub fn renameable_to_symbol(
 
             let new_constructor_name = new_name
                 .try_into()
-                .map_err(|_| RenameError::ToBadConstructor(new_name.to_owned()))?;
+                .map_err(|()| RenameError::ToBadConstructor(new_name.to_owned()))?;
 
             let checker = ConflictChecker::new(ast);
             checker
@@ -179,28 +179,28 @@ impl ConflictChecker<'_> {
     fn has_type_or_constructor(&self, t: TypeName) -> bool {
         self.ast.has_type_or_constructor(t.get())
     }
-    /// Checks if type t_name has field/dependency/alias r
+    /// Checks if type `t_name` has field/dependency/alias r
     fn type_has_resourse(&self, t_name: &str, r: FieldName) -> bool {
-        let t = match self.ast.get_type(t_name) {
-            Some(t) => t,
-            None => return false,
+        let Some(t) = self.ast.get_type(t_name) else {
+            return false;
         };
+
         if t.dependencies.iter().any(|d| d.0 == r.get()) {
             return true;
         }
         match &t.constructor_names {
             ConstructorNames::OfMessage(ctr) => {
                 let ctr = self.ast.get_constructor(ctr).expect("valid ast");
-                self.constructor_has_resourse(ctr, r)
+                Self::constructor_has_resourse(ctr, r)
             }
             ConstructorNames::OfEnum(ctrs) => ctrs.iter().any(|ctr| {
                 let ctr = self.ast.get_constructor(ctr).expect("valid ast");
-                self.constructor_has_resourse(ctr, r)
+                Self::constructor_has_resourse(ctr, r)
             }),
         }
     }
     /// Checks if constructor ctr has field/implicit r
-    fn constructor_has_resourse<T: AsRef<str>>(&self, ctr: &Constructor<T>, r: FieldName) -> bool {
+    fn constructor_has_resourse<T: AsRef<str>>(ctr: &Constructor<T>, r: FieldName) -> bool {
         ctr.implicits
             .iter()
             .map(|i| &i.0)

@@ -83,6 +83,9 @@ impl handler_box::Handler for Handler {
 impl Handler {
     /// `textDocument/documentSymbol` implementation.
     ///
+    /// # Errors
+    ///
+    /// Errors are never return.
     pub fn document_symbol(
         &self,
         access: &WorkspaceAccess,
@@ -95,6 +98,9 @@ impl Handler {
 
     /// `textDocument/semanticTokens/full` implementation.
     ///
+    /// # Errors
+    ///
+    /// Errors are never return.
     pub fn semantic_tokens_full(
         &self,
         access: &WorkspaceAccess,
@@ -108,6 +114,9 @@ impl Handler {
 
     /// `textDocument/references` implementation.
     ///
+    /// # Errors
+    ///
+    /// Errors are never return.
     pub fn references(
         &self,
         access: &WorkspaceAccess,
@@ -132,6 +141,9 @@ impl Handler {
 
     /// `textDocument/documentHighlight` implementation.
     ///
+    /// # Errors
+    ///
+    /// Errors are never return.
     pub fn document_highlight(
         &self,
         access: &WorkspaceAccess,
@@ -159,6 +171,9 @@ impl Handler {
     ///
     /// Currently shows only reference count.
     ///
+    /// # Errors
+    ///
+    /// Errors are never return.
     pub fn code_lens(
         &self,
         access: &WorkspaceAccess,

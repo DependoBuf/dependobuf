@@ -7,7 +7,7 @@ use tower_lsp::lsp_types::*;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
-/// FIXME when more Modifier variants appear: Use EnumSet instead.
+/// FIXME when more Modifier variants appear: Use `EnumSet` instead.
 #[derive(Debug, EnumIter, PartialEq, Eq, Clone, Copy)]
 pub enum Modifier {
     Declaration,
@@ -25,5 +25,5 @@ impl Modifier {
 }
 
 pub fn get_all_modifiers() -> Vec<SemanticTokenModifier> {
-    Modifier::iter().map(|m| m.to_lsp()).collect()
+    Modifier::iter().map(Modifier::to_lsp).collect()
 }

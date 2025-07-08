@@ -32,13 +32,13 @@ fn canon_formatting() {
         trim_final_newlines: None,
     };
 
-    let res = h.formatting(&TEST_WORKSPACE, options, &TEST_URL);
+    let res = h.formatting(&TEST_WORKSPACE, &options, &TEST_URL);
 
     if let Ok(Some(edits)) = res {
         assert!(edits.len() == 1);
 
         let edit = edits.first().unwrap();
-        assert!(edit.new_text == get_canon_strign())
+        assert!(edit.new_text == get_canon_strign());
     } else {
         panic!("bad result for canon formatting:\n{res:#?}");
     }

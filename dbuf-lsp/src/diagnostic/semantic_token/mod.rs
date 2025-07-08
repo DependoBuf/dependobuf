@@ -1,4 +1,4 @@
-//! Module provides SemanticTokenProvider
+//! Module provides `SemanticTokenProvider`
 //!
 
 mod modifier;
@@ -72,14 +72,14 @@ impl TokenBuilder {
         let len = self.location.end().get_column() - self.location.get_start().get_column();
         let mut modifier = 0;
 
-        for modify in self.modifiers.into_iter() {
+        for modify in self.modifiers {
             modifier |= 1 << modify.to_index();
         }
 
         SemanticToken {
-            delta_line: self.location.get_start().get_line(),
-            delta_start: self.location.get_start().get_column(),
-            length: len,
+            delta_line: u32::try_from(self.location.get_start().get_line()).unwrap(),
+            delta_start: u32::try_from(self.location.get_start().get_column()).unwrap(),
+            length: u32::try_from(len).unwrap(),
             token_type: self.token.to_index(),
             token_modifiers_bitset: modifier,
         }
@@ -115,18 +115,18 @@ impl SemanticTokenVisitor<'_> {
         }
         let mut token = builder.collect();
 
-        if self.last_line != token.delta_line {
-            assert!(token.delta_line > self.last_line || self.result.is_empty());
-            token.delta_line -= self.last_line;
-
-            self.last_line += token.delta_line;
-            self.last_char = token.delta_start;
-        } else {
+        if self.last_line == token.delta_line {
             assert!(token.delta_start > self.last_char || self.result.is_empty());
             token.delta_line = 0;
             token.delta_start -= self.last_char;
 
             self.last_char += token.delta_start;
+        } else {
+            assert!(token.delta_line > self.last_line || self.result.is_empty());
+            token.delta_line -= self.last_line;
+
+            self.last_line += token.delta_line;
+            self.last_char = token.delta_start;
         }
 
         self.result.push(token);
@@ -267,7 +267,7 @@ impl<'a> Visitor<'a> for SemanticTokenVisitor<'a> {
             }
             Visit::Operator(op, location) => self.push_operator(op, location),
             Visit::Literal(literal, location) => self.push_literal(literal, location),
-        };
+        }
 
         assert!(matches!(self.scope.visit(visit), VisitResult::Continue));
 

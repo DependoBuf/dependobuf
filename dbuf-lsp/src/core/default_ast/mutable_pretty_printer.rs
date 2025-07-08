@@ -1,4 +1,4 @@
-//! Used in default_ast to setup locaions
+//! Used in `default_ast` to setup locaions
 //!
 //! This module contains tools to:
 //! - Format AST nodes as human-readable text
@@ -17,12 +17,12 @@ use crate::core::ast_access::{
 
 #[derive(Debug, Copy, Clone)]
 struct Pos {
-    line: u32,
-    column: u32,
+    line: usize,
+    column: usize,
 }
 
 impl Pos {
-    fn new(line: u32, column: u32) -> Pos {
+    fn new(line: usize, column: usize) -> Pos {
         Pos { line, column }
     }
 }
@@ -69,23 +69,23 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
     }
 
     fn write(&mut self, s: &str) -> Result {
-        self.cursor.column += s.len() as u32;
-        write!(self.writer, "{}", s)?;
+        self.cursor.column += s.len();
+        write!(self.writer, "{s}")?;
         Ok(())
     }
 
     fn write_str(&mut self, s: &mut Str) -> Result {
         s.set_location_start(self.cursor.into());
-        self.cursor.column += s.len() as u32;
-        write!(self.writer, "{}", s)?;
+        self.cursor.column += s.len();
+        write!(self.writer, "{s}")?;
         s.set_location_end(self.cursor.into());
         Ok(())
     }
 
     fn write_tab(&mut self, len: usize) -> Result {
-        self.cursor.column += len as u32;
+        self.cursor.column += len;
         let to_write = " ".repeat(len);
-        write!(self.writer, "{}", to_write)?;
+        write!(self.writer, "{to_write}")?;
         Ok(())
     }
 
@@ -134,7 +134,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         &mut self,
         type_declaration: &mut TypeDeclaration<Loc, Str>,
     ) -> Result {
-        for dependency in type_declaration.dependencies.iter_mut() {
+        for dependency in &mut type_declaration.dependencies {
             self.parse_dependency(dependency)?;
             self.write(" ")?;
         }
@@ -179,7 +179,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         self.write_tab(4)?;
 
         let mut first = true;
-        for p in branch.patterns.iter_mut() {
+        for p in &mut branch.patterns {
             if !first {
                 self.write(", ")?;
             }
@@ -189,7 +189,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
         self.write(" => {")?;
 
-        for c in branch.constructors.iter_mut() {
+        for c in &mut branch.constructors {
             self.new_line()?;
             self.parse_enum_constructor(c)?;
         }
@@ -369,7 +369,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                 *expr_left = Rec::new(left);
 
                 self.write(" ")?;
-                self.parse_binary(op)?;
+                self.parse_binary(*op)?;
                 self.write(" ")?;
 
                 let mut right = (expr_right.as_ref()).clone();
@@ -446,7 +446,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         Ok(())
     }
 
-    fn parse_binary(&mut self, op: &BinaryOp) -> Result {
+    fn parse_binary(&mut self, op: BinaryOp) -> Result {
         match op {
             BinaryOp::BinaryAnd => {
                 self.write("&")?;

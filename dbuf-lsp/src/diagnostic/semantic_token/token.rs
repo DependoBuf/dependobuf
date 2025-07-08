@@ -42,5 +42,5 @@ impl Token {
 }
 
 pub fn get_all_tokens() -> Vec<SemanticTokenType> {
-    Token::iter().map(|t| t.to_lsp()).collect()
+    Token::iter().map(Token::to_lsp).collect()
 }

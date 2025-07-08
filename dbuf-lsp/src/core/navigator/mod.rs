@@ -1,4 +1,4 @@
-//! Helps with navigation in ParsedAst, based on ElaboratedAst.
+//! Helps with navigation in `ParsedAst`, based on `ElaboratedAst`.
 //!
 
 mod find_symbols;

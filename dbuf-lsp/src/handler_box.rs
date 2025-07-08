@@ -19,6 +19,9 @@ pub trait Handler {
 }
 
 impl<T: Handler> HandlerBox<T> {
+    /// # Panics
+    ///
+    /// Will panic if called more than once.
     pub fn init(&self, init: &InitializeParams) -> T::Capabilities {
         let (capabilities, state) = T::create(init);
         let res = self.handler.set(state);
@@ -38,7 +41,7 @@ impl<T> Deref for HandlerBox<T> {
 impl<T> Default for HandlerBox<T> {
     fn default() -> Self {
         Self {
-            handler: Default::default(),
+            handler: OnceLock::default(),
         }
     }
 }

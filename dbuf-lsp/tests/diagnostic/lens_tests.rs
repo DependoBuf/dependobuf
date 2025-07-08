@@ -39,7 +39,7 @@ fn test_code_lens() {
 
     assert!(resp.len() == CODE_LENS.len(), "no extra code lens");
 
-    for lens in resp.into_iter() {
+    for lens in resp {
         let line = lens.range.start.line;
 
         let expect_ref = CODE_LENS

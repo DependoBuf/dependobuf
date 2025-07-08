@@ -14,7 +14,7 @@ fn get_ast() -> ParsedAst {
     default_parsed_ast()
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct SkipMask {
     mask: u32,
     size: u32,
@@ -34,7 +34,7 @@ impl SkipMask {
     }
     fn set(&mut self, mask: u32) {
         assert!(mask < (1 << self.size));
-        self.mask = mask
+        self.mask = mask;
     }
     fn need_skip(&self, step: u32) -> bool {
         step < self.size && (self.mask & (1 << step)) != 0
@@ -44,7 +44,7 @@ impl Iterator for SkipMask {
     type Item = SkipMask;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let ans = *self;
+        let ans = self.clone();
 
         self.mask += 1;
         if self.mask > (1 << self.size) {
@@ -97,15 +97,11 @@ fn check_skip_mask(mask: u32, skip_at: &[u32]) {
         match result {
             VisitResult::Continue => assert!(
                 !skip_at.contains(&step),
-                "bad continue at step {}, mask {}",
-                step,
-                mask
+                "bad continue at step {step}, mask {mask}"
             ),
             VisitResult::Skip => assert!(
                 skip_at.contains(&step),
-                "bad skip at step {}, mask {}",
-                step,
-                mask
+                "bad skip at step {step}, mask {mask}"
             ),
             VisitResult::Stop(step) => panic!("unexpected stop signal at mask {mask}, step {step}"),
         }
@@ -138,7 +134,7 @@ fn test_skip_mask_iterator() {
         assert!(mask.mask == expect, "bad skip mask iterator");
         expect += 1;
     }
-    assert!(expect == 4, "bad skip mask count")
+    assert!(expect == 4, "bad skip mask count");
 }
 
 #[test]
@@ -155,7 +151,7 @@ fn test_stop_after_signal() {
         let res = visit_ast(&ast, &mut visitor, &tempo_elaborated);
         if visitor.stopped {
             assert!(res.is_some());
-            assert!(res.unwrap() == visitor.step)
+            assert!(res.unwrap() == visitor.step);
         }
         if !visitor.stopped {
             assert!(res.is_none());
@@ -175,7 +171,7 @@ fn test_skip_correctness() {
     let skip_mask = SkipMask::new(15);
 
     for mask in skip_mask {
-        let mut visitor = TestVisitor::new(mask, 1e9 as u32);
+        let mut visitor = TestVisitor::new(mask, 1_000_000_000);
         let res = visit_ast(&ast, &mut visitor, &tempo_elaborated);
         assert!(!visitor.stopped, "all steps done");
         assert!(res.is_none());
@@ -193,11 +189,11 @@ fn test_skip_stop_correctness() {
     let skip_mask = SkipMask::new(9);
     for mask in skip_mask {
         for stop_after in 0.. {
-            let mut visitor = TestVisitor::new(mask, stop_after);
+            let mut visitor = TestVisitor::new(mask.clone(), stop_after);
             let res = visit_ast(&ast, &mut visitor, &tempo_elaborated);
             if visitor.stopped {
                 assert!(res.is_some());
-                assert!(res.unwrap() == visitor.step)
+                assert!(res.unwrap() == visitor.step);
             }
             if !visitor.stopped {
                 assert!(res.is_none());

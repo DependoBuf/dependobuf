@@ -1,6 +1,6 @@
 //! Module exports:
-//! * trait ElaboratedHelper - helpfull getters for Elaborated ast.
-//! * type ElaboratedAst, wich implements ElaboratedHelper.
+//! * trait `ElaboratedHelper` - helpfull getters for elaborated ast.
+//! * type `ElaboratedAst`, wich implements `ElaboratedHelper`.
 //!
 
 use dbuf_core::ast::elaborated::*;
@@ -11,7 +11,7 @@ pub type Str = String;
 
 pub type ElaboratedAst = Module<Str>;
 
-/// Trait with getters for ElaboratedAst.
+/// Trait with getters for `ElaboratedAst`.
 pub trait ElaboratedHelper {
     /// returns type name of `constructor_name`.
     fn get_constructor_type(&self, constructor_name: &str) -> Option<&str>;

@@ -30,15 +30,16 @@ impl CodeLensVisitor<'_> {
         let symbol = Symbol::Type {
             type_name: type_name.to_string(),
         };
-        (navigator.find_symbols(&symbol).len() - 1) as u32
+        u32::try_from(navigator.find_symbols(&symbol).len() - 1)
+            .expect("reference count is not huge")
     }
 
     fn push_type(&mut self, type_name: &Str, _: &Loc) {
         let ref_count = self.calc_reference_count(type_name);
-        let title = format!("{} references", ref_count);
+        let title = format!("{ref_count} references");
         let command = Command {
             title,
-            command: "".to_owned(),
+            command: String::new(),
             arguments: None,
         };
 

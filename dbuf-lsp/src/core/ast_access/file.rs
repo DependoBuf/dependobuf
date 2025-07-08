@@ -1,4 +1,4 @@
-//! Module exports struct File - representation of one file in workspace.
+//! Module exports struct `File` - representation of one file in workspace.
 //!
 
 use super::ElaboratedAst;
@@ -8,9 +8,9 @@ use super::ParsedAst;
 pub struct File {
     /// File's version.
     version: i32,
-    /// Builded ParsedAst.
+    /// Builded `ParsedAst`.
     parsed_ast: ParsedAst,
-    /// Builded ElaboratedAst.
+    /// Builded `ElaboratedAst`.
     elaborated_ast: ElaboratedAst,
 }
 

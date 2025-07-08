@@ -289,7 +289,7 @@ impl SymbolVisitor<'_> {
             _ => panic!("bad builder state"),
         };
 
-        self.builder = enum_builder.push_constructor(cons_name, loc).into()
+        self.builder = enum_builder.push_constructor(cons_name, loc).into();
     }
 }
 
@@ -309,7 +309,7 @@ impl<'a> Visitor<'a> for SymbolVisitor<'a> {
             Visit::PatternUnderscore(_) => {}
             Visit::Constructor(c) => {
                 if !c.of_message {
-                    self.push_constructor(c.name, c.loc)
+                    self.push_constructor(c.name, c.loc);
                 }
             }
             Visit::Filed(field_name, location) => self.push_field(field_name, location),

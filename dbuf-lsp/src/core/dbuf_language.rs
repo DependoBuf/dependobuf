@@ -3,11 +3,13 @@
 
 use std::{collections::HashSet, sync::LazyLock};
 
+use std::string::ToString;
+
 static BUILTIN_TYPES: LazyLock<HashSet<String>> = LazyLock::new(|| {
-    HashSet::from(["Int", "String", "Bool", "Unsigned", "Float"].map(|t| t.to_string()))
+    HashSet::from(["Int", "String", "Bool", "Unsigned", "Float"].map(ToString::to_string))
 });
 static KEYWORDS: LazyLock<HashSet<String>> =
-    LazyLock::new(|| HashSet::from(["message", "enum"].map(|t| t.to_string())));
+    LazyLock::new(|| HashSet::from(["message", "enum"].map(ToString::to_string)));
 
 /// Returns builtint types set.
 pub fn get_builtin_types() -> &'static HashSet<String> {
@@ -36,9 +38,7 @@ impl<'a> TryFrom<&'a str> for TypeName<'a> {
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         let mut iterator = value.chars();
-        if iterator.next().map(char::is_uppercase).unwrap_or(false)
-            && iterator.all(char::is_alphanumeric)
-        {
+        if iterator.next().is_some_and(char::is_uppercase) && iterator.all(char::is_alphanumeric) {
             Ok(TypeName { name: value })
         } else {
             Err(())
@@ -63,9 +63,7 @@ impl<'a> TryFrom<&'a str> for FieldName<'a> {
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         let mut iterator = value.chars();
-        if iterator.next().map(char::is_lowercase).unwrap_or(false)
-            && iterator.all(char::is_alphanumeric)
-        {
+        if iterator.next().is_some_and(char::is_lowercase) && iterator.all(char::is_alphanumeric) {
             Ok(FieldName { field: value })
         } else {
             Err(())

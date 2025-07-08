@@ -1,13 +1,13 @@
 //! Convinient visitor for parsed ast.
 //!
 //! Module exports:
-//! * trait Visitor, indicating, that object wants to visit parsed ast,
-//! * enum Visit for parsed ast tokens.
-//! * enum VisitResult for Visitor results for visit.
-//! * fn visit_ast for invoking visitor.
+//! * trait `Visitor`, indicating, that object wants to visit parsed ast,
+//! * enum `Visit` for parsed ast tokens.
+//! * enum `VisitResult` for `Visitor` results for visit.
+//! * fn `visit_ast` for invoking visitor.
 //!
 //! Module also contains other useful modules:
-//! * mod scope visitor containing ScopeVisitor, wich helps with scope control
+//! * mod scope visitor containing `ScopeVisitor`, wich helps with scope control
 //!
 
 pub mod safe_skip;
@@ -285,7 +285,7 @@ pub fn visit_ast<'a, V: Visitor<'a>>(
     visitor: &mut V,
     tempo_elaborated: &'a ElaboratedAst,
 ) -> Option<V::StopResult> {
-    for td in ast.iter() {
+    for td in ast {
         let keyword = if tempo_elaborated.is_message(td.name.as_ref()) {
             get_keyword("message", td.name.get_location().get_start().get_line())
         } else {
@@ -321,11 +321,12 @@ fn stop<T>(value: T) -> Stop<T> {
     Stop::Err(value)
 }
 
+#[allow(clippy::unnecessary_wraps, reason = "absolutely not unnecessary")]
 fn next<T>() -> Stop<T> {
     Stop::Ok(())
 }
 
-fn get_keyword<'a>(keyword: &'static str, line: u32) -> Visit<'a> {
+fn get_keyword<'a>(keyword: &'static str, line: usize) -> Visit<'a> {
     let start = Position::new(line, 0);
     let mut end = start;
     *end.get_column_mut() += keyword.len();
@@ -340,11 +341,11 @@ fn visit_type_declaration<'a, V: Visitor<'a>>(
     type_loc: &'a Loc,
     visitor: &mut V,
 ) -> Stop<V::StopResult> {
-    for d in td.dependencies.iter() {
+    for d in &td.dependencies {
         let res = visitor.visit(Visit::Dependency(&d.name, &d.loc));
         match res {
             VisitResult::Continue => visit_type_expression(d, visitor)?,
-            VisitResult::Skip => continue,
+            VisitResult::Skip => (),
             VisitResult::Stop(r) => return stop(r),
         }
     }
@@ -359,7 +360,7 @@ fn visit_type_declaration<'a, V: Visitor<'a>>(
             }
         }
         TypeDefinition::Enum(enum_branchs) => {
-            for branch in enum_branchs.iter() {
+            for branch in enum_branchs {
                 let res = visitor.visit(Visit::Branch);
                 match res {
                     VisitResult::Continue => {}
@@ -367,11 +368,11 @@ fn visit_type_declaration<'a, V: Visitor<'a>>(
                     VisitResult::Stop(r) => return stop(r),
                 }
 
-                for pattern in branch.patterns.iter() {
+                for pattern in &branch.patterns {
                     visit_pattern(pattern, visitor)?;
                 }
 
-                for constructor in branch.constructors.iter() {
+                for constructor in &branch.constructors {
                     let visit = Visit::enum_constructor(&constructor.name, &constructor.loc);
                     let res = visitor.visit(visit);
                     match res {
@@ -428,11 +429,11 @@ fn visit_pattern_call_arguments<'a, V: Visitor<'a>>(
     p: &'a Definitions<Loc, Str, Pattern<Loc, Str>>,
     visitor: &mut V,
 ) -> Stop<V::StopResult> {
-    for p in p.iter() {
+    for p in p {
         let res = visitor.visit(Visit::PatternCallArgument(&p.name));
         match res {
             VisitResult::Continue => visit_pattern(&p.data, visitor)?,
-            VisitResult::Skip => continue,
+            VisitResult::Skip => (),
             VisitResult::Stop(r) => return stop(r),
         }
     }
@@ -464,7 +465,7 @@ fn visit_constructor<'a, V: Visitor<'a>>(
     c: &'a ConstructorBody<Loc, Str>,
     visitor: &mut V,
 ) -> Stop<V::StopResult> {
-    for field in c.iter() {
+    for field in c {
         let res = visitor.visit(Visit::Filed(&field.name, &field.loc));
         match res {
             VisitResult::Continue => {}
@@ -497,7 +498,7 @@ fn visit_type_expression<'a, V: Visitor<'a>>(
                 VisitResult::Continue => {}
                 VisitResult::Skip => continue,
                 VisitResult::Stop(r) => return stop(r),
-            };
+            }
 
             visit_expression(expr, visitor)?;
         }
@@ -516,8 +517,8 @@ fn visit_expression<'a, V: Visitor<'a>>(
         ExpressionNode::OpCall(OpCall::Binary(_, lhs, rhs)) => {
             visit_expression(lhs, visitor)?;
             let (op, loc) = get_operator(e);
-            let res = visitor.visit(Visit::Operator(op, loc));
-            match res {
+            let result = visitor.visit(Visit::Operator(op, loc));
+            match result {
                 VisitResult::Continue => visit_expression(rhs, visitor)?,
                 VisitResult::Skip => panic!("operator can't be skipped"),
                 VisitResult::Stop(r) => return stop(r),
@@ -540,8 +541,8 @@ fn visit_expression<'a, V: Visitor<'a>>(
         }
         ExpressionNode::OpCall(OpCall::Unary(_, rhs)) => {
             let (op, loc) = get_operator(e);
-            let res = visitor.visit(Visit::Operator(op, loc));
-            match res {
+            let result = visitor.visit(Visit::Operator(op, loc));
+            match result {
                 VisitResult::Continue => visit_expression(rhs, visitor)?,
                 VisitResult::Skip => panic!("operator can't be skipped"),
                 VisitResult::Stop(r) => return stop(r),
@@ -571,7 +572,7 @@ fn visit_expression<'a, V: Visitor<'a>>(
                 VisitResult::Stop(r) => return stop(r),
             }
 
-            for expr in fields.iter() {
+            for expr in fields {
                 let res = visitor.visit(Visit::ConstructorExprArgument(&expr.name)); // TOOD
                 match res {
                     VisitResult::Continue => {}
@@ -622,7 +623,7 @@ fn visit_access_chain<'a, V: Visitor<'a>>(
             }
         }
         _ => panic!("bad access chain"),
-    };
+    }
 
     let start = e.loc.get_end();
     let mut end = e.loc.get_end();

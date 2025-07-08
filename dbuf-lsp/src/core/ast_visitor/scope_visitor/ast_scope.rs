@@ -1,4 +1,4 @@
-//! Module provides AstScope - scope control
+//! Module provides `AstScope` - scope control
 //! for parsed ast.
 //!
 
@@ -119,7 +119,6 @@ impl<'a> AstScope<'a> {
     }
 
     fn try_switch_to(
-        &self,
         variable: &str,
         variants: &'a [(String, TypeExpression<String>)],
     ) -> Option<&'a str> {
@@ -145,15 +144,15 @@ impl<'a> AstScope<'a> {
 
         let t = self.elaborated.get_type(self.type_name).unwrap();
 
-        let mut switch = self.try_switch_to(variable, &t.dependencies).unwrap_or("");
+        let mut switch = Self::try_switch_to(variable, &t.dependencies).unwrap_or("");
 
         if !self.constructor_name.is_empty() {
             let c = self
                 .elaborated
                 .get_constructor(self.constructor_name)
                 .unwrap();
-            switch = self.try_switch_to(variable, &c.implicits).unwrap_or(switch);
-            switch = self.try_switch_to(variable, &c.fields).unwrap_or(switch);
+            switch = Self::try_switch_to(variable, &c.implicits).unwrap_or(switch);
+            switch = Self::try_switch_to(variable, &c.fields).unwrap_or(switch);
         }
 
         assert!(!switch.is_empty(), "unknow variable to switch");

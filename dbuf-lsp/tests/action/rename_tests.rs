@@ -23,7 +23,7 @@ impl Scenario {
     }
 
     fn rename(&self, p: Position, to: &str) -> Result<Option<WorkspaceEdit>> {
-        self.h.rename(&TEST_WORKSPACE, to.to_owned(), p, &TEST_URL)
+        self.h.rename(&TEST_WORKSPACE, to, p, &TEST_URL)
     }
 
     fn expect_valid_prepare_rename(&self, p: Position) {
@@ -136,25 +136,25 @@ fn test_invalid_prepare() {
 fn test_valid_rename() {
     let s = Scenario::new();
 
-    VALID_TYPE_RENAME.iter().for_each(|p| {
+    for p in VALID_TYPE_RENAME {
         s.expect_valid_rename(*p, "Name");
-    });
+    }
 
-    VALID_FIELD_RENAME.iter().for_each(|p| {
+    for p in VALID_FIELD_RENAME {
         s.expect_valid_rename(*p, "name");
-    });
+    }
 }
 
 #[test]
 fn test_invalid_rename() {
     let s = Scenario::new();
 
-    VALID_TYPE_RENAME.iter().for_each(|p| {
+    for p in VALID_FIELD_RENAME {
         s.expect_invalid_rename(*p, ""); // to empty
         s.expect_invalid_rename(*p, "Int"); // to builtin
         s.expect_invalid_rename(*p, "M1"); // to existing / old
         s.expect_invalid_rename(*p, "m1"); // to bad format
-    });
+    }
 
     let int = get_position(0, 17); // type Int
     s.expect_invalid_rename(int, "Name"); // of builtin
@@ -169,34 +169,34 @@ fn test_invalid_rename() {
     s.expect_invalid_rename(alias, "f1"); // to existing
     s.expect_invalid_rename(alias, "d1"); // to existing
 
-    VALID_FIELD_RENAME.iter().for_each(|p| {
+    for p in VALID_FIELD_RENAME {
         s.expect_invalid_rename(*p, ""); // to empty
         s.expect_invalid_rename(*p, "message"); // to keyword
         s.expect_invalid_rename(*p, "M1"); // to bad format
-    });
+    }
 
-    INVALID_RENAME.iter().for_each(|p| {
+    for p in INVALID_RENAME {
         s.expect_invalid_rename(*p, ""); // to empty
         s.expect_invalid_rename(*p, "Int"); // to builtin
         s.expect_invalid_rename(*p, "message"); // to keyword
         s.expect_invalid_rename(*p, "m1"); // bad position
         s.expect_invalid_rename(*p, "M1"); // bad position
-    });
+    }
 }
 
 #[test]
 fn test_cahce_hit() {
     let s = Scenario::new();
 
-    VALID_TYPE_RENAME.iter().for_each(|p| {
+    for p in VALID_TYPE_RENAME {
         s.expect_valid_prepare_rename(*p);
         s.expect_valid_rename(*p, "Name");
-    });
+    }
 
-    VALID_FIELD_RENAME.iter().for_each(|p| {
+    for p in VALID_FIELD_RENAME {
         s.expect_valid_prepare_rename(*p);
         s.expect_valid_rename(*p, "name");
-    });
+    }
 }
 
 #[test]
@@ -204,15 +204,15 @@ fn test_cache_miss() {
     let s = Scenario::new();
     let evil = get_position(0, 8); // message M1
 
-    VALID_TYPE_RENAME.iter().for_each(|p| {
+    for p in VALID_TYPE_RENAME {
         s.expect_valid_prepare_rename(*p);
         s.expect_valid_prepare_rename(evil);
         s.expect_valid_rename(*p, "Name");
-    });
+    }
 
-    VALID_FIELD_RENAME.iter().for_each(|p| {
+    for p in VALID_FIELD_RENAME {
         s.expect_valid_prepare_rename(*p);
         s.expect_valid_prepare_rename(evil);
         s.expect_valid_rename(*p, "name");
-    });
+    }
 }
