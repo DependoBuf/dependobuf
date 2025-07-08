@@ -5,6 +5,7 @@ use crate::ast::{operators::*, parsed::location::Location};
 use crate::parser::Token;
 use chumsky::{input::*, pratt::*, prelude::*};
 
+#[must_use]
 pub fn create_parser<'src, I>() -> impl Parser<
     'src,
     I,
@@ -289,7 +290,7 @@ where
 
         let underscore = just(Token::Star)
             .ignored()
-            .map_with(|_, extra| {
+            .map_with(|(), extra| {
                 let span: SimpleSpan<Offset> = extra.span();
                 Pattern {
                     loc: span.into_range().try_into().expect("Always correct range"),
