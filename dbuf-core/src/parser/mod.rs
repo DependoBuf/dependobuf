@@ -83,7 +83,10 @@ pub mod lexer;
 )]
 pub mod parser;
 
-pub fn parse<'src>(input: &'src str) -> Result<Module<Span, String>, Vec<Rich<'src, Token>>> {
+/// # Errors
+///
+/// TODO: explain when `Err` is returned.
+pub fn parse(input: &str) -> Result<Module<Span, String>, Vec<Rich<'_, Token>>> {
     let lexer = Token::lexer(input);
     let token_iter = lexer.spanned().map(|(tok, span)| match tok {
         Ok(tok) => (tok, span.into()),

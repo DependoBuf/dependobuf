@@ -4,6 +4,7 @@ use crate::ast::parsed::definition::*;
 use crate::ast::parsed::*;
 use chumsky::{input::*, pratt::*, prelude::*};
 
+#[must_use]
 pub fn create_parser<'src, I>(
 ) -> impl Parser<'src, I, Module<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
 where
@@ -30,6 +31,7 @@ where
     choice((message_def, enum_def))
 }
 
+#[must_use]
 pub fn parser_message_def<'src, I>() -> impl Parser<
     'src,
     I,
@@ -59,6 +61,7 @@ where
         })
 }
 
+#[must_use]
 pub fn parser_enum_def<'src, I>() -> impl Parser<
     'src,
     I,
@@ -74,6 +77,7 @@ where
     choice((dependent, independent))
 }
 
+#[must_use]
 pub fn parser_dependent_enum_def<'src, I>() -> impl Parser<
     'src,
     I,
@@ -108,6 +112,7 @@ where
         })
 }
 
+#[must_use]
 pub fn parser_independent_enum_def<'src, I>() -> impl Parser<
     'src,
     I,
@@ -137,6 +142,7 @@ where
         })
 }
 
+#[must_use]
 pub fn parser_depencies<'src, I>(
     at_least: usize,
 ) -> impl Parser<
@@ -154,6 +160,7 @@ where
     dependency.repeated().at_least(at_least).collect::<Vec<_>>()
 }
 
+#[must_use]
 pub fn parser_enum_branch<'src, I>(
 ) -> impl Parser<'src, I, EnumBranch<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
 where
@@ -176,6 +183,7 @@ where
         })
 }
 
+#[must_use]
 pub fn parser_constructors_block<'src, I>() -> impl Parser<
     'src,
     I,
@@ -203,6 +211,7 @@ where
         .delimited_by(just(Token::LBrace), just(Token::RBrace))
 }
 
+#[must_use]
 pub fn parser_constructor_body<'src, I>(
 ) -> impl Parser<'src, I, ConstructorBody<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
 where
@@ -214,6 +223,7 @@ where
     fields.delimited_by(just(Token::LBrace), just(Token::RBrace))
 }
 
+#[must_use]
 pub fn parser_typed_variable<'src, I>() -> impl Parser<
     'src,
     I,
@@ -236,6 +246,7 @@ where
         })
 }
 
+#[must_use]
 pub fn parser_pattern<'src, I>(
 ) -> impl Parser<'src, I, Pattern<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
 where
@@ -280,7 +291,7 @@ where
 
         let underscore = just(Token::Star)
             .ignored()
-            .map_with(|_, extra| {
+            .map_with(|(), extra| {
                 let span: SimpleSpan = extra.span();
                 Pattern {
                     loc: span.into(),
@@ -301,6 +312,7 @@ where
     })
 }
 
+#[must_use]
 pub fn parser_type_expression<'src, I>(
 ) -> impl Parser<'src, I, Expression<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
 where
@@ -311,6 +323,7 @@ where
     parser_type_expression_with_primary(primary)
 }
 
+#[must_use]
 pub fn parser_expression<'src, I>(
 ) -> impl Parser<'src, I, Expression<Span, String>, extra::Err<Rich<'src, Token>>> + Clone
 where
