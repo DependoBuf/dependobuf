@@ -10,6 +10,10 @@ use crate::ast;
 ///
 /// It is good enough for snapshot-testing purposes and can be gradually
 /// replaced by a full-featured backend later.
+///
+/// # Errors
+///
+/// TODO: explain when `Err` is returned.
 pub fn generate_module<Writer: Write>(
     module: ast::elaborated::Module<String>,
     w: &mut Writer,
@@ -36,10 +40,10 @@ fn generate_type(ty: &ast::Type) -> String {
     let mut s = String::new();
 
     let module_name = ty.name.to_lowercase();
-    let body_name = format!("Body");
+    let body_name = "Body".to_string();
 
     // namespace enum
-    s.push_str(&format!("public enum {} {{\n", module_name));
+    s.push_str(&format!("public enum {module_name} {{\n"));
 
     // Dependencies imports placeholder (empty for now)
     s.push_str("    public enum deps {}\n\n");
@@ -56,7 +60,9 @@ fn generate_type(ty: &ast::Type) -> String {
         if !constructor.fields.is_empty() {
             s.push('(');
             for (i, field) in constructor.fields.iter().enumerate() {
-                if i > 0 { s.push_str(", "); }
+                if i > 0 {
+                    s.push_str(", ");
+                }
                 s.push_str(&field.name);
                 s.push_str(": ");
                 s.push_str(&type_expr_to_swift(&field.ty));
@@ -97,7 +103,9 @@ fn generate_type(ty: &ast::Type) -> String {
 
         let mut params_written = 0;
         for imp in &constructor.implicits {
-            if params_written > 0 { s.push_str(", "); }
+            if params_written > 0 {
+                s.push_str(", ");
+            }
             s.push_str(imp.name.as_str());
             s.push_str(": ");
             s.push_str(&type_expr_to_swift(&imp.ty));
@@ -105,7 +113,9 @@ fn generate_type(ty: &ast::Type) -> String {
         }
 
         for field in &constructor.fields {
-            if params_written > 0 { s.push_str(", "); }
+            if params_written > 0 {
+                s.push_str(", ");
+            }
             s.push_str(field.name.as_str());
             s.push_str(": ");
             s.push_str(&type_expr_to_swift(&field.ty));
@@ -123,14 +133,16 @@ fn generate_type(ty: &ast::Type) -> String {
         if !constructor.fields.is_empty() {
             s.push('(');
             for (i, field) in constructor.fields.iter().enumerate() {
-                if i > 0 { s.push_str(", "); }
+                if i > 0 {
+                    s.push_str(", ");
+                }
                 s.push_str(field.name.as_str());
                 s.push_str(": ");
                 s.push_str(field.name.as_str());
             }
             s.push(')');
         }
-        s.push_str("\n");
+        s.push('\n');
 
         // Build Dependencies initializer
         if ty.dependencies.is_empty() {
@@ -142,7 +154,9 @@ fn generate_type(ty: &ast::Type) -> String {
             };
             s.push_str("            let dependencies = Dependencies(");
             for (idx, dep_sym) in ty.dependencies.iter().enumerate() {
-                if idx > 0 { s.push_str(", "); }
+                if idx > 0 {
+                    s.push_str(", ");
+                }
                 s.push_str(&dep_sym.name);
                 s.push_str(": ");
                 let expr = &dep_exprs[idx];
@@ -198,18 +212,30 @@ fn type_expr_to_swift(expr: &ast::TypeExpression) -> String {
 fn value_expr_to_swift(expr: &ast::ValueExpression) -> String {
     match expr {
         ast::ValueExpression::Variable(weak) => {
-            weak.upgrade().map(|s| s.name.clone()).unwrap_or("_".into())
+            weak.upgrade().map_or("_".into(), |s| s.name.clone())
         }
-        ast::ValueExpression::Constructor { call, implicits: _, arguments } => {
+        ast::ValueExpression::Constructor {
+            call,
+            implicits: _,
+            arguments,
+        } => {
             let ctor = call.upgrade().expect("dangling constructor");
             let ty_name = ctor.result_type.get_type().name.clone();
-            let mut res = format!("{}.{name}(", ty_name, name=ctor.name.to_lowercase());
+            let mut res = format!("{}.{name}(", ty_name, name = ctor.name.to_lowercase());
             let mut first = true;
             for (sym_idx, arg) in arguments.iter().enumerate() {
-                if !first { res.push_str(", "); } else { first = false; }
+                if first {
+                    first = false;
+                } else {
+                    res.push_str(", ");
+                }
                 // use positional arguments: fieldN:
                 let field_name = &ctor.fields[sym_idx].name;
-                res.push_str(&format!("{field}: {}", value_expr_to_swift(arg), field=field_name));
+                res.push_str(&format!(
+                    "{field}: {}",
+                    value_expr_to_swift(arg),
+                    field = field_name
+                ));
             }
             res.push(')');
             res
@@ -217,13 +243,17 @@ fn value_expr_to_swift(expr: &ast::ValueExpression) -> String {
         ast::ValueExpression::OpCall(op) => match op {
             ast::OpCall::Literal(lit) => match lit {
                 ast::Literal::Int(i) => i.to_string(),
-                ast::Literal::Str(s) => format!("\"{}\"", s),
+                ast::Literal::Str(s) => format!("\"{s}\""),
                 ast::Literal::Bool(b) => b.to_string(),
                 ast::Literal::Double(d) => d.to_string(),
                 ast::Literal::UInt(u) => u.to_string(),
             },
             ast::OpCall::Unary(_, expr) => format!("-{}", value_expr_to_swift(expr)),
-            ast::OpCall::Binary(_, lhs, rhs) => format!("({} + {})", value_expr_to_swift(lhs), value_expr_to_swift(rhs)),
+            ast::OpCall::Binary(_, lhs, rhs) => format!(
+                "({} + {})",
+                value_expr_to_swift(lhs),
+                value_expr_to_swift(rhs)
+            ),
         },
     }
-} 
+}

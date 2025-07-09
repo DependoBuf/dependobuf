@@ -31,15 +31,13 @@ mod tests {
                     "Suc".to_owned(),
                     e::Constructor {
                         implicits: Vec::new(),
-                        fields: vec![
-                            (
-                                "pred".to_owned(),
-                                e::TypeExpression::TypeExpression {
-                                    name: "Nat".to_owned(),
-                                    dependencies: e::Rec::new([]),
-                                },
-                            ),
-                        ],
+                        fields: vec![(
+                            "pred".to_owned(),
+                            e::TypeExpression::TypeExpression {
+                                name: "Nat".to_owned(),
+                                dependencies: e::Rec::new([]),
+                            },
+                        )],
                         result_type: e::TypeExpression::TypeExpression {
                             name: "Nat".to_owned(),
                             dependencies: e::Rec::new([]),
@@ -70,24 +68,28 @@ mod tests {
                     e::Type {
                         dependencies: Vec::new(),
                         constructor_names: e::ConstructorNames::OfEnum(
-                            ["Zero", "Suc"].into_iter().map(|s| s.to_owned()).collect(),
+                            ["Zero", "Suc"]
+                                .into_iter()
+                                .map(std::borrow::ToOwned::to_owned)
+                                .collect(),
                         ),
                     },
                 ),
                 (
                     "Vec".to_owned(),
                     e::Type {
-                        dependencies: vec![
-                            (
-                                "n".to_owned(),
-                                e::TypeExpression::TypeExpression {
-                                    name: "Nat".to_owned(),
-                                    dependencies: e::Rec::new([]),
-                                },
-                            ),
-                        ],
+                        dependencies: vec![(
+                            "n".to_owned(),
+                            e::TypeExpression::TypeExpression {
+                                name: "Nat".to_owned(),
+                                dependencies: e::Rec::new([]),
+                            },
+                        )],
                         constructor_names: e::ConstructorNames::OfEnum(
-                            ["Nil", "Cons"].into_iter().map(|s| s.to_owned()).collect(),
+                            ["Nil", "Cons"]
+                                .into_iter()
+                                .map(std::borrow::ToOwned::to_owned)
+                                .collect(),
                         ),
                     },
                 ),
@@ -108,15 +110,13 @@ mod tests {
                     "Suc".to_owned(),
                     e::Constructor {
                         implicits: Vec::new(),
-                        fields: vec![
-                            (
-                                "pred".to_owned(),
-                                e::TypeExpression::TypeExpression {
-                                    name: "Nat".to_owned(),
-                                    dependencies: e::Rec::new([]),
-                                },
-                            ),
-                        ],
+                        fields: vec![(
+                            "pred".to_owned(),
+                            e::TypeExpression::TypeExpression {
+                                name: "Nat".to_owned(),
+                                dependencies: e::Rec::new([]),
+                            },
+                        )],
                         result_type: e::TypeExpression::TypeExpression {
                             name: "Nat".to_owned(),
                             dependencies: e::Rec::new([]),
@@ -145,15 +145,13 @@ mod tests {
                 (
                     "Cons".to_owned(),
                     e::Constructor {
-                        implicits: vec![
-                            (
-                                "p".to_owned(),
-                                e::TypeExpression::TypeExpression {
-                                    name: "Nat".to_owned(),
-                                    dependencies: e::Rec::new([]),
-                                },
-                            ),
-                        ],
+                        implicits: vec![(
+                            "p".to_owned(),
+                            e::TypeExpression::TypeExpression {
+                                name: "Nat".to_owned(),
+                                dependencies: e::Rec::new([]),
+                            },
+                        )],
                         fields: vec![
                             (
                                 "val".to_owned(),
@@ -210,4 +208,4 @@ mod tests {
 
         assert_eq!(code, expected);
     }
-} 
+}
