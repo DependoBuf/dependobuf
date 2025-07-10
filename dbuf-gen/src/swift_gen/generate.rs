@@ -31,19 +31,19 @@ fn generate_type(ty: &ast::Type) -> String {
     s.push_str("    public enum deps {}\n\n");
 
     // Body enum
-    fill_body_enum(ty, &mut s, &body_name);
+    fill_body_enum(&mut s, ty, &body_name);
 
     // Dependencies struct
-    fill_dependencies_struct(ty, &mut s);
+    fill_dependencies_struct(&mut s, ty);
 
     // Main message/enum struct
-    fill_main_struct(ty, &mut s, &body_name);
+    fill_main_struct(&mut s, ty, &body_name);
 
     // Constructor functions
-    fill_constructor_functions(ty, &mut s, &body_name);
+    fill_constructor_functions(&mut s, ty, &body_name);
 
     // Serialization helpers
-    fill_serialization_helpers(ty, &mut s);
+    fill_serialization_helpers(&mut s, ty);
 
     // Close struct
     s.push_str("    }\n");
@@ -52,12 +52,12 @@ fn generate_type(ty: &ast::Type) -> String {
     s.push_str("}\n\n");
 
     // Typealias
-    fill_typealias(ty, &mut s, &module_name);
+    fill_typealias(&mut s, ty, &module_name);
 
     s
 }
 
-fn fill_body_enum(ty: &ast::Type, s: &mut String, body_name: &str) {
+fn fill_body_enum(s: &mut String, ty: &ast::Type, body_name: &str) {
     writeln!(s, "    public indirect enum {body_name}: Codable {{")
         .expect("Writing into String is always ok");
 
@@ -82,7 +82,7 @@ fn fill_body_enum(ty: &ast::Type, s: &mut String, body_name: &str) {
     s.push_str("    }\n\n");
 }
 
-fn fill_dependencies_struct(ty: &ast::Type, s: &mut String) {
+fn fill_dependencies_struct(s: &mut String, ty: &ast::Type) {
     s.push_str("    public struct Dependencies: Codable {\n");
     for dep_symbol in &ty.dependencies {
         writeln!(
@@ -96,7 +96,7 @@ fn fill_dependencies_struct(ty: &ast::Type, s: &mut String) {
     s.push_str("    }\n\n");
 }
 
-fn fill_main_struct(ty: &ast::Type, s: &mut String, body_name: &str) {
+fn fill_main_struct(s: &mut String, ty: &ast::Type, body_name: &str) {
     writeln!(s, "    public struct {}: Codable {{", ty.name)
         .expect("Writing into String is always ok");
 
@@ -104,7 +104,7 @@ fn fill_main_struct(ty: &ast::Type, s: &mut String, body_name: &str) {
     s.push_str("        public var dependencies: Dependencies\n\n");
 }
 
-fn fill_constructor_functions(ty: &ast::Type, s: &mut String, body_name: &str) {
+fn fill_constructor_functions(s: &mut String, ty: &ast::Type, body_name: &str) {
     for constructor_rc in &ty.constructors {
         let constructor = constructor_rc.as_ref();
         let func_name = constructor.name.to_lowercase();
@@ -179,7 +179,7 @@ fn fill_constructor_functions(ty: &ast::Type, s: &mut String, body_name: &str) {
     }
 }
 
-fn fill_serialization_helpers(ty: &ast::Type, s: &mut String) {
+fn fill_serialization_helpers(s: &mut String, ty: &ast::Type) {
     s.push_str("        public func serialize() -> Data {\n");
     s.push_str("            return try! JSONEncoder().encode(self)\n");
     s.push_str("        }\n\n");
@@ -194,7 +194,7 @@ fn fill_serialization_helpers(ty: &ast::Type, s: &mut String) {
     s.push_str("        }\n");
 }
 
-fn fill_typealias(ty: &ast::Type, s: &mut String, module_name: &str) {
+fn fill_typealias(s: &mut String, ty: &ast::Type, module_name: &str) {
     writeln!(
         s,
         "public typealias {} = {}.{}",
