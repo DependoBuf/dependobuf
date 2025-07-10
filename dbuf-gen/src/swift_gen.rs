@@ -1,3 +1,4 @@
+use std::fmt::Write as _;
 use std::io::{self, Write};
 
 use crate::ast;
@@ -43,72 +44,101 @@ fn generate_type(ty: &ast::Type) -> String {
     let body_name = "Body".to_string();
 
     // namespace enum
-    s.push_str(&format!("public enum {module_name} {{\n"));
+    writeln!(s, "public enum {module_name} {{").expect("Writing into String is always ok");
 
     // Dependencies imports placeholder (empty for now)
     s.push_str("    public enum deps {}\n\n");
 
     // Body enum
-    s.push_str("    public indirect enum ");
-    s.push_str(&body_name);
-    s.push_str(": Codable {\n");
+    fill_body_enum(ty, &mut s, &body_name);
+
+    // Dependencies struct
+    fill_dependencies_struct(ty, &mut s);
+
+    // Main message/enum struct
+    fill_main_struct(ty, &mut s, &body_name);
+
+    // Constructor functions
+    fill_constructor_functions(ty, &mut s, &body_name);
+
+    // Serialization helpers
+    fill_serialization_helpers(ty, &mut s);
+
+    // Close struct
+    s.push_str("    }\n");
+
+    // Close namespace enum
+    s.push_str("}\n\n");
+
+    // Typealias
+    fill_typealias(ty, &mut s, &module_name);
+
+    s
+}
+
+fn fill_body_enum(ty: &ast::Type, s: &mut String, body_name: &str) {
+    writeln!(s, "    public indirect enum {body_name}: Codable {{")
+        .expect("Writing into String is always ok");
+
     for constructor_rc in &ty.constructors {
         let constructor = constructor_rc.as_ref();
         let case_name = constructor.name.to_lowercase();
-        s.push_str("        case ");
-        s.push_str(&case_name);
+        write!(s, "        case {case_name}").expect("Writing into String is always ok");
         if !constructor.fields.is_empty() {
             s.push('(');
             for (i, field) in constructor.fields.iter().enumerate() {
                 if i > 0 {
                     s.push_str(", ");
                 }
-                s.push_str(&field.name);
-                s.push_str(": ");
-                s.push_str(&type_expr_to_swift(&field.ty));
+
+                write!(s, "{}: {}", field.name, type_expr_to_swift(&field.ty))
+                    .expect("Writing into String is always ok");
             }
             s.push(')');
         }
         s.push('\n');
     }
     s.push_str("    }\n\n");
+}
 
-    // Dependencies struct
+fn fill_dependencies_struct(ty: &ast::Type, s: &mut String) {
     s.push_str("    public struct Dependencies: Codable {\n");
     for dep_symbol in &ty.dependencies {
-        s.push_str("        public var ");
-        s.push_str(&dep_symbol.name);
-        s.push_str(": ");
-        s.push_str(&type_expr_to_swift(&dep_symbol.ty));
-        s.push('\n');
+        writeln!(
+            s,
+            "        public var {}: {}",
+            dep_symbol.name,
+            type_expr_to_swift(&dep_symbol.ty)
+        )
+        .expect("Writing into String is always ok");
     }
     s.push_str("    }\n\n");
+}
 
-    // Main message/enum struct
-    s.push_str(&format!("    public struct {}: Codable {{\n", ty.name));
-    s.push_str("        public var body: ");
-    s.push_str(&body_name);
-    s.push('\n');
+fn fill_main_struct(ty: &ast::Type, s: &mut String, body_name: &str) {
+    writeln!(s, "    public struct {}: Codable {{", ty.name)
+        .expect("Writing into String is always ok");
+
+    writeln!(s, "        public var body: {body_name}").expect("Writing into String is always ok");
     s.push_str("        public var dependencies: Dependencies\n\n");
+}
 
-    // Constructor functions
+fn fill_constructor_functions(ty: &ast::Type, s: &mut String, body_name: &str) {
     for constructor_rc in &ty.constructors {
         let constructor = constructor_rc.as_ref();
         let func_name = constructor.name.to_lowercase();
 
         // Parameters list (implicits first, then fields)
-        s.push_str("        public static func ");
-        s.push_str(&func_name);
-        s.push('(');
+        write!(s, "        public static func {func_name}(")
+            .expect("Writing into String is always ok");
 
         let mut params_written = 0;
         for imp in &constructor.implicits {
             if params_written > 0 {
                 s.push_str(", ");
             }
-            s.push_str(imp.name.as_str());
-            s.push_str(": ");
-            s.push_str(&type_expr_to_swift(&imp.ty));
+            write!(s, "{}: {}", imp.name, type_expr_to_swift(&imp.ty))
+                .expect("Writing into String is always ok");
             params_written += 1;
         }
 
@@ -116,29 +146,23 @@ fn generate_type(ty: &ast::Type) -> String {
             if params_written > 0 {
                 s.push_str(", ");
             }
-            s.push_str(field.name.as_str());
-            s.push_str(": ");
-            s.push_str(&type_expr_to_swift(&field.ty));
+            write!(s, "{}: {}", field.name, type_expr_to_swift(&field.ty))
+                .expect("Writing into String is always ok");
             params_written += 1;
         }
-        s.push_str(") -> ");
-        s.push_str(ty.name.as_str());
-        s.push_str(" {\n");
+        writeln!(s, ") -> {} {{", ty.name).expect("Writing into String is always ok");
 
         // body construction
-        s.push_str("            let body = ");
-        s.push_str(&body_name);
-        s.push('.');
-        s.push_str(&func_name);
+        write!(s, "            let body = {body_name}.{func_name}")
+            .expect("Writing into String is always ok");
         if !constructor.fields.is_empty() {
             s.push('(');
             for (i, field) in constructor.fields.iter().enumerate() {
                 if i > 0 {
                     s.push_str(", ");
                 }
-                s.push_str(field.name.as_str());
-                s.push_str(": ");
-                s.push_str(field.name.as_str());
+                write!(s, "{}: {}", field.name, field.name)
+                    .expect("Writing into String is always ok");
             }
             s.push(')');
         }
@@ -157,47 +181,45 @@ fn generate_type(ty: &ast::Type) -> String {
                 if idx > 0 {
                     s.push_str(", ");
                 }
-                s.push_str(&dep_sym.name);
-                s.push_str(": ");
                 let expr = &dep_exprs[idx];
-                s.push_str(&value_expr_to_swift(expr));
+                write!(s, "{}: {}", dep_sym.name, value_expr_to_swift(expr))
+                    .expect("Writing into String is always ok");
             }
             s.push_str(")\n");
         }
 
-        s.push_str("            return ");
-        s.push_str(ty.name.as_str());
-        s.push_str("(body: body, dependencies: dependencies)\n");
+        writeln!(
+            s,
+            "            return {}(body: body, dependencies: dependencies)",
+            ty.name
+        )
+        .expect("Writing into String is always ok");
         s.push_str("        }\n\n");
     }
+}
 
-    // Serialization helpers
+fn fill_serialization_helpers(ty: &ast::Type, s: &mut String) {
     s.push_str("        public func serialize() -> Data {\n");
     s.push_str("            return try! JSONEncoder().encode(self)\n");
     s.push_str("        }\n\n");
 
-    s.push_str("        public static func deserialize(_ data: Data) throws -> ");
-    s.push_str(&ty.name);
-    s.push_str(" {\n");
+    writeln!(
+        s,
+        "        public static func deserialize(_ data: Data) throws -> {} {{",
+        ty.name
+    )
+    .expect("Writing into String is always ok");
     s.push_str("            return try JSONDecoder().decode(Self.self, from: data)\n");
     s.push_str("        }\n");
+}
 
-    // Close struct
-    s.push_str("    }\n");
-
-    // Close namespace enum
-    s.push_str("}\n\n");
-
-    // Typealias
-    s.push_str("public typealias ");
-    s.push_str(&ty.name);
-    s.push_str(" = ");
-    s.push_str(&module_name);
-    s.push('.');
-    s.push_str(&ty.name);
-    s.push('\n');
-
-    s
+fn fill_typealias(ty: &ast::Type, s: &mut String, module_name: &str) {
+    writeln!(
+        s,
+        "public typealias {} = {}.{}",
+        ty.name, module_name, ty.name
+    )
+    .expect("Writing into String is always ok");
 }
 
 fn type_expr_to_swift(expr: &ast::TypeExpression) -> String {
@@ -231,11 +253,13 @@ fn value_expr_to_swift(expr: &ast::ValueExpression) -> String {
                 }
                 // use positional arguments: fieldN:
                 let field_name = &ctor.fields[sym_idx].name;
-                res.push_str(&format!(
+                write!(
+                    res,
                     "{field}: {}",
                     value_expr_to_swift(arg),
                     field = field_name
-                ));
+                )
+                .expect("Writing into String is always ok");
             }
             res.push(')');
             res

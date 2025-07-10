@@ -11,7 +11,10 @@ mod tests {
                 e::Type {
                     dependencies: Vec::new(),
                     constructor_names: e::ConstructorNames::OfEnum(
-                        ["Zero", "Suc"].into_iter().map(|s| s.to_owned()).collect(),
+                        ["Zero", "Suc"]
+                            .into_iter()
+                            .map(std::borrow::ToOwned::to_owned)
+                            .collect(),
                     ),
                 },
             )],
@@ -59,6 +62,7 @@ mod tests {
         assert_eq!(code, expected);
     }
 
+    #[allow(clippy::too_many_lines)] // I guess this test cannot be divided into parts.
     #[test]
     fn nat_vec() {
         let module = e::Module {
