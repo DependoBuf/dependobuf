@@ -1,4 +1,5 @@
 #[allow(warnings)]
+#[allow(clippy::all)]
 mod basic {
     include!("./canon/basic.rs");
 }
@@ -29,6 +30,7 @@ fn basic_counting() {
 }
 
 #[allow(warnings)]
+#[allow(clippy::all)]
 mod nat_vec {
     include!("./canon/nat_vec.rs");
 }
