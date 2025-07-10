@@ -1,3 +1,4 @@
+#[allow(warnings)]
 mod basic {
     include!("./canon/basic.rs");
 }
@@ -27,6 +28,7 @@ fn basic_counting() {
     assert_eq!(four1, four2);
 }
 
+#[allow(warnings)]
 mod nat_vec {
     include!("./canon/nat_vec.rs");
 }
