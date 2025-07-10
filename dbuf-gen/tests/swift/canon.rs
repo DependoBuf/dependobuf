@@ -52,11 +52,7 @@ mod tests {
             .collect(),
         };
 
-        let mut writer = Vec::new();
-        assert!(swift_gen::generate_module(module, &mut writer).is_ok());
-
-        let code = String::from_utf8(writer).expect("generated code must be correct utf8");
-
+        let code = swift_gen::generate_module(module);
         let expected = include_str!("./canon/basic.swift");
 
         assert_eq!(code, expected);
@@ -203,11 +199,7 @@ mod tests {
             .collect(),
         };
 
-        let mut writer = Vec::new();
-        assert!(swift_gen::generate_module(module, &mut writer).is_ok());
-
-        let code = String::from_utf8(writer).expect("generated code must be correct utf8");
-
+        let code = swift_gen::generate_module(module);
         let expected = include_str!("./canon/nat_vec.swift");
 
         assert_eq!(code, expected);

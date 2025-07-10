@@ -1,30 +1,11 @@
 use std::fmt::Write as _;
-use std::io::{self, Write};
 
 use crate::ast;
+use crate::ast::Module;
 
-/// Generate Swift source code for the provided elaborated module.
-///
-/// The implementation is intentionally *very* small – it is **only** capable
-/// of generating code for the subset of DependoBuf that is currently covered
-/// by the canonicalisation tests (`basic` and `nat_vec`).
-///
-/// It is good enough for snapshot-testing purposes and can be gradually
-/// replaced by a full-featured backend later.
-///
-/// # Errors
-///
-/// TODO: explain when `Err` is returned.
-pub fn generate_module<Writer: Write>(
-    module: ast::elaborated::Module<String>,
-    w: &mut Writer,
-) -> io::Result<()> {
-    // Convert the elaborated AST used by the type-checker into the internal
-    // representation expected by the generators.
-    let module = ast::Module::from_elaborated(module);
-
-    // Accumulate Swift code as an UTF-8 string – simple and fast for the needs
-    // of canonicalisation.
+/// Accumulate Swift code as an UTF-8 string – simple and fast for the needs
+/// of canonicalisation.
+pub fn generate_module(module: &Module) -> String {
     let mut code = String::new();
     code.push_str("import Foundation\n\n");
 
@@ -34,7 +15,7 @@ pub fn generate_module<Writer: Write>(
         code.push('\n');
     }
 
-    w.write_all(code.as_bytes())
+    code
 }
 
 fn generate_type(ty: &ast::Type) -> String {
