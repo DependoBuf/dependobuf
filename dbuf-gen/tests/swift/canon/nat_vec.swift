@@ -43,7 +43,7 @@ public enum vec {
     public enum deps {}
 
     public indirect enum Body: Codable {
-        case cons(val: Nat, tail: Vec)
+        case cons(value: Nat, tail: Vec)
         case nil
     }
 
@@ -55,8 +55,8 @@ public enum vec {
         public var body: Body
         public var dependencies: Dependencies
 
-        public static func cons(p: Nat, val: Nat, tail: Vec) -> Vec {
-            let body = Body.cons(val: val, tail: tail)
+        public static func cons(p: Nat, value: Nat, tail: Vec) -> Vec {
+            let body = Body.cons(value: value, tail: tail)
             let dependencies = Dependencies(n: Nat.suc(pred: p))
             return Vec(body: body, dependencies: dependencies)
         }

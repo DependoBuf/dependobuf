@@ -1,3 +1,4 @@
+#[path = "../common.rs"]
 mod common;
 
 mod tests {
@@ -10,7 +11,7 @@ mod tests {
         let module = common::get_basic_module();
         let code = kotlin_gen::generate_module(module);
 
-        println!("{}", code);
+        println!("{code}");
         let expected = include_str!("./canon/basic.kt");
         assert_eq!(code, expected);
     }
@@ -20,7 +21,7 @@ mod tests {
         let module = common::get_nat_vec_module();
         let code = kotlin_gen::generate_module(module);
 
-        println!("{}", code);
+        println!("{code}");
         let expected = include_str!("./canon/nat_vec.kt");
         assert_eq!(code, expected);
     }

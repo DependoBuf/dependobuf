@@ -1,3 +1,4 @@
+#[path = "../common.rs"]
 mod common;
 
 mod tests {

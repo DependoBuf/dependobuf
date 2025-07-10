@@ -13,3 +13,15 @@ dbuf-rust-runtime.workspace = true
 
 [lints]
 workspace = true
+
+[[test]]
+name = "swift"
+path = "tests/swift/canon.rs"
+
+[[test]]
+name = "kotlin"
+path = "tests/kotlin/canon.rs"
+
+[[test]]
+name = "rust"
+path = "tests/rust/canon.rs"
