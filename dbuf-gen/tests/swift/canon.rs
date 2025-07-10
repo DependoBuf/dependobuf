@@ -57,7 +57,7 @@ mod tests {
 
         let code = String::from_utf8(writer).expect("generated code must be correct utf8");
 
-        let expected = include_str!("./canon_swift/basic.swift");
+        let expected = include_str!("./canon/basic.swift");
 
         assert_eq!(code, expected);
     }
@@ -208,7 +208,7 @@ mod tests {
 
         let code = String::from_utf8(writer).expect("generated code must be correct utf8");
 
-        let expected = include_str!("./canon_swift/nat_vec.swift");
+        let expected = include_str!("./canon/nat_vec.swift");
 
         assert_eq!(code, expected);
     }
