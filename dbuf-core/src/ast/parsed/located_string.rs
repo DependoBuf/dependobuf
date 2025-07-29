@@ -1,4 +1,4 @@
-//! Strings for parsed AST.
+//! `LocatedString` for parsed AST.
 
 use std::ops::{Add, Deref};
 
