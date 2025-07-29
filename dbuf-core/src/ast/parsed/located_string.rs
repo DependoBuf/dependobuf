@@ -6,7 +6,7 @@ use std::ops::{Add, Deref};
 pub struct LocatedString<String, Pos> {
     /// String content.
     pub content: String,
-    /// Starting position of string.
+    /// Starting position of a string.
     pub start: Pos,
 }
 
