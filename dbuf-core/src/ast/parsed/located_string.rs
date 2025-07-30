@@ -1,21 +1,21 @@
-//! `LocatedString` for parsed AST.
+//! `LocatedName` for parsed AST.
 
 use std::ops::{Add, Deref};
 
-/// Single line string with location.
-pub struct LocatedString<String, Pos> {
-    /// String content.
-    pub content: String,
-    /// Starting position of a string.
+/// Single line name with location.
+pub struct LocatedName<Str, Pos> {
+    /// Name content.
+    pub content: Str,
+    /// Starting position of a name.
     pub start: Pos,
 }
 
-impl<String, Pos> LocatedString<String, Pos>
+impl<Str, Pos> LocatedName<Str, Pos>
 where
-    String: Deref<Target = [u8]>,
+    Str: Deref<Target = [u8]>,
     Pos: Copy + Add<usize, Output = Pos>,
 {
-    /// Ending position of a string.
+    /// Ending position of a name.
     pub fn end(&self) -> Pos {
         self.start + self.content.len()
     }
