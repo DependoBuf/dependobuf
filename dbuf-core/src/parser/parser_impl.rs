@@ -1,15 +1,18 @@
 use crate::ast::parsed::definition::*;
+use crate::ast::parsed::located_name::LocatedName;
 use crate::ast::parsed::location::Offset;
 use crate::ast::parsed::*;
 use crate::ast::{operators::*, parsed::location::Location};
 use crate::parser::Token;
 use chumsky::{input::*, pratt::*, prelude::*};
 
+type Name = LocatedName<String, Offset>;
+
 #[must_use]
 pub fn create_parser<'src, I>() -> impl Parser<
     'src,
     I,
-    Module<Location<Offset>, String>,
+    Module<Location<Offset>, Name>,
     extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>,
 > + Clone
 where
@@ -22,7 +25,7 @@ where
 }
 
 type ParsedTypeDeclaration =
-    Definition<Location<Offset>, String, TypeDeclaration<Location<Offset>, String>>;
+    Definition<Location<Offset>, Name, TypeDeclaration<Location<Offset>, Name>>;
 
 fn parser_type_declaration<'src, I>(
 ) -> impl Parser<'src, I, ParsedTypeDeclaration, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
@@ -130,7 +133,7 @@ where
 }
 
 type ParserDependencies =
-    Definitions<Location<Offset>, String, TypeExpression<Location<Offset>, String>>;
+    Definitions<Location<Offset>, Name, TypeExpression<Location<Offset>, Name>>;
 
 fn parser_depencies<'src, I>(
     at_least: usize,
@@ -151,7 +154,7 @@ where
 fn parser_enum_branch<'src, I>() -> impl Parser<
     'src,
     I,
-    EnumBranch<Location<Offset>, String>,
+    EnumBranch<Location<Offset>, Name>,
     extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>,
 > + Clone
 where
@@ -176,7 +179,7 @@ where
 }
 
 type ParsedConstructedBlock =
-    Definitions<Location<Offset>, String, ConstructorBody<Location<Offset>, String>>;
+    Definitions<Location<Offset>, Name, ConstructorBody<Location<Offset>, Name>>;
 
 fn parser_constructors_block<'src, I>(
 ) -> impl Parser<'src, I, ParsedConstructedBlock, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>>
@@ -206,7 +209,7 @@ where
 fn parser_constructor_body<'src, I>() -> impl Parser<
     'src,
     I,
-    ConstructorBody<Location<Offset>, String>,
+    ConstructorBody<Location<Offset>, Name>,
     extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>,
 > + Clone
 where
@@ -221,7 +224,7 @@ where
 }
 
 type ParsedTypedVariable =
-    Definition<Location<Offset>, String, Expression<Location<Offset>, String>>;
+    Definition<Location<Offset>, Name, Expression<Location<Offset>, Name>>;
 
 fn parser_typed_variable<'src, I>(
 ) -> impl Parser<'src, I, ParsedTypedVariable, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
@@ -245,7 +248,7 @@ where
 fn parser_pattern<'src, I>() -> impl Parser<
     'src,
     I,
-    Pattern<Location<Offset>, String>,
+    Pattern<Location<Offset>, Name>,
     extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>,
 > + Clone
 where
@@ -315,7 +318,7 @@ where
 fn parser_type_expression<'src, I>() -> impl Parser<
     'src,
     I,
-    Expression<Location<Offset>, String>,
+    Expression<Location<Offset>, Name>,
     extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>,
 > + Clone
 where
@@ -329,7 +332,7 @@ where
 fn parser_expression<'src, I>() -> impl Parser<
     'src,
     I,
-    Expression<Location<Offset>, String>,
+    Expression<Location<Offset>, Name>,
     extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>,
 > + Clone
 where
@@ -439,13 +442,13 @@ fn parser_type_expression_with_primary<'src, I>(
     primary: impl Parser<
             'src,
             I,
-            Expression<Location<Offset>, String>,
+            Expression<Location<Offset>, Name>,
             extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>,
         > + Clone,
 ) -> impl Parser<
     'src,
     I,
-    Expression<Location<Offset>, String>,
+    Expression<Location<Offset>, Name>,
     extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>,
 > + Clone
 where
@@ -471,13 +474,13 @@ fn parser_primary_with_expression<'src, I>(
     expr: impl Parser<
             'src,
             I,
-            Expression<Location<Offset>, String>,
+            Expression<Location<Offset>, Name>,
             extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>,
         > + Clone,
 ) -> impl Parser<
     'src,
     I,
-    Expression<Location<Offset>, String>,
+    Expression<Location<Offset>, Name>,
     extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>,
 > + Clone
 where
@@ -534,7 +537,7 @@ where
 fn parser_var_access<'src, I>() -> impl Parser<
     'src,
     I,
-    Expression<Location<Offset>, String>,
+    Expression<Location<Offset>, Name>,
     extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>,
 > + Clone
 where
@@ -545,8 +548,8 @@ where
         .separated_by(just(Token::Dot))
         .at_least(1)
         .collect::<Vec<_>>()
-        .map(|vec: Vec<(String, SimpleSpan<Offset>)>| {
-            let start: Expression<Location<Offset>, String> = {
+        .map(|vec: Vec<(Name, SimpleSpan<Offset>)>| {
+            let start: Expression<Location<Offset>, Name> = {
                 let (name, first_span) = &vec[0];
                 Expression {
                     loc: first_span
@@ -574,35 +577,59 @@ where
 }
 
 fn parser_type_identifier<'src, I>(
-) -> impl Parser<'src, I, String, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
+) -> impl Parser<'src, I, Name, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan<Offset>>,
 {
     select! {
         Token::UCIdentifier(s) => s,
     }
+    .map_with(|s, extra| {
+        let span: SimpleSpan<Offset> = extra.span();
+        let loc: Location<Offset> = span.into_range().try_into().expect("Always correct range");
+        Name {
+            content: s,
+            start: loc.start,
+        }
+    })
     .labelled("type identifier")
 }
 
 fn parser_constructor_identifier<'src, I>(
-) -> impl Parser<'src, I, String, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
+) -> impl Parser<'src, I, Name, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan<Offset>>,
 {
     select! {
         Token::UCIdentifier(s) => s,
     }
+    .map_with(|s, extra| {
+        let span: SimpleSpan<Offset> = extra.span();
+        let loc: Location<Offset> = span.into_range().try_into().expect("Always correct range");
+        Name {
+            content: s,
+            start: loc.start,
+        }
+    })
     .labelled("constructor identifier")
 }
 
 fn parser_var_identifier<'src, I>(
-) -> impl Parser<'src, I, String, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
+) -> impl Parser<'src, I, Name, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan<Offset>>,
 {
     select! {
         Token::LCIdentifier(s) => s,
     }
+    .map_with(|s, extra| {
+        let span: SimpleSpan<Offset> = extra.span();
+        let loc: Location<Offset> = span.into_range().try_into().expect("Always correct range");
+        Name {
+            content: s,
+            start: loc.start,
+        }
+    })
     .labelled("var identifier")
 }
 

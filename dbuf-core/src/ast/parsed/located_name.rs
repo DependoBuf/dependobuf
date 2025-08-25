@@ -3,6 +3,7 @@
 use std::ops::{Add, Deref};
 
 /// Single line name with location.
+#[derive(Clone, Debug)]
 pub struct LocatedName<Str, Pos> {
     /// Name content.
     pub content: Str,
