@@ -77,8 +77,8 @@ use parser_impl::create_parser;
 use located_iter::*;
 
 use crate::ast::parsed::{
-    location::{Location, Offset},
     located_name::LocatedName,
+    location::{Location, Offset},
     *,
 };
 

@@ -223,8 +223,7 @@ where
         .labelled("constructor body")
 }
 
-type ParsedTypedVariable =
-    Definition<Location<Offset>, Name, Expression<Location<Offset>, Name>>;
+type ParsedTypedVariable = Definition<Location<Offset>, Name, Expression<Location<Offset>, Name>>;
 
 fn parser_typed_variable<'src, I>(
 ) -> impl Parser<'src, I, ParsedTypedVariable, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
