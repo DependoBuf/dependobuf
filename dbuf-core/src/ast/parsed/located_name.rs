@@ -17,6 +17,8 @@ where
     Pos: Copy + Add<usize, Output = Pos>,
 {
     /// Ending position of a name.
+    /// 
+    /// Assumes name contains no newline characters.
     pub fn end(&self) -> Pos {
         self.start + self.content.as_ref().len()
     }
