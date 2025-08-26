@@ -29,6 +29,17 @@ impl Add<Offset> for Offset {
     }
 }
 
+impl Add<usize> for Offset {
+    type Output = Offset;
+
+    fn add(self, rhs: usize) -> Self::Output {
+        Self {
+            lines: self.lines,
+            columns: self.columns + rhs
+        }
+    }
+}
+
 impl Sub<Offset> for Offset {
     type Output = Option<Self>;
 
