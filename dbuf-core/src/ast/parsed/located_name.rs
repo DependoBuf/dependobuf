@@ -23,8 +23,8 @@ where
 }
 
 impl<Str, Pos> AsRef<str> for LocatedName<Str, Pos>
-where 
-    Str: AsRef<str>
+where
+    Str: AsRef<str>,
 {
     fn as_ref(&self) -> &str {
         self.content.as_ref()
@@ -32,8 +32,8 @@ where
 }
 
 impl<Str, Pos> fmt::Display for LocatedName<Str, Pos>
-where 
-    Str: AsRef<str>
+where
+    Str: AsRef<str>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.content.as_ref().fmt(f)

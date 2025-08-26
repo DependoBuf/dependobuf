@@ -3,11 +3,11 @@
 //! * `LocNameHelper` trait with helpfull funtions for `LocatedName`.
 //!
 
-use super::location::{PositionHelper, LocationHelper};
+use super::location::{LocationHelper, PositionHelper};
 
 use tower_lsp::lsp_types;
 
-use super::{Str, Loc};
+use super::{Loc, Str};
 
 /// Trait for types, that can be converted to `LocatedName`.
 /// TODO: remove such API.
@@ -37,8 +37,7 @@ pub trait LocNameHelper {
     fn set_location_start(&mut self, start: Pos);
 }
 
-impl LocNameHelper for Str
-{
+impl LocNameHelper for Str {
     fn new(string: &str, location: Loc) -> Self {
         Self {
             content: string.to_string(),
@@ -58,7 +57,7 @@ impl LocNameHelper for Str
         }
     }
     fn set_location_start(&mut self, start: Pos) {
-        self.start = start
+        self.start = start;
     }
 }
 

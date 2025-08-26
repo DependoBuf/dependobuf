@@ -35,7 +35,7 @@ impl Add<usize> for Offset {
     fn add(self, rhs: usize) -> Self::Output {
         Self {
             lines: self.lines,
-            columns: self.columns + rhs
+            columns: self.columns + rhs,
         }
     }
 }

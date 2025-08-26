@@ -11,9 +11,7 @@ use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 
-use crate::core::ast_access::{
-    Loc, LocNameHelper, LocationHelper, Position, PositionHelper, Str,
-};
+use crate::core::ast_access::{Loc, LocNameHelper, LocationHelper, Position, PositionHelper, Str};
 
 #[derive(Debug, Copy, Clone)]
 struct Pos {
