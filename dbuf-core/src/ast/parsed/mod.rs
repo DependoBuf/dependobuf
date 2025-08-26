@@ -1,5 +1,5 @@
 pub mod definition;
-pub mod located_string;
+pub mod located_name;
 pub mod location;
 
 use super::operators::{Literal, OpCall};

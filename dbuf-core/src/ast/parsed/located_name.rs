@@ -3,6 +3,7 @@
 use std::{fmt, ops::Add};
 
 /// Single line name with location.
+#[derive(Clone, Debug)]
 pub struct LocatedName<Str, Pos> {
     /// Name content.
     pub content: Str,
