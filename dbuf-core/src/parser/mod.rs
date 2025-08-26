@@ -77,6 +77,7 @@ use parser_impl::create_parser;
 use located_iter::*;
 
 use crate::ast::parsed::{
+    located_name::LocatedName,
     location::{Location, Offset},
     *,
 };
@@ -85,7 +86,7 @@ pub mod lexer;
 pub mod located_iter;
 pub mod parser_impl;
 
-type ParsedModule = Module<Location<Offset>, String>;
+type ParsedModule = Module<Location<Offset>, LocatedName<String, Offset>>;
 type ParseError<'src> = Rich<'src, Token, SimpleSpan<Offset>>;
 
 /// # Errors
