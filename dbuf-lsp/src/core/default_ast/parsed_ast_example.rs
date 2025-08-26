@@ -1,5 +1,5 @@
 use super::ast_builder::AstBuilder;
-use crate::core::ast_access::LocStringHelper;
+use crate::core::ast_access::LocNameHelper;
 use crate::core::ast_access::{Loc, ParsedAst, Str};
 
 use dbuf_core::ast::operators::*;

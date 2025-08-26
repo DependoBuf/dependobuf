@@ -11,7 +11,7 @@ pub type Position = location::Offset;
 pub type Location = location::Location<Position>;
 
 /// Helpers for `dbuf-core::Position` type.
-pub trait PositionHelpers {
+pub trait PositionHelper {
     /// Creates new position.
     fn new(lines: usize, columns: usize) -> Self;
     /// Get line of position.
@@ -24,7 +24,7 @@ pub trait PositionHelpers {
     fn to_lsp(&self) -> lsp_types::Position;
 }
 
-impl PositionHelpers for Position {
+impl PositionHelper for Position {
     fn new(lines: usize, columns: usize) -> Self {
         Position { lines, columns }
     }
@@ -53,11 +53,14 @@ fn to_position(p: lsp_types::Position) -> Position {
 }
 
 /// Helpers for `dbuf-core::Location` type.
-pub trait LocationHelpers {
+pub trait LocationHelper {
+    /// Type for start of position.
+    type Pos: PositionHelper;
+
     /// Returns empty location. Typically ((0, 0), (0, 0))
     fn new_empty() -> Self;
     /// Returns location with start and end.
-    fn new(start: Position, end: Position) -> Self;
+    fn new(start: Self::Pos, end: Self::Pos) -> Self;
     /// Convers Location to `lsp_types::Range`;
     fn to_lsp(&self) -> Range;
     /// Check if cursor position in location.
@@ -68,16 +71,18 @@ pub trait LocationHelpers {
     /// Checks if location intersects with range.
     fn intersects(&self, r: Range) -> bool;
     /// Get start of location.
-    fn get_start(&self) -> Position;
+    fn get_start(&self) -> Self::Pos;
     /// Get end of location.
-    fn get_end(&self) -> Position;
+    fn get_end(&self) -> Self::Pos;
     /// Sets start of location and resets end.
-    fn reset_start(&mut self, start: Position);
+    fn reset_start(&mut self, start: Self::Pos);
     /// Sets end of location.
-    fn set_end(&mut self, end: Position);
+    fn set_end(&mut self, end: Self::Pos);
 }
 
-impl LocationHelpers for Location {
+impl LocationHelper for Location {
+    type Pos = Position;
+
     fn new_empty() -> Self {
         Self {
             start: Position {
@@ -91,7 +96,7 @@ impl LocationHelpers for Location {
         }
     }
 
-    fn new(start: Position, end: Position) -> Self {
+    fn new(start: Self::Pos, end: Self::Pos) -> Self {
         let mut ans = Self::new_empty();
         ans.reset_start(start);
         ans.set_end(end);
@@ -120,20 +125,20 @@ impl LocationHelpers for Location {
         }
     }
 
-    fn get_start(&self) -> Position {
+    fn get_start(&self) -> Self::Pos {
         self.start
     }
 
-    fn get_end(&self) -> Position {
+    fn get_end(&self) -> Self::Pos {
         self.end()
     }
 
-    fn reset_start(&mut self, start: Position) {
+    fn reset_start(&mut self, start: Self::Pos) {
         self.start = start;
         self.length = Offset::default();
     }
 
-    fn set_end(&mut self, end: Position) {
+    fn set_end(&mut self, end: Self::Pos) {
         if end.lines == self.start.lines {
             self.length.lines = 0;
             self.length.columns = end.columns - self.start.columns;

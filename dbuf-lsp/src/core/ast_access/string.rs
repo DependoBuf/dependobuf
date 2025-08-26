@@ -1,93 +1,69 @@
 //! Module exports
-//! * `ConvertibleToString` trait, wich allows any type conversation to `LocString`.
-//! * `LocStringHelper` trait with helpfull funtions for `LocString`.
-//! * 'temporary' `LocString`, since there is no one in dbuf-core.
+//! * `ConvertibleToString` trait, wich allows any type conversation to `LocatedName`.
+//! * `LocNameHelper` trait with helpfull funtions for `LocatedName`.
 //!
 
-use std::fmt;
-
-use super::location::*;
+use super::location::{PositionHelper, LocationHelper};
 
 use tower_lsp::lsp_types;
 
-/// String, containing location.
-/// TODO: migrate to type in dbuf-core.
-#[derive(Debug, Clone)]
-pub struct LocString {
-    string: String,
-    location: Location,
-}
+use super::{Str, Loc};
 
-/// Trait for types, that can be converted to `LocString`.
+/// Trait for types, that can be converted to `LocatedName`.
 /// TODO: remove such API.
 pub trait ConvertibleToString {
-    fn to_loc_string(&self) -> LocString;
+    fn to_loc_string(&self) -> Str;
 }
 
-/// Helpers for `dbuf-core::LocString` (in future).
-pub trait LocStringHelper {
-    /// Constructs `LocString`.
-    fn new(string: &str, location: Location) -> Self;
+type Pos = <Loc as LocationHelper>::Pos;
+
+/// Helpers for `dbuf-core::LocatedName`.
+pub trait LocNameHelper {
+    /// Constructs `LocatedName`.
+    fn new(string: &str, location: Loc) -> Self;
     /// Returns string's len.
     fn len(&self) -> usize;
     /// Returns string's location.
-    fn get_location(&self) -> Location;
+    fn get_location(&self) -> Loc;
     /// Returns if positions in string's location.
     fn contains(&self, p: lsp_types::Position) -> bool {
         self.get_location().contains(p)
     }
-    /// Constructs `LocString` with empty location.
+    /// Constructs `LocatedName` with empty location.
     /// TODO: remove such API.
     fn unsafe_new(string: &str) -> Self;
     /// Sets begin of string's location.
     /// TODO: remove such API.
-    fn set_location_start(&mut self, start: Position);
-    /// Sets end of string's location.
-    /// TODO: remove such API.
-    fn set_location_end(&mut self, end: Position);
+    fn set_location_start(&mut self, start: Pos);
 }
 
-impl LocStringHelper for LocString {
-    fn new(string: &str, location: Location) -> LocString {
-        LocString {
-            string: string.to_string(),
-            location,
+impl LocNameHelper for Str
+{
+    fn new(string: &str, location: Loc) -> Self {
+        Self {
+            content: string.to_string(),
+            start: location.get_start(),
         }
     }
     fn len(&self) -> usize {
-        self.string.len()
+        self.content.len()
     }
-    fn get_location(&self) -> Location {
-        self.location
+    fn get_location(&self) -> Loc {
+        Loc::new(self.start, self.end())
     }
-    fn unsafe_new(string: &str) -> LocString {
-        LocString {
-            string: string.to_string(),
-            location: Location::new_empty(),
+    fn unsafe_new(string: &str) -> Self {
+        Self {
+            content: string.to_string(),
+            start: Pos::new(0, 0),
         }
     }
-    fn set_location_start(&mut self, start: Position) {
-        self.location.reset_start(start);
-    }
-    fn set_location_end(&mut self, end: Position) {
-        self.location.set_end(end);
-    }
-}
-
-impl AsRef<str> for LocString {
-    fn as_ref(&self) -> &str {
-        &self.string
-    }
-}
-
-impl fmt::Display for LocString {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.string.fmt(f)
+    fn set_location_start(&mut self, start: Pos) {
+        self.start = start
     }
 }
 
 impl ConvertibleToString for &str {
-    fn to_loc_string(&self) -> LocString {
-        LocString::unsafe_new(self)
+    fn to_loc_string(&self) -> Str {
+        Str::unsafe_new(self)
     }
 }

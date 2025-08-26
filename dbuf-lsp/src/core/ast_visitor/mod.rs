@@ -20,11 +20,11 @@ use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::definition::Definitions;
 use dbuf_core::ast::parsed::*;
 
-use super::ast_access::{Loc, LocationHelpers, PositionHelpers, Str};
+use super::ast_access::{Loc, LocationHelper, PositionHelper, Str};
 
 use super::ast_access::ElaboratedAst;
 use super::ast_access::ElaboratedHelper;
-use super::ast_access::LocStringHelper;
+use super::ast_access::LocNameHelper;
 use super::ast_access::ParsedAst;
 use super::ast_access::Position;
 

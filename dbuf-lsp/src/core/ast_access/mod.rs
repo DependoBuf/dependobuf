@@ -17,6 +17,8 @@ mod string;
 
 use dashmap::DashMap;
 use dashmap::mapref::one::Ref;
+use dbuf_core::ast::parsed::located_name::LocatedName;
+use dbuf_core::ast::parsed::location::Offset;
 use tower_lsp::lsp_types::Url;
 
 use parsers::*;
@@ -27,7 +29,7 @@ pub use location::*;
 pub use string::*;
 
 /// String for `ParsedAst`
-pub type Str = LocString;
+pub type Str = LocatedName<String, Offset>;
 /// Location for `ParsedAst`
 pub type Loc = Location;
 /// Alias for `ElaboratedAst`

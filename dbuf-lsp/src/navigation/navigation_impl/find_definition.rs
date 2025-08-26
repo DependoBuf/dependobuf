@@ -3,8 +3,8 @@
 
 use tower_lsp::lsp_types::Range;
 
-use crate::core::ast_access::LocStringHelper;
-use crate::core::ast_access::LocationHelpers;
+use crate::core::ast_access::LocNameHelper;
+use crate::core::ast_access::LocationHelper;
 use crate::core::ast_access::Str;
 use crate::core::ast_visitor::VisitResult::*;
 use crate::core::ast_visitor::safe_skip::safe_skip;

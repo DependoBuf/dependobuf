@@ -5,7 +5,7 @@
 
 use tower_lsp::lsp_types::Range;
 
-use crate::core::ast_access::{LocStringHelper, LocationHelpers, Str};
+use crate::core::ast_access::{LocNameHelper, LocationHelper, Str};
 
 use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
 use crate::core::ast_visitor::*;

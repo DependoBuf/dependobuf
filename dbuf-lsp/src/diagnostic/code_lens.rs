@@ -1,6 +1,6 @@
 use tower_lsp::lsp_types::*;
 
-use crate::core::ast_access::{File, Loc, LocStringHelper, LocationHelpers, Str};
+use crate::core::ast_access::{File, Loc, LocNameHelper, LocationHelper, Str};
 use crate::core::ast_visitor::*;
 use crate::core::navigator::{Navigator, Symbol};
 

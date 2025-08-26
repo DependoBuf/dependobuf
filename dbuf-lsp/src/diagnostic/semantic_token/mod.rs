@@ -16,9 +16,9 @@ use tower_lsp::lsp_types::SemanticTokenModifier;
 use tower_lsp::lsp_types::SemanticTokenType;
 use tower_lsp::lsp_types::SemanticTokens;
 
-use crate::core::ast_access::LocationHelpers;
-use crate::core::ast_access::PositionHelpers;
-use crate::core::ast_access::{ElaboratedAst, ElaboratedHelper, File, Loc, LocStringHelper, Str};
+use crate::core::ast_access::LocationHelper;
+use crate::core::ast_access::PositionHelper;
+use crate::core::ast_access::{ElaboratedAst, ElaboratedHelper, File, Loc, LocNameHelper, Str};
 
 use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
 use crate::core::ast_visitor::*;

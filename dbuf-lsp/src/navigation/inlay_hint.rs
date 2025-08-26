@@ -2,7 +2,7 @@
 //!
 
 use crate::core::ast_access::{
-    ElaboratedAst, ElaboratedHelper, File, LocStringHelper, LocationHelpers, PositionHelpers, Str,
+    ElaboratedAst, ElaboratedHelper, File, LocNameHelper, LocationHelper, PositionHelper, Str,
 };
 use crate::core::ast_visitor::VisitResult::*;
 use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
