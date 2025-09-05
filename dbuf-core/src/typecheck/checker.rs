@@ -70,7 +70,7 @@ pub struct TypeChecker {
     /// Context for variable and alias bindings
     context: Box<Context>,
     /// String interner for efficient string handling
-    interner: StringInterner<String>,
+    _interner: StringInterner<String>,
     /// Built-in types (String, Int, Bool, etc.)
     builtins: BuiltinTypes,
     /// Simple typer for basic type operations
@@ -88,7 +88,7 @@ impl TypeChecker {
 
         Self {
             context: Box::new(Context::new()),
-            interner,
+            _interner: interner,
             builtins,
             simple_typer: SimpleTyper::default(),
             constructors: HashMap::new(),
@@ -101,7 +101,7 @@ impl TypeChecker {
     pub fn with_builtins(interner: StringInterner<String>, builtins: BuiltinTypes) -> Self {
         Self {
             context: Box::new(Context::new()),
-            interner,
+            _interner: interner,
             builtins,
             simple_typer: SimpleTyper::default(),
             constructors: HashMap::new(),
@@ -516,9 +516,6 @@ impl Context {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::parsed::location::Location;
-
-    type TestLocation = Location<usize>;
 
     #[test]
     fn test_type_checker_creation() {

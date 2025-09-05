@@ -9,11 +9,11 @@ use super::{
 };
 
 pub struct AdvancedTyper {
-    context: Box<Context>,
+    _context: Box<Context>,
     pub interner: StringInterner<String>,
-    builtins: BuiltinTypes,
-    constructors: HashMap<InternedString, Constructor<InternedString>>,
-    types: HashMap<InternedString, Type<InternedString>>,
+    _builtins: BuiltinTypes,
+    _constructors: HashMap<InternedString, Constructor<InternedString>>,
+    _types: HashMap<InternedString, Type<InternedString>>,
 }
 
 impl AdvancedTyper {}
