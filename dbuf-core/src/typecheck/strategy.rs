@@ -22,7 +22,7 @@ pub enum CheckerTask {
         type_name: InternedString,
         branch_index: usize,
     },
-    Constuctor(InternedString),
+    Constructor(InternedString),
 }
 
 #[derive(Debug)]
@@ -34,7 +34,7 @@ pub struct StrategyBuilder {
     graph: TopSortBuilder<CheckerTask>,
 }
 
-#[derive(Error)]
+#[derive(Error, Debug)]
 pub enum StrategyError<Str> {
     #[error(transparent)]
     SimpleTyperError(#[from] SimpleTyperError<Str>),
@@ -84,7 +84,7 @@ impl StrategyBuilder {
         let signature_target = CheckerTask::Signature(definition.name);
         match &definition.body {
             TypeDefinition::Message(constructor) => {
-                let constructor_target = CheckerTask::Constuctor(definition.name);
+                let constructor_target = CheckerTask::Constructor(definition.name);
                 self.graph.add_edge(&constructor_target, &signature_target);
                 self.analyze_constructor(constructor, constructor_target)?;
             }
@@ -109,7 +109,7 @@ impl StrategyBuilder {
                         )?;
                     }
                     for constructor in &branch.constructors {
-                        let constructor_target = CheckerTask::Constuctor(constructor.name);
+                        let constructor_target = CheckerTask::Constructor(constructor.name);
                         self.graph.add_edge(&constructor_target, &branch_target);
                         self.analyze_constructor(constructor, constructor_target)?;
                     }
@@ -138,7 +138,7 @@ impl StrategyBuilder {
                             .ok_or(StrategyError::IncorrectAccess)?;
                         let type_name = self.typer.get_field(lhs_type, *field)?;
                         self.graph
-                            .add_edge(&target, &CheckerTask::Constuctor(lhs_type));
+                            .add_edge(&target, &CheckerTask::Constructor(lhs_type));
                         Some(type_name)
                     }
                     _ => None,
@@ -158,7 +158,7 @@ impl StrategyBuilder {
             }
             ConstructorCall { name, fields } => {
                 self.graph
-                    .add_edge(&target, &CheckerTask::Constuctor(*name));
+                    .add_edge(&target, &CheckerTask::Constructor(*name));
                 for field in fields {
                     self.analyze_expression(&field, target)?;
                 }
@@ -180,7 +180,7 @@ impl StrategyBuilder {
         match &pattern.node {
             ConstructorCall { name, fields } => {
                 self.graph
-                    .add_edge(&target, &CheckerTask::Constuctor(*name));
+                    .add_edge(&target, &CheckerTask::Constructor(*name));
                 for field in fields {
                     let type_name = self.typer.get_field_from_constructor(*name, field.name)?;
                     self.analyze_pattern(&field, target, type_name)?;

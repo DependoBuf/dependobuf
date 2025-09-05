@@ -4,11 +4,11 @@ use crate::ast::elaborated::{TypeExpression, ValueExpression};
 
 use super::interning::InternedString;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Context {
     parent: Option<Box<Context>>,
-    variables: HashMap<InternedString, TypeExpression<InternedString>>,
-    aliases: HashMap<InternedString, ValueExpression<InternedString>>,
+    pub variables: HashMap<InternedString, TypeExpression<InternedString>>,
+    pub aliases: HashMap<InternedString, ValueExpression<InternedString>>,
 }
 
 impl Context {

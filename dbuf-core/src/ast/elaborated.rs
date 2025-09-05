@@ -12,7 +12,7 @@ pub struct Module<Str> {
 }
 
 /// Elaborated DependoBuf type.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Type<Str> {
     /// List of elaborated dependencies.
     pub dependencies: Context<Str>,
@@ -21,7 +21,7 @@ pub struct Type<Str> {
 }
 
 /// Constructor names of a type.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ConstructorNames<Str> {
     /// Message has a single constructor.
     OfMessage(Str),
@@ -30,7 +30,7 @@ pub enum ConstructorNames<Str> {
 }
 
 /// Elaborated DependoBuf constructor.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Constructor<Str> {
     /// List of elaborated implicit arguments' types.
     pub implicits: Context<Str>,
