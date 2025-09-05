@@ -12,10 +12,10 @@ pub mod strategy;
 // Re-export key types for convenience
 pub use advanced::AdvancedTyper;
 pub use builtins::BuiltinTypes;
-pub use checker::{TypeChecker, TypeCheckError};
+pub use checker::{TypeCheckError, TypeChecker};
 pub use context::Context;
 pub use graph::TopSortBuilder;
-pub use interning::{InternedString, StringInterner, ModuleInterner};
+pub use interning::{InternedString, ModuleInterner, StringInterner};
 pub use scope_checks::{ScopeChecker, ScopeCheckerError};
-pub use simple::{SimpleTyper, SimpleTyperError, SimpleType};
-pub use strategy::{StrategyBuilder, StrategyError, CheckerTask};
+pub use simple::{SimpleType, SimpleTyper, SimpleTyperError};
+pub use strategy::{CheckerTask, StrategyBuilder, StrategyError};
