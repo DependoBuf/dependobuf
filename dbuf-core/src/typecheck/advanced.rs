@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use dbuf_core::ast::elaborated::{Constructor, Type};
+use crate::ast::elaborated::{Constructor, Type};
 
-use crate::{
+use super::{
     builtins::BuiltinTypes,
     context::Context,
     interning::{InternedString, StringInterner},

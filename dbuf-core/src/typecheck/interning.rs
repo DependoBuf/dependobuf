@@ -1,9 +1,9 @@
 use std::borrow::Borrow;
 use std::{collections::HashMap, hash::Hash};
 
-use dbuf_core::ast::operators::{OpCall, UnaryOp};
-use dbuf_core::ast::parsed::Rec;
-use dbuf_core::ast::parsed::{
+use crate::ast::operators::{OpCall, UnaryOp};
+use crate::ast::parsed::Rec;
+use crate::ast::parsed::{
     definition::Definition, ConstructorBody, EnumBranch, Expression, ExpressionNode, Module,
     Pattern, PatternNode, TypeDeclaration, TypeDefinition,
 };
@@ -17,29 +17,48 @@ pub type InternedExpression<Loc> = Expression<Loc, InternedString>;
 pub type InternedConstructor<Loc> = ConstructorBody<Loc, InternedString>;
 pub type InternedPattern<Loc> = Pattern<Loc, InternedString>;
 
-#[derive(Default, Debug)]
-pub struct StringInterner<Str: Hash + Eq + Clone> {
+#[derive(Debug)]
+pub struct StringInterner<Str> {
     mapping: HashMap<Str, InternedString>,
     reverse_mapping: Vec<Str>,
-    unused_index: InternedString,
 }
 
-impl<Str: Default + Hash + Eq + Clone> StringInterner<Str> {
+impl<Str> Default for StringInterner<Str> {
+    fn default() -> Self {
+        Self {
+            mapping: Default::default(),
+            reverse_mapping: Default::default(),
+        }
+    }
+}
+
+impl<Str> StringInterner<Str>
+where
+    Str: Hash + Eq + Clone,
+{
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn add_string<T>(&mut self, string: &T) -> Result<InternedString, InternedString>
-    where
-        T: ToOwned<Owned = Str> + ?Sized,
-    {
-        let new_index = match self.mapping.insert(string.to_owned(), self.unused_index) {
-            None => self.unused_index,
-            Some(index) => return Err(index),
-        };
-        self.reverse_mapping.push(string.to_owned());
-        self.unused_index += 1;
-        Ok(new_index)
+    fn unused_index(&self) -> InternedString {
+        self.reverse_mapping.len() as InternedString
+    }
+
+    pub fn add_string(
+        &mut self,
+        string: &(impl ToOwned<Owned = Str> + ?Sized),
+    ) -> (bool, InternedString) {
+        match self.mapping.insert(string.to_owned(), self.unused_index()) {
+            None => {
+                let new_index = self.unused_index();
+                self.reverse_mapping.push(string.to_owned());
+                (true, new_index)
+            }
+            Some(existing_index) => {
+                self.mapping.insert(string.to_owned(), existing_index);
+                (false, existing_index)
+            }
+        }
     }
 
     pub fn get_index<T>(&self, string: &T) -> Option<InternedString>
@@ -56,7 +75,7 @@ impl<Str: Default + Hash + Eq + Clone> StringInterner<Str> {
         T: ToOwned<Owned = Str> + Hash + Eq + ?Sized,
     {
         match self.get_index(string) {
-            None => self.add_string(string).expect("Item not added yet"),
+            None => self.add_string(string).1,
             Some(index) => index,
         }
     }
@@ -66,12 +85,23 @@ impl<Str: Default + Hash + Eq + Clone> StringInterner<Str> {
     }
 }
 
-#[derive(Default, Debug)]
-pub struct ModuleInterner<Str: Hash + Eq + Clone> {
+#[derive(Debug)]
+pub struct ModuleInterner<Str> {
     pub interner: StringInterner<Str>,
 }
 
-impl<Str: Default + Hash + Eq + Clone> ModuleInterner<Str> {
+impl<Str> Default for ModuleInterner<Str> {
+    fn default() -> Self {
+        Self {
+            interner: Default::default(),
+        }
+    }
+}
+
+impl<Str> ModuleInterner<Str>
+where
+    Str: Hash + Eq + Clone,
+{
     pub fn new() -> Self {
         Default::default()
     }

@@ -1,12 +1,12 @@
 use std::collections::HashSet;
 
-use dbuf_core::ast::{
+use crate::ast::{
     operators::OpCall,
     parsed::{ExpressionNode, PatternNode, TypeDefinition},
 };
 use thiserror::Error;
 
-use crate::interning::{
+use super::interning::{
     InternedConstructor, InternedExpression, InternedModule, InternedPattern, InternedString,
     InternedTypeDeclaration,
 };

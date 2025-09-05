@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use dbuf_core::ast::elaborated::{TypeExpression, ValueExpression};
+use crate::ast::elaborated::{TypeExpression, ValueExpression};
 
-use crate::interning::InternedString;
+use super::interning::InternedString;
 
 #[derive(Default, Debug)]
 pub struct Context {

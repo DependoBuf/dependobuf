@@ -1,14 +1,14 @@
 use std::{collections::HashMap, hash::Hash};
 
 #[derive(Debug)]
-pub struct TopSortBuilder<T: Clone + Hash + Eq> {
+pub struct TopSortBuilder<T> {
     mapping: HashMap<T, u32>,
     reverse_mapping: Vec<T>,
     unused_index: u32,
     graph: internal::Graph,
 }
 
-impl<T: Clone + Hash + Eq> Default for TopSortBuilder<T> {
+impl<T> Default for TopSortBuilder<T> {
     fn default() -> Self {
         Self {
             mapping: Default::default(),
@@ -19,7 +19,10 @@ impl<T: Clone + Hash + Eq> Default for TopSortBuilder<T> {
     }
 }
 
-impl<T: Clone + Hash + Eq> TopSortBuilder<T> {
+impl<T> TopSortBuilder<T>
+where
+    T: Clone + Hash + Eq,
+{
     pub fn new() -> Self {
         Default::default()
     }

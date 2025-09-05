@@ -1,5 +1,5 @@
 [workspace]
-members = ["dbuf-core", "dbuf-gen", "dbuf-lsp", "runtime/dbuf-rust-runtime", "dbuf-typecheck"]
+members = ["dbuf-core", "dbuf-gen", "dbuf-lsp", "runtime/dbuf-rust-runtime"]
 resolver = "2"
 
 [workspace.package]

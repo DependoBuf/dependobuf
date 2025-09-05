@@ -1,4 +1,4 @@
-use crate::interning::{InternedString, StringInterner};
+use super::interning::{InternedString, StringInterner};
 
 #[allow(non_snake_case)]
 #[derive(Debug, Clone, Copy)]

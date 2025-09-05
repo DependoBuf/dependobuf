@@ -173,6 +173,7 @@ version = "0.1.0"
 dependencies = [
  "chumsky",
  "logos",
+ "thiserror",
  "unescape",
 ]
 
@@ -206,14 +207,6 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "dbuf-typecheck"
-version = "0.1.0"
-dependencies = [
- "dbuf-core",
- "thiserror",
 ]
 
 [[package]]

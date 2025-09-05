@@ -1,12 +1,12 @@
 use std::{collections::HashMap, iter::zip};
 
-use dbuf_core::ast::{
+use crate::ast::{
     operators::{OpCall, UnaryOp},
     parsed::{ExpressionNode, PatternNode, TypeDefinition},
 };
 use thiserror::Error;
 
-use crate::{
+use super::{
     graph::TopSortBuilder,
     interning::{
         InternedConstructor, InternedExpression, InternedModule, InternedPattern, InternedString,
@@ -51,7 +51,7 @@ impl StrategyBuilder {
         module: &InternedModule<Loc>,
     ) -> Result<Vec<CheckerTask>, InternedStrategyError> {
         let mut builder = Self {
-            typer: SimpleTyper::from_module(module),
+            typer: SimpleTyper::from_module(module)?,
             signature_scope: Default::default(),
             pattern_scope: Default::default(),
             constructor_scope: Default::default(),
@@ -72,7 +72,7 @@ impl StrategyBuilder {
             .iter()
             .map(|dependency| {
                 let ExpressionNode::FunCall { fun: type_name, .. } = dependency.node else {
-                    todo!()
+                    unreachable!()
                 };
                 self.signature_scope.insert(dependency.name, type_name);
                 (dependency.name, type_name)
@@ -201,7 +201,7 @@ impl StrategyBuilder {
     ) -> Result<(), InternedStrategyError> {
         for field in constructor {
             let ExpressionNode::FunCall { fun: type_name, .. } = field.node else {
-                todo!()
+                unreachable!()
             };
             self.constructor_scope.insert(field.name, type_name);
         }

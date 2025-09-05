@@ -1,8 +1,0 @@
-[package]
-name = "dbuf-typecheck"
-edition = "2021"
-version.workspace = true
-
-[dependencies]
-dbuf-core.workspace = true
-thiserror.workspace = true
