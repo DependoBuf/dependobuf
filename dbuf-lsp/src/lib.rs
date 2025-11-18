@@ -13,3 +13,5 @@ pub mod action;
 pub mod completion;
 pub mod diagnostic;
 pub mod navigation;
+
+pub mod backend;

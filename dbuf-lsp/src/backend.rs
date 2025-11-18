@@ -3,16 +3,16 @@ use tower_lsp::lsp_types::request::*;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
-use dbuf_lsp::WorkspaceAccess;
+use crate::WorkspaceAccess;
 
-use dbuf_lsp::handler_box::HandlerBox;
+use crate::handler_box::HandlerBox;
 
-use dbuf_lsp::action;
-use dbuf_lsp::completion;
-use dbuf_lsp::diagnostic;
-use dbuf_lsp::navigation;
+use crate::action;
+use crate::completion;
+use crate::diagnostic;
+use crate::navigation;
 
-struct Backend {
+pub struct Backend {
     client: Client,
     workspace: WorkspaceAccess,
     action_handler: HandlerBox<action::Handler>,
@@ -22,7 +22,8 @@ struct Backend {
 }
 
 impl Backend {
-    fn new(client: Client) -> Self {
+    #[must_use]
+    pub fn new(client: Client) -> Self {
         Self {
             client,
             workspace: WorkspaceAccess::new(),
@@ -235,8 +236,12 @@ impl LanguageServer for Backend {
     }
 }
 
+pub fn run() {
+    run_async();
+}
+
 #[tokio::main]
-async fn main() {
+async fn run_async() {
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
 

@@ -27,8 +27,8 @@ where
 type ParsedTypeDeclaration =
     Definition<Location<Offset>, Name, TypeDeclaration<Location<Offset>, Name>>;
 
-fn parser_type_declaration<'src, I>(
-) -> impl Parser<'src, I, ParsedTypeDeclaration, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
+fn parser_type_declaration<'src, I>()
+-> impl Parser<'src, I, ParsedTypeDeclaration, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan<Offset>>,
 {
@@ -38,8 +38,8 @@ where
     choice((message_def, enum_def)).labelled("type declaration")
 }
 
-fn parser_message_def<'src, I>(
-) -> impl Parser<'src, I, ParsedTypeDeclaration, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
+fn parser_message_def<'src, I>()
+-> impl Parser<'src, I, ParsedTypeDeclaration, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan<Offset>>,
 {
@@ -64,8 +64,8 @@ where
         .labelled("message definition")
 }
 
-fn parser_enum_def<'src, I>(
-) -> impl Parser<'src, I, ParsedTypeDeclaration, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
+fn parser_enum_def<'src, I>()
+-> impl Parser<'src, I, ParsedTypeDeclaration, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan<Offset>>,
 {
@@ -75,8 +75,8 @@ where
     choice((dependent, independent)).labelled("enum definition")
 }
 
-fn parser_dependent_enum_def<'src, I>(
-) -> impl Parser<'src, I, ParsedTypeDeclaration, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
+fn parser_dependent_enum_def<'src, I>()
+-> impl Parser<'src, I, ParsedTypeDeclaration, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan<Offset>>,
 {
@@ -106,8 +106,8 @@ where
         .labelled("dependent enum definition")
 }
 
-fn parser_independent_enum_def<'src, I>(
-) -> impl Parser<'src, I, ParsedTypeDeclaration, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
+fn parser_independent_enum_def<'src, I>()
+-> impl Parser<'src, I, ParsedTypeDeclaration, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan<Offset>>,
 {
@@ -181,9 +181,9 @@ where
 type ParsedConstructedBlock =
     Definitions<Location<Offset>, Name, ConstructorBody<Location<Offset>, Name>>;
 
-fn parser_constructors_block<'src, I>(
-) -> impl Parser<'src, I, ParsedConstructedBlock, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>>
-       + Clone
+fn parser_constructors_block<'src, I>()
+-> impl Parser<'src, I, ParsedConstructedBlock, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>>
++ Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan<Offset>>,
 {
@@ -225,8 +225,8 @@ where
 
 type ParsedTypedVariable = Definition<Location<Offset>, Name, Expression<Location<Offset>, Name>>;
 
-fn parser_typed_variable<'src, I>(
-) -> impl Parser<'src, I, ParsedTypedVariable, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
+fn parser_typed_variable<'src, I>()
+-> impl Parser<'src, I, ParsedTypedVariable, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan<Offset>>,
 {
@@ -439,11 +439,11 @@ where
 
 fn parser_type_expression_with_primary<'src, I>(
     primary: impl Parser<
-            'src,
-            I,
-            Expression<Location<Offset>, Name>,
-            extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>,
-        > + Clone,
+        'src,
+        I,
+        Expression<Location<Offset>, Name>,
+        extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>,
+    > + Clone,
 ) -> impl Parser<
     'src,
     I,
@@ -471,11 +471,11 @@ where
 
 fn parser_primary_with_expression<'src, I>(
     expr: impl Parser<
-            'src,
-            I,
-            Expression<Location<Offset>, Name>,
-            extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>,
-        > + Clone,
+        'src,
+        I,
+        Expression<Location<Offset>, Name>,
+        extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>,
+    > + Clone,
 ) -> impl Parser<
     'src,
     I,
@@ -575,8 +575,8 @@ where
         .labelled("var access")
 }
 
-fn parser_type_identifier<'src, I>(
-) -> impl Parser<'src, I, Name, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
+fn parser_type_identifier<'src, I>()
+-> impl Parser<'src, I, Name, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan<Offset>>,
 {
@@ -594,8 +594,8 @@ where
     .labelled("type identifier")
 }
 
-fn parser_constructor_identifier<'src, I>(
-) -> impl Parser<'src, I, Name, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
+fn parser_constructor_identifier<'src, I>()
+-> impl Parser<'src, I, Name, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan<Offset>>,
 {
@@ -613,8 +613,8 @@ where
     .labelled("constructor identifier")
 }
 
-fn parser_var_identifier<'src, I>(
-) -> impl Parser<'src, I, Name, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
+fn parser_var_identifier<'src, I>()
+-> impl Parser<'src, I, Name, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan<Offset>>,
 {
@@ -632,8 +632,8 @@ where
     .labelled("var identifier")
 }
 
-fn parser_literal<'src, I>(
-) -> impl Parser<'src, I, Literal, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
+fn parser_literal<'src, I>()
+-> impl Parser<'src, I, Literal, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan<Offset>>,
 {

@@ -69,7 +69,7 @@
 //! VarIdentifier = 'LC_IDENTIFIER_token'
 //! ```
 
-use chumsky::{error::Rich, input::*, span::SimpleSpan, Parser};
+use chumsky::{Parser, error::Rich, input::*, span::SimpleSpan};
 use lexer::Token;
 use logos::Logos;
 use parser_impl::create_parser;
@@ -86,8 +86,8 @@ pub mod lexer;
 pub mod located_iter;
 pub mod parser_impl;
 
-type ParsedModule = Module<Location<Offset>, LocatedName<String, Offset>>;
-type ParseError<'src> = Rich<'src, Token, SimpleSpan<Offset>>;
+pub type ParsedModule = Module<Location<Offset>, LocatedName<String, Offset>>;
+pub type ParseError<'src> = Rich<'src, Token, SimpleSpan<Offset>>;
 
 /// # Errors
 ///
