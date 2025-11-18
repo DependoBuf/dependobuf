@@ -12,7 +12,7 @@ use crate::completion;
 use crate::diagnostic;
 use crate::navigation;
 
-pub struct Backend {
+struct Backend {
     client: Client,
     workspace: WorkspaceAccess,
     action_handler: HandlerBox<action::Handler>,
@@ -23,7 +23,7 @@ pub struct Backend {
 
 impl Backend {
     #[must_use]
-    pub fn new(client: Client) -> Self {
+    fn new(client: Client) -> Self {
         Self {
             client,
             workspace: WorkspaceAccess::new(),
