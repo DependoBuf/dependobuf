@@ -15,7 +15,7 @@ fn get_type(te: &TypeExpression<String>) -> Symbol {
         dependencies: _,
     } = te;
     Symbol::Type {
-        type_name: name.to_string(),
+        type_name: name.clone(),
     }
 }
 
