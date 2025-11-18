@@ -1,8 +1,9 @@
 [workspace]
-members = ["dbuf-core", "dbuf-gen", "dbuf-lsp", "runtime/dbuf-rust-runtime"]
+members = ["dbuf", "dbuf-core", "dbuf-gen", "dbuf-lsp", "runtime/dbuf-rust-runtime"]
 resolver = "2"
 
 [workspace.package]
+edition = "2024"
 version = "0.1.0"
 
 [workspace.dependencies]

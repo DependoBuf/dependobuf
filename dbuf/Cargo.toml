@@ -1,12 +1,9 @@
 [package]
-name = "dbuf-core"
+name = "dbuf"
 edition.workspace = true
 version.workspace = true
 
 [dependencies]
-chumsky.workspace = true
-logos.workspace = true
-unescape.workspace = true
 
 [lints]
 workspace = true

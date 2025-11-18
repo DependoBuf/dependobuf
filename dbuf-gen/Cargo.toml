@@ -1,6 +1,6 @@
 [package]
 name = "dbuf-gen"
-edition = "2024"
+edition.workspace = true
 version.workspace = true
 
 [dependencies]

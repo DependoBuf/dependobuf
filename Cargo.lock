@@ -168,6 +168,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "dbuf"
+version = "0.1.0"
+
+[[package]]
 name = "dbuf-core"
 version = "0.1.0"
 dependencies = [
