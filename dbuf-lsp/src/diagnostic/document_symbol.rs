@@ -177,11 +177,14 @@ impl Builder<Constructor> {
         }
     }
 }
+
+#[derive(Default)]
 enum SymbolBuilder {
     EmptyBuilder(Builder<Empty>),
     MessageBuilder(Builder<Message>),
     EnumBuilder(Builder<Enum>),
     ConstructorBuilder(Builder<Constructor>),
+    #[default]
     Invalid,
 }
 
@@ -216,12 +219,6 @@ impl SymbolBuilder {
             extra: Empty {},
         }
         .into()
-    }
-}
-
-impl Default for SymbolBuilder {
-    fn default() -> Self {
-        Self::Invalid
     }
 }
 

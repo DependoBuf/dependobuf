@@ -1,0 +1,21 @@
+[package]
+name = "dbuf"
+edition.workspace = true
+version.workspace = true
+
+[features]
+lsp = ["dbuf-lsp"]
+
+[dependencies]
+# The dbuf-lsp crate cannot be included as a workspace dependency because it needs to be optional
+dbuf-lsp = { path = "../dbuf-lsp", optional = true}
+
+clap.workspace = true
+dbuf-core.workspace = true
+
+# Probably worth add features for each language
+dbuf-gen.workspace = true
+
+
+[lints]
+workspace = true
