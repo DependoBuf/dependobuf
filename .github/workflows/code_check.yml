@@ -2,53 +2,46 @@ name: Run code checks
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-Dwarnings"
+  RUST_TOOLCHAIN: "1.91.1"
 
 jobs:
   format:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: "${{ env.RUST_TOOLCHAIN }}"
+          components: "rustfmt"
 
-    - name: Run format check
-      run: cargo fmt --check
+      - name: Run format check
+        run: cargo fmt --check
 
   build:
     needs: format
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Cache target
-      uses: actions/cache@v4
-      env:
-        cache-name: cache-rust-crates
-      with:
-        path: | 
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
+      - uses: actions/checkout@v4
 
-    - name: Build packages
-      run: cargo build --verbose --all-targets --all-features
-      
-    - name: Run clippy
-      run: cargo clippy --verbose --all-targets --all-features
-      
-    - name: Run tests
-      run: cargo test --verbose
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: "${{ env.RUST_TOOLCHAIN }}"
+          components: "clippy"
+
+      - name: Build packages
+        run: cargo build --verbose --all-targets --all-features
+
+      - name: Run clippy
+        run: cargo clippy --verbose --all-targets --all-features
+
+      - name: Run tests
+        run: cargo test --verbose
