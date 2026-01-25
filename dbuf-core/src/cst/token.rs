@@ -49,9 +49,9 @@ pub enum LexingErrorKind {
     InvalidFloat,
     /// String literal is incorrect.
     InvalidStringLiteral,
-    /// LCIdentifier is incorrect. May contain only [a-zA-Z0-9].
+    /// `LCIdentifier` is incorrect. May contain only [a-zA-Z0-9].
     InvalidLCIdentifier,
-    /// UCIdentifier is incorrect. May contain only [a-zA-Z0-9].
+    /// `UCIdentifier` is incorrect. May contain only [a-zA-Z0-9].
     InvalidUCIdentifier,
     /// Unknown token.
     UnknownToken,
