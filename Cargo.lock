@@ -279,6 +279,7 @@ version = "0.1.0"
 dependencies = [
  "chumsky",
  "logos",
+ "regex",
  "strum",
  "strum_macros",
  "thiserror",
@@ -833,6 +834,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "928fca9cf2aa042393a8325b9ead81d2f0df4cb12e1e24cef072922ccd99c5af"
 dependencies = [
  "bitflags 2.9.0",
+]
+
+[[package]]
+name = "regex"
+version = "1.12.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "843bc0191f75f3e22651ae5f1e72939ab2f72a4bc30fa80a066bd66edefc24d4"
+dependencies = [
+ "aho-corasick",
+ "memchr",
+ "regex-automata 0.4.13",
+ "regex-syntax 0.8.5",
 ]
 
 [[package]]

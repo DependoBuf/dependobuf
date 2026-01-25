@@ -1,4 +1,5 @@
 use logos::{Lexer, Logos, Skip};
+use regex::Regex;
 use unescape::unescape;
 
 use strum::EnumMessage;
@@ -11,6 +12,7 @@ use std::{
         IntErrorKind::{NegOverflow, PosOverflow},
         ParseIntError,
     },
+    sync::LazyLock,
 };
 
 use crate::ast::parsed::location::Offset;
@@ -47,6 +49,10 @@ pub enum LexingErrorKind {
     InvalidFloat,
     /// String literal is incorrect.
     InvalidStringLiteral,
+    /// LCIdentifier is incorrect. May contain only [a-zA-Z0-9].
+    InvalidLCIdentifier,
+    /// UCIdentifier is incorrect. May contain only [a-zA-Z0-9].
+    InvalidUCIdentifier,
     /// Unknown token.
     UnknownToken,
 }
@@ -142,18 +148,21 @@ pub enum Token {
     #[token("true", |_| true)]
     #[token("false", |_| false)]
     BoolLiteral(bool),
-    #[regex(r"[0-9]+", parse_int)]
+    // Number without u or .
+    #[regex(r"[0-9]([a-tv-zA-Z0-9])*", parse_int)]
     IntLiteral(i64),
-    #[regex(r"[0-9]+u", parse_uint)]
+    // Number without u or ., followed by u, followed by any
+    #[regex(r"[0-9]([a-tv-zA-Z0-9])*u[a-zA-Z0-9.]*", parse_uint)]
     UintLiteral(u64),
-    #[regex(r"[0-9]+\.[0-9]+", parse_float)]
+    // Number without u or ., followed by ., followed by any
+    #[regex(r"[0-9]([a-tv-zA-Z0-9])*\.[a-zA-Z0-9.]*", parse_float)]
     FloatLiteral(f64),
     #[regex(r#""([^"\\]|\\.)*""#, parse_string_literal)]
     StringLiteral(String),
 
-    #[regex(r"[A-Z][A-Za-z0-9_]*", |lex| lex.slice().parse())]
+    #[regex(r"[A-Z]\w*", parse_uc_identifier)]
     UCIdentifier(String),
-    #[regex(r"[a-z][A-Za-z0-9_]*", |lex| lex.slice().parse())]
+    #[regex(r"[a-z]\w*", parse_lc_identifier)]
     LCIdentifier(String),
 
     #[token("=>")]
@@ -193,12 +202,13 @@ pub enum Token {
     #[regex(r"\n", newline_callback)]
     Newline,
 
-    #[regex(r"//.*?\n", line_comment_callback)]
+    #[regex(
+        r"//[^\n]*(\n|$)",
+        line_comment_callback,
+        priority = 0,
+        allow_greedy = true
+    )]
     LineComment(String),
-    /// FIXME.
-    ///
-    /// When Issue <https://github.com/maciejhirsz/logos/issues/532> is resolved
-    /// can be simplified to "(?m)\/\*.*?\*\/".
     #[regex(r"/\*([^*]|\*[^/])*\*/", block_comment_callback)]
     BlockComment(String),
 
@@ -242,7 +252,7 @@ fn block_comment_callback(lex: &mut Lexer<'_, Token>) -> Result<String, LexingEr
 /// Errors
 ///   * `LexingErrorKind::IntegerOverflow` when integer can't be represented
 ///     as i64.
-///   * `LexingErrorKind::InvalidInteger` in other cases (probably never).
+///   * `LexingErrorKind::InvalidInteger` when text is not integer.
 fn parse_int(lex: &mut Lexer<'_, Token>) -> Result<i64, LexingError> {
     lex.slice().parse().map_err(|err: ParseIntError| {
         let kind = match err.kind() {
@@ -258,7 +268,7 @@ fn parse_int(lex: &mut Lexer<'_, Token>) -> Result<i64, LexingError> {
 /// Errors
 ///   * `LexingErrorKind::IntegerOverflow` when integer can't be represented
 ///     as i64.
-///   * `LexingErrorKind::InvalidInteger` in other cases (probably never).
+///   * `LexingErrorKind::InvalidInteger` when text is not integer.
 fn parse_uint(lex: &mut Lexer<'_, Token>) -> Result<u64, LexingError> {
     let s = lex.slice();
 
@@ -274,7 +284,7 @@ fn parse_uint(lex: &mut Lexer<'_, Token>) -> Result<u64, LexingError> {
 /// Parser for `FloatLiteral` token. Parses f64 and return `Result`.
 ///
 /// Errors
-///   * `LexingErrorKind::InvalidFloat` when float cannot be parsed. (probably never).
+///   * `LexingErrorKind::InvalidFloat` text is not float.
 fn parse_float(lex: &mut Lexer<'_, Token>) -> Result<f64, LexingError> {
     lex.slice()
         .parse()
@@ -293,4 +303,167 @@ fn parse_string_literal(lex: &mut Lexer<'_, Token>) -> Result<String, LexingErro
         lex,
         LexingErrorKind::InvalidStringLiteral,
     ))
+}
+
+/// Parser for `UCIdentifier` token. Parses string and return `Result`.
+///
+/// Errors
+///     * `LexingErrorKind::InvalidUCIdentifier` when uc identifier contains bad characters.
+fn parse_uc_identifier(lex: &mut Lexer<'_, Token>) -> Result<String, LexingError> {
+    static RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new("^[A-Z][a-zA-Z0-9]*$").expect("correct regular expression"));
+
+    if RE.is_match(lex.slice()) {
+        Ok(lex.slice().into())
+    } else {
+        Err(LexingError::from_lexer(
+            lex,
+            LexingErrorKind::InvalidUCIdentifier,
+        ))
+    }
+}
+
+/// Parser for `LCIdentifier` token. Parses string and return `Result`.
+///
+/// Errors
+///     * `LexingErrorKind::InvalidLCIdentifier` when lc identifier contains bad characters.
+fn parse_lc_identifier(lex: &mut Lexer<'_, Token>) -> Result<String, LexingError> {
+    static RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new("^[a-z][a-zA-Z0-9]*$").expect("correct regular expression"));
+
+    if RE.is_match(lex.slice()) {
+        Ok(lex.slice().into())
+    } else {
+        Err(LexingError::from_lexer(
+            lex,
+            LexingErrorKind::InvalidLCIdentifier,
+        ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_same(input: &str, expect: &[Option<Token>]) {
+        let tokens: Vec<_> = Token::lexer(input).collect();
+        if tokens.len() != expect.len() {
+            panic!(
+                "[input='{input}'] Expected {} tokens in answer, got {}",
+                expect.len(),
+                tokens.len()
+            );
+        }
+        assert!(tokens.len() == expect.len());
+
+        let lex = Token::lexer(input);
+        for (ans, expect) in lex.into_iter().zip(expect.into_iter()) {
+            match (ans, expect) {
+                (Ok(t), None) => {
+                    panic!("[input='{input}'] Expected error token, got '{t:?}'");
+                }
+                (Ok(t1), Some(t2)) => {
+                    if t1 != *t2 {
+                        panic!("[input='{input}'] Expected token '{t2:?}', got token '{t1:?}'")
+                    }
+                    assert!(t1 == *t2);
+                }
+                (Err(_), None) => {}
+                (Err(err), Some(t)) => {
+                    panic!("[input='{input}'] Expected token '{t:?}', got error: '{err}'");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_number_correct() {
+        test_same("123", &[Some(Token::IntLiteral(123))]);
+        test_same("123u", &[Some(Token::UintLiteral(123))]);
+        test_same("123.32", &[Some(Token::FloatLiteral(123.32))]);
+
+        test_same(
+            "123+32",
+            &[
+                Some(Token::IntLiteral(123)),
+                Some(Token::Plus),
+                Some(Token::IntLiteral(32)),
+            ],
+        );
+        test_same(
+            "123u+32u",
+            &[
+                Some(Token::UintLiteral(123)),
+                Some(Token::Plus),
+                Some(Token::UintLiteral(32)),
+            ],
+        );
+        test_same(
+            "123.32+32.32",
+            &[
+                Some(Token::FloatLiteral(123.32)),
+                Some(Token::Plus),
+                Some(Token::FloatLiteral(32.32)),
+            ],
+        );
+    }
+
+    #[test]
+    fn test_string_correct() {
+        test_same("\"aba\"", &[Some(Token::StringLiteral("aba".into()))]);
+        test_same(
+            "\"\\\"aba\\\"\"",
+            &[Some(Token::StringLiteral("\"aba\"".into()))],
+        );
+        test_same(
+            "\"aba\\naba\"",
+            &[Some(Token::StringLiteral("aba\naba".into()))],
+        );
+    }
+
+    #[test]
+    fn test_comment_correct() {
+        test_same(
+            "// comment line",
+            &[Some(Token::LineComment("// comment line".into()))],
+        );
+        test_same(
+            "// comment line\n// other comment",
+            &[
+                Some(Token::LineComment("// comment line\n".into())),
+                Some(Token::LineComment("// other comment".into())),
+            ],
+        );
+        test_same("// / // a", &[Some(Token::LineComment("// / // a".into()))]);
+
+        test_same(
+            "a /* comment */ b",
+            &[
+                Some(Token::LCIdentifier("a".into())),
+                Some(Token::BlockComment("/* comment */".into())),
+                Some(Token::LCIdentifier("b".into())),
+            ],
+        );
+        test_same(
+            "/* comment */",
+            &[Some(Token::BlockComment("/* comment */".into()))],
+        );
+        test_same(
+            "/* comment */\n",
+            &[Some(Token::BlockComment("/* comment */".into()))],
+        );
+        test_same(
+            "/* * / */",
+            &[Some(Token::BlockComment("/* * / */".into()))],
+        );
+        test_same(
+            "/*\n * multi line\n * comment\n*/ /* other */",
+            &[
+                Some(Token::BlockComment(
+                    "/*\n * multi line\n * comment\n*/".into(),
+                )),
+                Some(Token::BlockComment("/* other */".into())),
+            ],
+        );
+    }
 }
