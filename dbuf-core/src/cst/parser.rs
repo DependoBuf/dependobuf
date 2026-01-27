@@ -1,13 +1,12 @@
+use chumsky::extra::Err;
 use chumsky::input::ValueInput;
 use chumsky::prelude::*;
-use chumsky::extra::Err;
-
 
 use super::Location;
 use super::{Child, Token, Tree, TreeKind};
 
-use super::parser_utils::{MapToken, MapTree};
 use super::parser_error::ParsingError;
+use super::parser_utils::{MapToken, MapTree};
 
 pub fn file_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
 where

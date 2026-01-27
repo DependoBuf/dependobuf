@@ -3,10 +3,9 @@ mod lexer;
 mod located_token;
 mod location;
 
+mod parser;
 mod parser_error;
 mod parser_utils;
-mod parser;
-
 
 use std::fs;
 
@@ -16,9 +15,9 @@ use chumsky::{
 };
 use logos::Logos;
 
+use lexer::Token;
 use located_token::LocatedLexer;
 use location::Location;
-use lexer::Token;
 
 use crate::ast::parsed::location::Offset;
 

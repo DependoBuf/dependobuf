@@ -47,8 +47,7 @@ impl Span for Location {
         Self::new(range.start, range.end).expect("correct increasing range")
     }
 
-    fn context(&self) -> Self::Context {
-    }
+    fn context(&self) -> Self::Context {}
 
     fn start(&self) -> Self::Offset {
         self.start

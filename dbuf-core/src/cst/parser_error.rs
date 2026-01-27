@@ -1,4 +1,4 @@
-//! Module exports `ParsingError` struct that 
+//! Module exports `ParsingError` struct that
 //! is used by parser.
 use chumsky::DefaultExpected;
 use chumsky::error::Error;
@@ -65,7 +65,7 @@ where
         });
         ParsingError {
             found,
-            expected: expected.into_iter().map(|label| label.into()).collect(),
+            expected: expected.into_iter().map(Into::into).collect(),
             at: span,
         }
     }
