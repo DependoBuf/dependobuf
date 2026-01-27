@@ -1,10 +1,14 @@
+//! Module containing `Lexer`.
+//!
+//! Exports:
+//!   * `LexingError` and its dependencies. Structure containing lexer-phase errors
+//!   * `Token` enum for tokens in dbuf files, that implements:
+//!     * `Lexer`, so `Token::lexer(&src)` can be used.
+//!     * `Locatable` for `Lexer` so `lexer.location()` can be used.
+//!
 use logos::{Lexer, Logos, Skip};
 use regex::Regex;
 use unescape::unescape;
-
-use strum::EnumMessage;
-use strum_macros::EnumMessage;
-use thiserror::Error;
 
 use std::{
     convert::Infallible,
@@ -14,8 +18,11 @@ use std::{
     },
     sync::LazyLock,
 };
+use strum::EnumMessage;
+use strum_macros::EnumMessage;
+use thiserror::Error;
 
-use crate::ast::parsed::location::Offset;
+use super::location::{Locatable, Location, Offset};
 
 /// Common lexing error data.
 #[derive(Debug, Clone, PartialEq)]
@@ -108,12 +115,21 @@ impl Default for LexingError {
 }
 
 /// Extra data for lexer.
-#[derive(Default)]
+///
+/// API
+///   * Lexer should call `new_line_at` on every `\n` character in input.
+///   * Lexer should call `token_at` on every token in input.
+#[derive(Default, Clone)]
 pub struct LexingExtra {
     /// Current line number.
     line_num: usize,
     /// Start of current line.
     line_start: usize,
+    /// `Offset` of current token start.
+    ///
+    /// Need due impossibility to calculate that on
+    /// multiline tokens.
+    token_start: Offset,
 }
 
 impl LexingExtra {
@@ -134,19 +150,27 @@ impl LexingExtra {
         self.line_num += 1;
         self.line_start = position + 1;
     }
+
+    /// Token start handler. Saves starting position of token.
+    ///
+    /// `position` is a starting position of current token.
+    fn token_at(&mut self, position: usize) {
+        self.token_start = self.get_offset(position);
+    }
 }
 
 #[derive(Logos, Debug, PartialEq, Clone)]
+#[logos(skip r"[ \t\r\f]+")]
 #[logos(error(LexingError, LexingError::unknown_token))]
 #[logos(extras = LexingExtra)]
 pub enum Token {
-    #[token("message")]
+    #[token("message", at_callback)]
     Message,
-    #[token("enum")]
+    #[token("enum", at_callback)]
     Enum,
 
-    #[token("true", |_| true)]
-    #[token("false", |_| false)]
+    #[token("true", |lex| at_callback_with(lex, true))]
+    #[token("false", |lex| at_callback_with(lex, false))]
     BoolLiteral(bool),
     // Number without u or .
     #[regex(r"[0-9]([a-tv-zA-Z0-9])*", parse_int)]
@@ -165,70 +189,85 @@ pub enum Token {
     #[regex(r"[a-z]\w*", parse_lc_identifier)]
     LCIdentifier(String),
 
-    #[token("=>")]
+    #[token("=>", at_callback)]
     Arrow,
-    #[token(":")]
+    #[token(":", at_callback)]
     Colon,
-    #[token(";")]
+    #[token(";", at_callback)]
     Semicolon,
-    #[token(",")]
+    #[token(",", at_callback)]
     Comma,
-    #[token(".")]
+    #[token(".", at_callback)]
     Dot,
-    #[token("(")]
+    #[token("(", at_callback)]
     LParen,
-    #[token(")")]
+    #[token(")", at_callback)]
     RParen,
-    #[token("{")]
+    #[token("{", at_callback)]
     LBrace,
-    #[token("}")]
+    #[token("}", at_callback)]
     RBrace,
 
-    #[token("+")]
+    #[token("+", at_callback)]
     Plus,
-    #[token("-")]
+    #[token("-", at_callback)]
     Minus,
-    #[token("*")]
+    #[token("*", at_callback)]
     Star,
-    #[token("/")]
+    #[token("/", at_callback)]
     Slash,
-    #[token("&")]
+    #[token("&", at_callback)]
     Amp,
-    #[token("|")]
+    #[token("|", at_callback)]
     Pipe,
-    #[token("!")]
+    #[token("!", at_callback)]
     Bang,
 
     #[regex(r"\n", newline_callback)]
     Newline,
-
-    #[regex(
-        r"//[^\n]*(\n|$)",
-        line_comment_callback,
-        priority = 0,
-        allow_greedy = true
-    )]
+    #[regex(r"//[^\n]*", line_comment_callback, allow_greedy = true)]
     LineComment(String),
     #[regex(r"/\*([^*]|\*[^/])*\*/", block_comment_callback)]
     BlockComment(String),
 
-    #[regex(r"[ \t\r\f]+", logos::skip)]
-    Err,
+    Err(LexingError),
+}
+
+impl Locatable for Lexer<'_, Token> {
+    fn location(&self) -> Location {
+        Location::new(
+            self.extras.token_start,
+            self.extras.get_offset(self.span().end),
+        )
+        .expect("correct incremental offset behavior")
+    }
+}
+
+/// Callback that sets start of token.
+fn at_callback(lex: &mut Lexer<'_, Token>) {
+    lex.extras.token_at(lex.span().start);
+}
+
+/// Callback that sets start of token and returns value
+fn at_callback_with<T>(lex: &mut Lexer<'_, Token>, value: T) -> T {
+    lex.extras.token_at(lex.span().start);
+    value
 }
 
 /// Callback for `NewLine` token.
 ///
 /// Just update extra.
 fn newline_callback(lex: &mut Lexer<'_, Token>) -> Skip {
+    at_callback(lex);
     lex.extras.new_line_at(lex.span().start);
     Skip
 }
 
 /// Callback for `LineComment` token.
 ///
-/// Updates extra and parses content of comment (currently just saves it to `String`).
+/// Parses content of comment (currently just saves it to `String`).
 fn line_comment_callback(lex: &mut Lexer<'_, Token>) -> Result<String, LexingError> {
-    lex.extras.new_line_at(lex.span().start);
+    at_callback(lex);
     lex.slice().parse().map_err(Into::into)
 }
 
@@ -240,6 +279,7 @@ fn line_comment_callback(lex: &mut Lexer<'_, Token>) -> Result<String, LexingErr
 ///   * `lex.span().start` is a start of token slice.
 ///   * `lex.span().start + pos` is a start of `\n` symbol.
 fn block_comment_callback(lex: &mut Lexer<'_, Token>) -> Result<String, LexingError> {
+    at_callback(lex);
     let s = lex.slice();
     s.match_indices('\n')
         .for_each(|(pos, _)| lex.extras.new_line_at(lex.span().start + pos));
@@ -254,6 +294,7 @@ fn block_comment_callback(lex: &mut Lexer<'_, Token>) -> Result<String, LexingEr
 ///     as i64.
 ///   * `LexingErrorKind::InvalidInteger` when text is not integer.
 fn parse_int(lex: &mut Lexer<'_, Token>) -> Result<i64, LexingError> {
+    at_callback(lex);
     lex.slice().parse().map_err(|err: ParseIntError| {
         let kind = match err.kind() {
             PosOverflow | NegOverflow => LexingErrorKind::IntegerOverflow,
@@ -270,6 +311,7 @@ fn parse_int(lex: &mut Lexer<'_, Token>) -> Result<i64, LexingError> {
 ///     as i64.
 ///   * `LexingErrorKind::InvalidInteger` when text is not integer.
 fn parse_uint(lex: &mut Lexer<'_, Token>) -> Result<u64, LexingError> {
+    at_callback(lex);
     let s = lex.slice();
 
     s[..s.len() - 1].parse().map_err(|err: ParseIntError| {
@@ -286,6 +328,7 @@ fn parse_uint(lex: &mut Lexer<'_, Token>) -> Result<u64, LexingError> {
 /// Errors
 ///   * `LexingErrorKind::InvalidFloat` text is not float.
 fn parse_float(lex: &mut Lexer<'_, Token>) -> Result<f64, LexingError> {
+    at_callback(lex);
     lex.slice()
         .parse()
         .map_err(|_| LexingError::from_lexer(lex, LexingErrorKind::InvalidFloat))
@@ -297,6 +340,7 @@ fn parse_float(lex: &mut Lexer<'_, Token>) -> Result<f64, LexingError> {
 ///   * `LexingErrorKind::InvalidStringLiteral` when literal contains bad escape symbols
 ///     (such a `\a`, which is heavily outdated).
 fn parse_string_literal(lex: &mut Lexer<'_, Token>) -> Result<String, LexingError> {
+    at_callback(lex);
     let s = lex.slice();
     let trimmed = &s[1..s.len() - 1];
     unescape(trimmed).ok_or(LexingError::from_lexer(
@@ -308,11 +352,12 @@ fn parse_string_literal(lex: &mut Lexer<'_, Token>) -> Result<String, LexingErro
 /// Parser for `UCIdentifier` token. Parses string and return `Result`.
 ///
 /// Errors
-///     * `LexingErrorKind::InvalidUCIdentifier` when uc identifier contains bad characters.
+///   * `LexingErrorKind::InvalidUCIdentifier` when uc identifier contains bad characters.
 fn parse_uc_identifier(lex: &mut Lexer<'_, Token>) -> Result<String, LexingError> {
     static RE: LazyLock<Regex> =
         LazyLock::new(|| Regex::new("^[A-Z][a-zA-Z0-9]*$").expect("correct regular expression"));
 
+    at_callback(lex);
     if RE.is_match(lex.slice()) {
         Ok(lex.slice().into())
     } else {
@@ -326,11 +371,12 @@ fn parse_uc_identifier(lex: &mut Lexer<'_, Token>) -> Result<String, LexingError
 /// Parser for `LCIdentifier` token. Parses string and return `Result`.
 ///
 /// Errors
-///     * `LexingErrorKind::InvalidLCIdentifier` when lc identifier contains bad characters.
+///   * `LexingErrorKind::InvalidLCIdentifier` when lc identifier contains bad characters.
 fn parse_lc_identifier(lex: &mut Lexer<'_, Token>) -> Result<String, LexingError> {
     static RE: LazyLock<Regex> =
         LazyLock::new(|| Regex::new("^[a-z][a-zA-Z0-9]*$").expect("correct regular expression"));
 
+    at_callback(lex);
     if RE.is_match(lex.slice()) {
         Ok(lex.slice().into())
     } else {
@@ -430,7 +476,7 @@ mod tests {
         test_same(
             "// comment line\n// other comment",
             &[
-                Some(Token::LineComment("// comment line\n".into())),
+                Some(Token::LineComment("// comment line".into())),
                 Some(Token::LineComment("// other comment".into())),
             ],
         );
