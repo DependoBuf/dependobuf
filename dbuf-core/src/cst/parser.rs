@@ -94,6 +94,7 @@ where
 }
 
 /// Parses var identifier (`LCIdentifier`)
+#[allow(dead_code)]
 fn parse_var_identifier<'src, I>() -> impl Parser<'src, I, Child, Err<ParsingError>> + Clone
 where
     I: ValueInput<'src, Span = Location, Token = Token>,

@@ -66,7 +66,7 @@ pub enum LexingErrorKind {
 
 /// General lexing errors structure.
 #[derive(Debug, Clone, PartialEq, Error)]
-#[error("[ln {}, ch {}]: Token '{}' raised error: {}", 
+#[error("[ln {}, ch {}]: Token '{}' raised error: {}",
     {data.at.lines}, {data.at.columns}, {&data.current},
     {kind.get_documentation().expect("every enum variant has documentation")})]
 pub struct LexingError {

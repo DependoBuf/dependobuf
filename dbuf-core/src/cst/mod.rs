@@ -30,6 +30,7 @@ pub enum TreeKind {
     Field,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct Tree {
     kind: TreeKind,

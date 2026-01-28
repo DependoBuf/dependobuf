@@ -43,6 +43,7 @@ impl From<&'static str> for ExpectedPattern {
 /// Parsing error, that implements `LabelError`
 /// and `Error` required by `chumsky`.
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub struct ParsingError {
     found: Option<Token>,
     expected: Vec<ExpectedPattern>,
