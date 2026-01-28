@@ -393,26 +393,25 @@ mod tests {
 
     fn test_same(input: &str, expect: &[Option<Token>]) {
         let tokens: Vec<_> = Token::lexer(input).collect();
-        if tokens.len() != expect.len() {
-            panic!(
-                "[input='{input}'] Expected {} tokens in answer, got {}",
-                expect.len(),
-                tokens.len()
-            );
-        }
-        assert!(tokens.len() == expect.len());
+
+        assert!(
+            tokens.len() == expect.len(),
+            "[input='{input}'] Expected {} tokens in answer, got {}",
+            expect.len(),
+            tokens.len()
+        );
 
         let lex = Token::lexer(input);
-        for (ans, expect) in lex.into_iter().zip(expect.into_iter()) {
+        for (ans, expect) in lex.into_iter().zip(expect.iter()) {
             match (ans, expect) {
                 (Ok(t), None) => {
                     panic!("[input='{input}'] Expected error token, got '{t:?}'");
                 }
                 (Ok(t1), Some(t2)) => {
-                    if t1 != *t2 {
-                        panic!("[input='{input}'] Expected token '{t2:?}', got token '{t1:?}'")
-                    }
-                    assert!(t1 == *t2);
+                    assert!(
+                        t1 == *t2,
+                        "[input='{input}'] Expected token '{t2:?}', got token '{t1:?}'"
+                    );
                 }
                 (Err(_), None) => {}
                 (Err(err), Some(t)) => {
