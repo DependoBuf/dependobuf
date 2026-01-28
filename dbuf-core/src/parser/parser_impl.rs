@@ -43,7 +43,7 @@ fn parser_message_def<'src, I>()
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan<Offset>>,
 {
-    let dependencies = parser_depencies(0);
+    let dependencies = parser_dependencies(0);
     let constructor_body = parser_constructor_body();
 
     just(Token::Message)
@@ -87,7 +87,7 @@ where
         .collect::<Vec<_>>()
         .delimited_by(just(Token::LBrace), just(Token::RBrace));
 
-    let dependencies = parser_depencies(1);
+    let dependencies = parser_dependencies(1);
     just(Token::Enum)
         .ignore_then(parser_type_identifier())
         .then(dependencies)
@@ -135,7 +135,7 @@ where
 type ParserDependencies =
     Definitions<Location<Offset>, Name, TypeExpression<Location<Offset>, Name>>;
 
-fn parser_depencies<'src, I>(
+fn parser_dependencies<'src, I>(
     at_least: usize,
 ) -> impl Parser<'src, I, ParserDependencies, extra::Err<Rich<'src, Token, SimpleSpan<Offset>>>> + Clone
 where
@@ -431,7 +431,7 @@ where
                     }
                 }),
             ))
-            .labelled("opearator expression");
+            .labelled("operator expression");
 
         choice((type_expr, op_expr))
     })

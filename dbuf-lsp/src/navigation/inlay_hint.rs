@@ -64,7 +64,7 @@ impl InlayVisitor<'_> {
         let type_name = self.get_type_of_field(name);
 
         let mut pos = name.get_location().end();
-        pos.columns += 1; // ':' character 
+        pos.columns += 1; // ':' character
 
         self.ans.push(InlayHint {
             position: pos.to_lsp(),
