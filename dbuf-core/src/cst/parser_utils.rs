@@ -38,7 +38,7 @@ where
 
 /// Trait implemented for every `Child` type parser.
 ///
-/// Contains method that convert output to `Child::Tree`.
+/// Contains method that convert output to `Tree`.
 ///
 /// Generic parameters:
 ///   * `'src` - lifetime of src.
@@ -52,7 +52,7 @@ where
 {
     /// From parser with `Vec<Child>` like output generate parser
     /// with output `Child::Tree`.
-    fn map_tree(self, kind: TreeKind) -> impl Parser<'src, I, Child, E> + Clone;
+    fn map_tree(self, kind: TreeKind) -> impl Parser<'src, I, Tree, E> + Clone;
 }
 
 impl<'src, I, O, E, P> MapTree<'src, I, O, E> for P
@@ -62,18 +62,45 @@ where
     P: Parser<'src, I, O, E> + Clone,
     O: ChildFlatten,
 {
-    fn map_tree(self, kind: TreeKind) -> impl Parser<'src, I, Child, E> + Clone {
-        self.map_with(move |ch, extra| {
-            Child::Tree(Tree {
-                kind: kind.clone(),
-                location: extra.span(),
-                children: ch.flatten(),
-            })
+    fn map_tree(self, kind: TreeKind) -> impl Parser<'src, I, Tree, E> + Clone {
+        self.map_with(move |ch, extra| Tree {
+            kind: kind.clone(),
+            location: extra.span(),
+            children: ch.flatten(),
         })
     }
 }
 
-/// Trait that flattens `T = Child, Option<Child>, Vec<Child>, (T, T)` to
+/// Trait implemented for every `Tree` type parser.
+///
+/// Contains method that convert output to `Child::Tree`.
+///
+/// Generic parameters:
+///   * `'src` - lifetime of src.
+///   * `I` - Input for parser.
+///   * `E` - Extra for parser.
+pub trait MapChild<'src, I, E>
+where
+    I: Input<'src>,
+    E: ParserExtra<'src, I>,
+{
+    /// From parser with `Vec<Child>` like output generate parser
+    /// with output `Child::Tree`.
+    fn map_child(self) -> impl Parser<'src, I, Child, E> + Clone;
+}
+
+impl<'src, I, E, P> MapChild<'src, I, E> for P
+where
+    I: Input<'src, Span = Location, Token = Token>,
+    E: ParserExtra<'src, I>,
+    P: Parser<'src, I, Tree, E> + Clone,
+{
+    fn map_child(self) -> impl Parser<'src, I, Child, E> + Clone {
+        self.map(Child::Tree)
+    }
+}
+
+/// Trait that flattens `T = Child, Tree, Option<T>, Vec<T>, (T, T)` to
 /// `Vec<Child>`.
 trait ChildFlatten {
     /// Flattens complex `Child` struct to simple `Vec<Child>`.
@@ -86,15 +113,31 @@ impl ChildFlatten for Child {
     }
 }
 
-impl ChildFlatten for Option<Child> {
+impl ChildFlatten for Tree {
     fn flatten(self) -> Vec<Child> {
-        self.map_or(vec![], |ch| vec![ch])
+        vec![Child::Tree(self)]
     }
 }
 
-impl ChildFlatten for Vec<Child> {
+impl<T: ChildFlatten> ChildFlatten for Option<T> {
     fn flatten(self) -> Vec<Child> {
-        self
+        self.map_or(vec![], ChildFlatten::flatten)
+    }
+}
+
+impl<T: ChildFlatten> ChildFlatten for Vec<T> {
+    fn flatten(self) -> Vec<Child> {
+        let mut ans = vec![];
+        for ch in self {
+            ans.append(&mut ch.flatten());
+        }
+        ans
+    }
+}
+
+impl ChildFlatten for () {
+    fn flatten(self) -> Vec<Child> {
+        vec![]
     }
 }
 

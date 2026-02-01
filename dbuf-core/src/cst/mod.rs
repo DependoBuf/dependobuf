@@ -27,7 +27,12 @@ pub enum TreeKind {
     File,
     Message,
     Body,
-    Field,
+    Definition,
+    ExprParen,
+    ExprLiteral,
+    ExprIdentifier,
+    ExprBinary,
+    ExprUnary,
 }
 
 #[allow(dead_code)]
