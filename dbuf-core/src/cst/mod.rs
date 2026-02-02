@@ -26,9 +26,19 @@ pub enum TreeKind {
     ErrorTree,
 
     File,
+
     Message,
     Body,
     Definition,
+
+    Enum,
+    EnumBody,
+    Branch,
+    Pattern,
+    ConstructedPattern,
+    ConstructedPatternField,
+    ConstructorEnum,
+    Constructor,
 
     ConstructedValue,
     ConstructedValueField,

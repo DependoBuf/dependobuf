@@ -16,10 +16,11 @@ where
     I: ValueInput<'src, Span = Location, Token = Token>,
 {
     let message = message_parser().map_child().map(Option::Some);
+    let enum_parser = enum_parser().map_child().map(Option::Some);
     let comment = comment_parser().map(Option::Some);
     let ws = white_space_parser(true).map(|()| Option::None);
 
-    choice((message, comment, ws))
+    choice((message, enum_parser, comment, ws))
         .repeated()
         .collect::<Vec<_>>()
         .map_with(|v, extra| Tree {
@@ -41,13 +42,13 @@ fn message_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + 
 where
     I: ValueInput<'src, Span = Location, Token = Token>,
 {
-    let one_comment = comment_one_parser();
+    let one_comment = one_comment_parser();
     let comment_r = comment_r_parser();
     let message_kw = just(Token::Message).map_token();
     let type_ident = type_identifier_parser();
     let dependency = dependency_parser().then(comment_r.clone());
     let dependency_r = dependency.repeated().collect::<Vec<_>>();
-    let body_parser = body_parser();
+    let body = body_parser();
 
     one_comment
         .or_not()
@@ -56,7 +57,7 @@ where
         .then(type_ident)
         .then(comment_r)
         .then(dependency_r)
-        .then(body_parser)
+        .then(body)
         .map_tree(TreeKind::Message)
 }
 
@@ -151,7 +152,7 @@ fn definition_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>>
 where
     I: ValueInput<'src, Span = Location, Token = Token>,
 {
-    let one_comment = comment_one_parser();
+    let one_comment = one_comment_parser();
     let comment_r = comment_r_parser();
     let var_ident = var_identifier_parser();
     let type_ident = type_identifier_parser();
@@ -183,7 +184,7 @@ where
 ///
 /// Pattern:
 /// ```dbuf
-/// UCIdentifier /* c */{[/* c */ lcIdentifier /* c */: /* c */ (<expresssion>|<constructed value>) /* c */,]}
+/// UCIdentifier /* c */{[/* c */ lcIdentifier /* c */: /* c */ (<expression>|<constructed value>) /* c */,] | /* c */}
 /// ```
 fn constructed_value_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
 where
@@ -361,6 +362,227 @@ where
         .labelled("Parened Expression")
 }
 
+/// Parses one enum.
+///
+/// Pattern:
+/// ```dbuf
+/// /*one comment*/
+/// enum /* comments */ UCIdentifier /*comments*/ [<dependency definition> /* comments */]
+///     <enumBody>
+/// ```
+fn enum_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+where
+    I: ValueInput<'src, Span = Location, Token = Token>,
+{
+    let one_comment = one_comment_parser();
+    let comment_r = comment_r_parser();
+    let enum_kw = just(Token::Enum).map_token();
+    let type_ident = type_identifier_parser();
+    let dependency = dependency_parser().then(comment_r.clone());
+    let dependency_r = dependency.repeated().collect::<Vec<_>>();
+    let enum_body = enum_body_parser();
+
+    one_comment
+        .or_not()
+        .then(enum_kw)
+        .then(comment_r.clone())
+        .then(type_ident)
+        .then(comment_r)
+        .then(dependency_r)
+        .then(enum_body)
+        .map_tree(TreeKind::Enum)
+}
+
+/// Parses enum body.
+///
+/// Pattern is:
+/// ```dbuf
+/// {
+///     [<branch> | /* comment */ | /* whitespace */]
+/// }
+/// ```
+/// or
+/// ```dbuf
+/// <constructor_enum>
+/// ```
+fn enum_body_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+where
+    I: ValueInput<'src, Span = Location, Token = Token>,
+{
+    let lbrace = just(Token::LBrace).map_token();
+    let branch = branch_parser().map_child().map(Option::Some);
+    let comment = comment_parser().map(Option::Some);
+    let ws = white_space_parser(true).map(|()| Option::None);
+    let rbrace = just(Token::RBrace).map_token();
+
+    let inside = choice((branch, comment, ws)).repeated().collect::<Vec<_>>();
+    let branched = lbrace
+        .then(inside)
+        .then(rbrace)
+        .map_tree(TreeKind::EnumBody);
+
+    let ce = constructor_enum_parser()
+        .map_child()
+        .map_tree(TreeKind::EnumBody);
+
+    choice((branched, ce))
+}
+
+/// Branch parser.
+///
+/// Pattern is
+/// ```dbuf
+/// <pattern> /* comment */ [, /* comment */ <pattern> /* comment */] => /* comment_r */ <constructor_enum>
+/// ```
+fn branch_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+where
+    I: ValueInput<'src, Span = Location, Token = Token>,
+{
+    let pattern = pattern_parser();
+    let comment_r = comment_r_parser();
+    let comma = just(Token::Comma).map_token();
+    let arrow = just(Token::Arrow).map_token();
+    let ce = constructor_enum_parser();
+
+    let pattern_r = comma
+        .then(comment_r.clone())
+        .then(pattern.clone())
+        .then(comment_r.clone())
+        .repeated()
+        .collect::<Vec<_>>();
+
+    pattern
+        .then(comment_r.clone())
+        .then(pattern_r)
+        .then(arrow)
+        .then(comment_r)
+        .then(ce)
+        .map_tree(TreeKind::Branch)
+}
+
+/// Pattern parser.
+///
+/// Pattern is
+/// ```dbuf
+///     (* | <literal> | lcIdentifier |
+///      UCIdentifier /* c */ { [/* c */ lcIdentifier /* c */ : /* c */ <pattern> /* c */, /* c */] | /* c */ } )
+/// ```
+fn pattern_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+where
+    I: ValueInput<'src, Span = Location, Token = Token>,
+{
+    recursive(pattern_parser_impl)
+}
+
+/// Implementation of pattern parser.
+fn pattern_parser_impl<'src, I>(
+    p_parser: impl Parser<'src, I, Tree, Err<ParsingError>> + Clone,
+) -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+where
+    I: ValueInput<'src, Span = Location, Token = Token>,
+{
+    let star = just(Token::Star).map_token();
+    let literal = literal_parser();
+    let alias = var_identifier_parser();
+
+    let type_indent = type_identifier_parser();
+    let comment_r = comment_r_parser();
+    let lbrace = just(Token::LBrace).map_token();
+    let colon = just(Token::Colon).map_token();
+    let comma = just(Token::Comma).map_token();
+    let rbrace = just(Token::RBrace).map_token();
+
+    let field_init = comment_r
+        .clone()
+        .then(alias.clone())
+        .then(comment_r.clone())
+        .then(colon)
+        .then(comment_r.clone())
+        .then(p_parser)
+        .then(comment_r.clone())
+        .then(comma.or_not())
+        .then(comment_r.clone())
+        .map_tree(TreeKind::ConstructedPatternField)
+        .map_child();
+
+    let field_r = field_init.repeated().at_least(1).collect::<Vec<_>>();
+
+    let constructed_pattern = type_indent
+        .then(comment_r.clone())
+        .then(lbrace)
+        .then(choice((field_r, comment_r)))
+        .then(rbrace)
+        .map_tree(TreeKind::ConstructedPattern)
+        .map_child();
+
+    choice((star, literal, alias, constructed_pattern)).map_tree(TreeKind::Pattern)
+}
+
+/// Parses constructor enum.
+///
+/// Pattern is:
+/// ```dbuf
+/// {
+///    [<Constructor> | /* comment */ | /* whitespace */]
+/// }
+/// ```
+fn constructor_enum_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+where
+    I: ValueInput<'src, Span = Location, Token = Token>,
+{
+    let lbrace = just(Token::LBrace).map_token();
+    let constructor = constructor_parser().map_child().map(Option::Some);
+    let comment = comment_parser().map(Option::Some);
+    let rbrace = just(Token::RBrace).map_token();
+
+    let ws = white_space_parser(true).map(|()| Option::None);
+
+    let inside = choice((constructor, comment, ws))
+        .repeated()
+        .collect::<Vec<_>>();
+
+    lbrace
+        .then(inside)
+        .then(rbrace)
+        .map_tree(TreeKind::ConstructorEnum)
+}
+
+/// Parses constructor.
+///
+/// Pattern is:
+/// ```dbuf
+/// /* one comment */
+/// UCIdentifier /* comment */
+///     <body>
+/// ```
+/// or
+/// ```dbuf
+/// /* one comment */
+/// UCIdentifier
+/// ```
+fn constructor_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+where
+    I: ValueInput<'src, Span = Location, Token = Token>,
+{
+    let one_comment = one_comment_parser();
+    let type_indent = type_identifier_parser();
+    let comment_r = comment_r_parser();
+    let body = body_parser();
+
+    let constructor_with_body = one_comment
+        .clone()
+        .then(type_indent.clone())
+        .then(comment_r)
+        .then(body)
+        .map_tree(TreeKind::Constructor);
+
+    let constructor_no_body = one_comment
+        .then(type_indent)
+        .map_tree(TreeKind::Constructor);
+
+    choice((constructor_with_body, constructor_no_body))
+}
+
 /// Parses and ignores any number of whitespaces.
 ///
 /// Param:
@@ -416,7 +638,7 @@ where
 }
 
 /// Parsees one or zero comments with spaces.
-fn comment_one_parser<'src, I>() -> impl Parser<'src, I, Option<Child>, Err<ParsingError>> + Clone
+fn one_comment_parser<'src, I>() -> impl Parser<'src, I, Option<Child>, Err<ParsingError>> + Clone
 where
     I: ValueInput<'src, Span = Location, Token = Token>,
 {
