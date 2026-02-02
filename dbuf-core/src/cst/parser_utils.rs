@@ -102,7 +102,7 @@ where
 
 /// Trait that flattens `T = Child, Tree, Option<T>, Vec<T>, (T, T)` to
 /// `Vec<Child>`.
-trait ChildFlatten {
+pub trait ChildFlatten {
     /// Flattens complex `Child` struct to simple `Vec<Child>`.
     fn flatten(self) -> Vec<Child>;
 }

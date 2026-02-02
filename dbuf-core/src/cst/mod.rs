@@ -24,10 +24,15 @@ use crate::ast::parsed::location::Offset;
 #[derive(Debug, Clone)]
 pub enum TreeKind {
     ErrorTree,
+
     File,
     Message,
     Body,
     Definition,
+
+    ConstructedValue,
+    ConstructedValueField,
+
     ExprParen,
     ExprLiteral,
     ExprIdentifier,

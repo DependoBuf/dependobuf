@@ -40,6 +40,13 @@ impl From<&'static str> for ExpectedPattern {
     }
 }
 
+/// Extra information about error.
+#[derive(Clone, Debug)]
+pub enum ParsingErrorExtra {
+    /// Call chain ends with dot.
+    BadCallChain,
+}
+
 /// Parsing error, that implements `LabelError`
 /// and `Error` required by `chumsky`.
 #[derive(Clone, Debug)]
@@ -48,6 +55,7 @@ pub struct ParsingError {
     found: Option<Token>,
     expected: Vec<ExpectedPattern>,
     at: Location,
+    extra: Option<ParsingErrorExtra>,
 }
 
 impl<'src, I, L> LabelError<'src, I, L> for ParsingError
@@ -68,6 +76,7 @@ where
             found,
             expected: expected.into_iter().map(Into::into).collect(),
             at: span,
+            extra: None,
         }
     }
 
@@ -85,7 +94,13 @@ where
         other.expected.into_iter().for_each(|e| {
             (!self.expected.contains(&e)).then(|| self.expected.push(e));
         });
+        self
+    }
+}
 
+impl ParsingError {
+    pub fn bad_call_chain(mut self) -> Self {
+        self.extra = Some(ParsingErrorExtra::BadCallChain);
         self
     }
 }

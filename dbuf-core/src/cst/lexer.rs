@@ -6,7 +6,7 @@
 //!     * `Lexer`, so `Token::lexer(&src)` can be used.
 //!     * `Locatable` for `Lexer` so `lexer.location()` can be used.
 //!
-use logos::{Lexer, Logos, Skip};
+use logos::{Lexer, Logos};
 use regex::Regex;
 use unescape::unescape;
 
@@ -160,7 +160,6 @@ impl LexingExtra {
 }
 
 #[derive(Logos, Debug, PartialEq, Clone)]
-#[logos(skip r"[ \t\r\f]+")]
 #[logos(error(LexingError, LexingError::unknown_token))]
 #[logos(extras = LexingExtra)]
 pub enum Token {
@@ -225,6 +224,8 @@ pub enum Token {
 
     #[regex(r"\n", newline_callback)]
     Newline,
+    #[regex(r"[ \t\r\f]+", at_callback)]
+    Space,
     #[regex(r"//[^\n]*", line_comment_callback, allow_greedy = true)]
     LineComment(String),
     #[regex(r"/\*([^*]|\*[^/])*\*/", block_comment_callback)]
@@ -257,10 +258,9 @@ fn at_callback_with<T>(lex: &mut Lexer<'_, Token>, value: T) -> T {
 /// Callback for `NewLine` token.
 ///
 /// Just update extra.
-fn newline_callback(lex: &mut Lexer<'_, Token>) -> Skip {
+fn newline_callback(lex: &mut Lexer<'_, Token>) {
     at_callback(lex);
     lex.extras.new_line_at(lex.span().start);
-    Skip
 }
 
 /// Callback for `LineComment` token.
@@ -476,6 +476,7 @@ mod tests {
             "// comment line\n// other comment",
             &[
                 Some(Token::LineComment("// comment line".into())),
+                Some(Token::Newline),
                 Some(Token::LineComment("// other comment".into())),
             ],
         );
@@ -485,7 +486,9 @@ mod tests {
             "a /* comment */ b",
             &[
                 Some(Token::LCIdentifier("a".into())),
+                Some(Token::Space),
                 Some(Token::BlockComment("/* comment */".into())),
+                Some(Token::Space),
                 Some(Token::LCIdentifier("b".into())),
             ],
         );
@@ -495,19 +498,24 @@ mod tests {
         );
         test_same(
             "/* comment */\n",
-            &[Some(Token::BlockComment("/* comment */".into()))],
+            &[
+                Some(Token::BlockComment("/* comment */".into())),
+                Some(Token::Newline),
+            ],
         );
         test_same(
             "/* * / */",
             &[Some(Token::BlockComment("/* * / */".into()))],
         );
         test_same(
-            "/*\n * multi line\n * comment\n*/ /* other */",
+            "/*\n * multi line\n * comment\n*/ /* other *//* other2 */",
             &[
                 Some(Token::BlockComment(
                     "/*\n * multi line\n * comment\n*/".into(),
                 )),
+                Some(Token::Space),
                 Some(Token::BlockComment("/* other */".into())),
+                Some(Token::BlockComment("/* other2 */".into())),
             ],
         );
     }
