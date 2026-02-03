@@ -6,7 +6,7 @@
 //! * (✓) `textDocument/typeDefinition`
 //! * (✓) `textDocument/hover`
 //! * (✓) `textDocument/inlayHint`
-//!  
+//!
 //! Also it might be good idea to handle such requests:
 //!
 //! Perhaps, next time:
