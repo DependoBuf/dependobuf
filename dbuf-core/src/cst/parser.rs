@@ -1,3 +1,5 @@
+//! Module exports:
+//!   * `file_parser` function, which builds `chumsky::Parser` for dbuf language.
 use chumsky::extra::Err;
 use chumsky::input::ValueInput;
 use chumsky::pratt::*;
@@ -7,9 +9,19 @@ use super::Location;
 use super::{Child, Token, Tree, TreeKind};
 
 use super::parser_error::ParsingError;
-use super::parser_utils::{ChildFlatten, MapChild, MapToken, MapTree};
+use super::parser_utils::{MapChild, MapToken, MapTree};
 
 /// Parses one dbuf file.
+///
+/// Pattern:
+/// ```dbuf
+/// (<message> | <enum> | /* comment */ | /* whitespace */)
+/// ```
+///
+/// Recovery:
+/// ```dbuf
+/// [not (/* one comment */ message | /* one comment */ enum)]
+/// ```
 ///
 pub fn file_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
 where
@@ -20,14 +32,28 @@ where
     let comment = comment_parser().map(Option::Some);
     let ws = white_space_parser(true).map(|()| Option::None);
 
-    choice((message, enum_parser, comment, ws))
+    let recovery_on = comment
+        .clone()
+        .or_not()
+        .then(choice((just(Token::Message), just(Token::Enum))));
+    let recovery_skip = any()
+        .map_token()
+        .and_is(recovery_on.not())
+        .repeated()
+        .collect::<Vec<_>>();
+    let recovery = any()
+        .map_token()
+        .then(recovery_skip)
+        .map_tree(TreeKind::ErrorTree)
+        .map_child()
+        .map(Option::Some);
+
+    let one_block = choice((message, enum_parser, comment, ws)).recover_with(via_parser(recovery));
+
+    one_block
         .repeated()
         .collect::<Vec<_>>()
-        .map_with(|v, extra| Tree {
-            kind: TreeKind::File,
-            location: extra.span(),
-            children: v.flatten(),
-        })
+        .map_tree(TreeKind::File)
 }
 
 /// Parses one message.
@@ -81,15 +107,17 @@ where
         .then(definition)
         .then(comment_r)
         .then(rparen)
-        .map(|((((lp, mut comm1), mut tree), mut comm2), rp)| {
+        .map_with(|((((lp, mut comm1), mut tree), mut comm2), rp), extra| {
             let mut ans = vec![lp];
             ans.append(&mut comm1);
             ans.append(&mut tree.children);
             ans.append(&mut comm2);
             ans.push(rp);
             tree.children = ans;
+            tree.location = extra.span();
             tree
         })
+        .boxed()
 }
 
 /// Parses body.
@@ -113,7 +141,12 @@ where
 
     let inside = choice((field, comment, ws)).repeated().collect::<Vec<_>>();
 
-    lbrace.then(inside).then(rbrace).map_tree(TreeKind::Body)
+    lbrace
+        .then(inside)
+        .then(rbrace)
+        .map_tree(TreeKind::Body)
+        .labelled("Body")
+        .boxed()
 }
 
 /// Parses field.
@@ -133,11 +166,13 @@ where
     definition
         .then(comment_r)
         .then(semicolon)
-        .map(|((mut tree, mut comm), t)| {
+        .map_with(|((mut tree, mut comm), t), extra| {
             tree.children.append(&mut comm);
             tree.children.push(t);
+            tree.location = extra.span();
             tree
         })
+        .labelled("Field")
 }
 
 /// Parses definition.
@@ -158,10 +193,10 @@ where
     let type_ident = type_identifier_parser();
 
     let expr = expression_parser();
-    let paren_expr = parened_expression_parser(expr).map_child();
-    let chain = var_chain_parser().map_child();
-    let literal = literal_parser();
-    let cv = constructed_value_parser().map_child();
+    let paren_expr = parened_expression_parser(expr);
+    let chain = var_chain_parser();
+    let literal = literal_parser().map_tree(TreeKind::ExprLiteral);
+    let cv = constructed_value_parser();
 
     let arguments = choice((paren_expr, chain, literal, cv));
     let commented_arguments = comment_r
@@ -178,6 +213,7 @@ where
         .then(comment_r)
         .then(commented_arguments)
         .map_tree(TreeKind::Definition)
+        .labelled("Definition")
 }
 
 /// Parses constructed value.
@@ -279,21 +315,20 @@ where
     let atom = choice((literal_atom, identifier_atom, parented_atom));
     let comment_r = comment_r_parser();
 
-    let commented_atom =
-        comment_r
-            .clone()
-            .then(atom)
-            .then(comment_r.clone())
-            .map(|((c1, mut a), mut c2)| {
-                let mut nchildren = c1;
-                nchildren.append(&mut a.children);
-                nchildren.append(&mut c2);
-                Tree {
-                    kind: a.kind,
-                    location: a.location,
-                    children: nchildren,
-                }
-            });
+    let commented_atom = comment_r
+        .clone()
+        .then(atom)
+        .then(comment_r.clone())
+        .map_with(|((c1, mut a), mut c2), extra| {
+            let mut nchildren = c1;
+            nchildren.append(&mut a.children);
+            nchildren.append(&mut c2);
+            Tree {
+                kind: a.kind,
+                location: extra.span(),
+                children: nchildren,
+            }
+        });
 
     let binary_op = |c| just(c).map_token();
     let unary_op = |c| comment_r.clone().then(just(c).map_token());
@@ -596,7 +631,10 @@ where
     let white_space = choice((just(Token::Newline), just(Token::Space)));
 
     let at_least = usize::from(progress);
-    white_space.repeated().at_least(at_least)
+    white_space
+        .repeated()
+        .at_least(at_least)
+        .labelled("Whitespace")
 }
 
 /// Parses one comment with spaces.

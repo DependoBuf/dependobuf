@@ -81,6 +81,7 @@ impl LexingError {
     ///
     /// Used as default for unknown tokens.
     fn unknown_token(lex: &mut logos::Lexer<'_, Token>) -> Self {
+        at_callback(lex);
         Self::from_lexer(lex, LexingErrorKind::UnknownToken)
     }
 

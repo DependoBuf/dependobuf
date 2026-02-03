@@ -7,6 +7,8 @@ mod parser;
 mod parser_error;
 mod parser_utils;
 
+mod cst_to_ast;
+
 use std::fs;
 
 use chumsky::{
@@ -21,7 +23,7 @@ use location::Location;
 
 use crate::ast::parsed::location::Offset;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TreeKind {
     ErrorTree,
 
@@ -50,7 +52,6 @@ pub enum TreeKind {
     ExprUnary,
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct Tree {
     kind: TreeKind,
@@ -64,7 +65,7 @@ pub enum Child {
     Tree(Tree),
 }
 
-#[allow(clippy::missing_panics_doc)]
+#[allow(clippy::missing_panics_doc, reason = "just for testing")]
 pub fn cst_main() {
     let str = fs::read_to_string("dbuf_file.dbuf").unwrap();
 
@@ -102,4 +103,14 @@ pub fn cst_main() {
     let result = parser.parse(token_stream);
 
     println!("{result:#?}");
+
+    println!("===========================");
+    println!("|         Convert         |");
+    println!("===========================");
+
+    let tree = result.output().unwrap();
+
+    let ast = cst_to_ast::convert(tree);
+
+    println!("{ast:#?}");
 }

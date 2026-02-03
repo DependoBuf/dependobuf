@@ -50,7 +50,7 @@ pub enum ParsingErrorExtra {
 /// Parsing error, that implements `LabelError`
 /// and `Error` required by `chumsky`.
 #[derive(Clone, Debug)]
-#[allow(dead_code)]
+#[allow(dead_code, reason = "no error report")]
 pub struct ParsingError {
     found: Option<Token>,
     expected: Vec<ExpectedPattern>,
