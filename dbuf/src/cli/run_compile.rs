@@ -5,7 +5,7 @@ use std::path;
 use std::sync::LazyLock;
 
 use dbuf_core::ast::elaborated;
-use dbuf_core::parser::{ParsedModule, parse};
+use dbuf_core::cst::{ParsedModule, convert_to_ast, parse_to_cst};
 type ElaboratedModule = elaborated::Module<String>;
 
 use dbuf_gen::codegen;
@@ -74,12 +74,16 @@ fn get_parsed(file: &path::Path) -> Result<ParsedModule, ()> {
         eprintln!("Error while trying to open file: {e}");
     })?;
 
-    parse(input.as_ref()).map_err(|e| {
-        eprintln!("Error while parsing file:");
-        for err in e {
+    let parse_result = parse_to_cst(input.as_ref());
+
+    let tree = parse_result.into_result().map_err(|errs| {
+        eprintln!("Parsing errors:");
+        for err in errs {
             eprintln!("{err:#?}");
         }
-    })
+    })?;
+
+    Ok(convert_to_ast(&tree))
 }
 
 #[allow(clippy::unnecessary_wraps, reason = "elaboration could return errors")]

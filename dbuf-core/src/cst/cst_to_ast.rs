@@ -179,6 +179,7 @@ fn is_expression(expression: &Tree) -> bool {
             | TreeKind::ExprIdentifier
             | TreeKind::ExprBinary
             | TreeKind::ExprUnary
+            | TreeKind::ExprHole
     )
 }
 
@@ -277,6 +278,7 @@ fn convert_expression(expression: &Tree) -> Expression<LocationAST, NameAST> {
                 rhs.expect("rhs expression in ExprUnary tree").into(),
             ))
         }
+        TreeKind::ExprHole => ExpressionNode::TypedHole,
         _ => panic!("bad expression tree kind"),
     };
 
@@ -315,10 +317,7 @@ fn convert_expression_identifier(ei: &Tree) -> Expression<LocationAST, NameAST> 
 
     let start = ei.location.start();
 
-    let mut trailing_dot = false;
     for i in ident {
-        trailing_dot = i.is_none();
-
         let Some(name) = i else {
             continue;
         };
@@ -332,9 +331,6 @@ fn convert_expression_identifier(ei: &Tree) -> Expression<LocationAST, NameAST> 
         };
     }
 
-    if trailing_dot {
-        unimplemented!("trailing dot like a.b.c.");
-    }
     ans
 }
 

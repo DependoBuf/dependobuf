@@ -29,11 +29,20 @@ pub trait Locatable {
 }
 
 impl Location {
+    #[must_use]
     pub fn new(start: Offset, end: Offset) -> Option<Location> {
         if (end - start).is_some() {
             Some(Location { start, end })
         } else {
             None
+        }
+    }
+
+    #[must_use]
+    pub fn point(point: Offset) -> Location {
+        Location {
+            start: point,
+            end: point,
         }
     }
 }

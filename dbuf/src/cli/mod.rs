@@ -8,7 +8,7 @@ use clap::{Args, Parser, Subcommand};
 #[command(version, about)]
 pub struct Cli {
     #[command(subcommand)]
-    command: Option<Commands>,
+    command: Commands,
 }
 
 #[derive(Subcommand)]
@@ -35,7 +35,7 @@ struct CompileParams {
 }
 
 pub fn parse_cli(cli: Cli) {
-    match cli.command.unwrap() {
+    match cli.command {
         Commands::Lsp => run_lsp::run(),
         Commands::Compile(compile_params) => run_compile::run(compile_params),
     }

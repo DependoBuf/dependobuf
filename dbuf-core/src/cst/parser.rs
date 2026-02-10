@@ -181,7 +181,7 @@ where
 /// ```dbuf
 /// /*one comment*/
 /// lcIdentifier /* comments */ UCIdentifier /* comments */
-///   [/* comments */ (<parened expression>|<var chain>|<literal>|<constructed value>)]
+///   [/* comments */ (<parened expression>|<var chain>|<literal>|<constructed value>|<hole>)]
 /// ```
 fn definition_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
 where
@@ -197,8 +197,9 @@ where
     let chain = var_chain_parser();
     let literal = literal_parser().map_tree(TreeKind::ExprLiteral);
     let cv = constructed_value_parser();
+    let hole = typed_hole_parser();
 
-    let arguments = choice((paren_expr, chain, literal, cv));
+    let arguments = choice((paren_expr, chain, literal, cv, hole));
     let commented_arguments = comment_r
         .clone()
         .then(arguments)
@@ -276,6 +277,7 @@ where
 /// ```dbuf
 /// /* comment */ <literal> /* comment */
 /// /* comment */ <var chain> /* comment */
+/// /* comment */ <typed hole> /* comment */
 /// /* comment */ (/* comment */ <expression> /* comment */) /* comment */
 /// <lhs_expression> (+|-|*|/|'|'|&) <rhs_expression>
 /// /* comment */ (-|!) <rhs_expression>
@@ -311,8 +313,9 @@ where
     let literal_atom = literal_parser().map_tree(TreeKind::ExprLiteral);
     let identifier_atom = var_chain_parser();
     let parented_atom = parened_expression_parser(e_parser);
+    let hole_atom = typed_hole_parser();
 
-    let atom = choice((literal_atom, identifier_atom, parented_atom));
+    let atom = choice((literal_atom, identifier_atom, parented_atom, hole_atom));
     let comment_r = comment_r_parser();
 
     let commented_atom = comment_r
@@ -761,4 +764,18 @@ where
     }
     .map_token()
     .labelled("Literal")
+}
+
+fn typed_hole_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+where
+    I: ValueInput<'src, Span = Location, Token = Token>,
+{
+    just(Token::Underscore)
+        .map_token()
+        .map_tree(TreeKind::ExprHole)
+        .map_with(|t, extra| {
+            let err: ParsingError = extra.into();
+            extra.emit(err.typed_hole());
+            t
+        })
 }

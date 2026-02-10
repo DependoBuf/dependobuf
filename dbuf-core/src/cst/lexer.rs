@@ -123,14 +123,14 @@ impl Default for LexingError {
 #[derive(Default, Clone)]
 pub struct LexingExtra {
     /// Current line number.
-    line_num: usize,
+    pub line_num: usize,
     /// Start of current line.
-    line_start: usize,
+    pub line_start: usize,
     /// `Offset` of current token start.
     ///
     /// Need due impossibility to calculate that on
     /// multiline tokens.
-    token_start: Offset,
+    pub token_start: Offset,
 }
 
 impl LexingExtra {
@@ -222,6 +222,9 @@ pub enum Token {
     Pipe,
     #[token("!", at_callback)]
     Bang,
+
+    #[token("_", at_callback)]
+    Underscore,
 
     #[regex(r"\n", newline_callback)]
     Newline,

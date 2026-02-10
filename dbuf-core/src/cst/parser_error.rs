@@ -2,6 +2,8 @@
 //! is used by parser.
 use chumsky::DefaultExpected;
 use chumsky::error::Error;
+use chumsky::extra::ParserExtra;
+use chumsky::input::MapExtra;
 use chumsky::input::ValueInput;
 use chumsky::label::LabelError;
 use chumsky::prelude::*;
@@ -13,7 +15,7 @@ use super::Token;
 
 /// Possible expected tokens for parser.
 #[derive(Clone, Debug, PartialEq)]
-enum ExpectedPattern {
+pub enum ExpectedPattern {
     Token(Token),
     Label(&'static str),
     Any,
@@ -45,6 +47,8 @@ impl From<&'static str> for ExpectedPattern {
 pub enum ParsingErrorExtra {
     /// Call chain ends with dot.
     BadCallChain,
+    /// Typed hole found.
+    TypedHole,
 }
 
 /// Parsing error, that implements `LabelError`
@@ -52,10 +56,10 @@ pub enum ParsingErrorExtra {
 #[derive(Clone, Debug)]
 #[allow(dead_code, reason = "no error report")]
 pub struct ParsingError {
-    found: Option<Token>,
-    expected: Vec<ExpectedPattern>,
-    at: Location,
-    extra: Option<ParsingErrorExtra>,
+    pub found: Option<Token>,
+    pub expected: Vec<ExpectedPattern>,
+    pub at: Location,
+    pub extra: Option<ParsingErrorExtra>,
 }
 
 impl<'src, I, L> LabelError<'src, I, L> for ParsingError
@@ -98,9 +102,32 @@ where
     }
 }
 
+impl<'src, 'b, I, E> From<&mut MapExtra<'src, 'b, I, E>> for ParsingError
+where
+    I: ValueInput<'src, Span = Location, Token = Token>,
+    E: ParserExtra<'src, I>,
+{
+    fn from(value: &mut MapExtra<'src, 'b, I, E>) -> Self {
+        Self {
+            found: None,
+            expected: vec![],
+            at: value.span(),
+            extra: None,
+        }
+    }
+}
+
 impl ParsingError {
+    #[must_use]
     pub fn bad_call_chain(mut self) -> Self {
         self.extra = Some(ParsingErrorExtra::BadCallChain);
+        self
+    }
+
+    #[must_use]
+    pub fn typed_hole(mut self) -> Self {
+        self.extra = Some(ParsingErrorExtra::TypedHole);
+        self.found = Some(Token::Underscore);
         self
     }
 }
