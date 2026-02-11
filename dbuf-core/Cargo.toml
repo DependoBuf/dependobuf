@@ -8,5 +8,10 @@ chumsky.workspace = true
 logos.workspace = true
 unescape.workspace = true
 
+thiserror.workspace = true
+strum.workspace = true
+strum_macros.workspace = true
+regex.workspace = true
+
 [lints]
 workspace = true
