@@ -1,4 +1,4 @@
-//! Module exports `ParsingError` struct that
+//! Module implements `ParsingError` struct that
 //! is used by parser.
 use chumsky::DefaultExpected;
 use chumsky::error::Error;
@@ -13,15 +13,10 @@ use chumsky::util::MaybeRef;
 use super::Location;
 use super::Token;
 
-/// Possible expected tokens for parser.
-#[derive(Clone, Debug, PartialEq)]
-pub enum ExpectedPattern {
-    Token(Token),
-    Label(&'static str),
-    Any,
-    SomethingElse,
-    EndOfInput,
-}
+use crate::error::parsing;
+use crate::error::parsing::{ErrorExtra, ExpectedPattern};
+
+pub(super) type ParsingError = parsing::Error;
 
 impl<'src> From<DefaultExpected<'src, Token>> for ExpectedPattern {
     fn from(value: DefaultExpected<'src, Token>) -> Self {
@@ -40,26 +35,6 @@ impl From<&'static str> for ExpectedPattern {
     fn from(value: &'static str) -> Self {
         Self::Label(value)
     }
-}
-
-/// Extra information about error.
-#[derive(Clone, Debug)]
-pub enum ParsingErrorExtra {
-    /// Call chain ends with dot.
-    BadCallChain,
-    /// Typed hole found.
-    TypedHole,
-}
-
-/// Parsing error, that implements `LabelError`
-/// and `Error` required by `chumsky`.
-#[derive(Clone, Debug)]
-#[allow(dead_code, reason = "no error report")]
-pub struct ParsingError {
-    pub found: Option<Token>,
-    pub expected: Vec<ExpectedPattern>,
-    pub at: Location,
-    pub extra: Option<ParsingErrorExtra>,
 }
 
 impl<'src, I, L> LabelError<'src, I, L> for ParsingError
@@ -119,14 +94,14 @@ where
 
 impl ParsingError {
     #[must_use]
-    pub fn bad_call_chain(mut self) -> Self {
-        self.extra = Some(ParsingErrorExtra::BadCallChain);
+    pub(super) fn bad_call_chain(mut self, loc: Location) -> Self {
+        self.extra = Some(ErrorExtra::BadCallChain(loc));
         self
     }
 
     #[must_use]
-    pub fn typed_hole(mut self) -> Self {
-        self.extra = Some(ParsingErrorExtra::TypedHole);
+    pub(super) fn typed_hole(mut self) -> Self {
+        self.extra = Some(ErrorExtra::TypedHole);
         self.found = Some(Token::Underscore);
         self
     }
