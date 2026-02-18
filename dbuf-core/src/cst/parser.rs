@@ -734,7 +734,7 @@ where
         .then(dot_call)
         .then(dot.not().rewind())
         .map_tree(TreeKind::ExprIdentifier)
-        .map_err(ParsingError::bad_call_chain)
+        .map_err_with_state(|e, l, ()| e.bad_call_chain(l))
         .recover_with(via_parser(recovery))
 }
 

@@ -7,7 +7,6 @@ use crate::ast::{
 
 use super::{Child, Token, Tree, TreeKind};
 
-use chumsky::span::Span;
 type LocationCST = super::Location;
 
 type OffsetAST = location::Offset;

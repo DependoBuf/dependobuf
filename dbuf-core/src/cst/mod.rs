@@ -13,16 +13,14 @@ use chumsky::Parser;
 use chumsky::input::{Input, Stream};
 use logos::Logos;
 
-use located_token::LocatedLexer;
-
 use crate::ast::parsed::location::Offset;
 use cst_to_ast::convert;
+use located_token::LocatedLexer;
 
-pub use chumsky::ParseResult;
+pub use crate::error::Error;
 pub use cst_to_ast::ParsedModule;
-pub use lexer::{LexingError, LexingErrorData, LexingErrorKind, Token};
+pub use lexer::Token;
 pub use location::Location;
-pub use parser_error::{ExpectedPattern, ParsingError, ParsingErrorExtra};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TreeKind {
@@ -69,23 +67,35 @@ pub enum Child {
 
 /// Parse text to CST.
 #[must_use]
-pub fn parse_to_cst(text: &str) -> ParseResult<Tree, ParsingError> {
+pub fn parse_to_cst(text: &str) -> (Option<Tree>, Vec<Error>) {
     let lexer = LocatedLexer::from_lexer(Token::lexer(text));
-    let token_iter = lexer.map(|(tok, loc)| match tok {
-        Ok(tok) => (tok, loc),
-        Err(err) => (Token::Err(err), loc),
-    });
 
-    let lines_number = text.lines().count() + 1;
-    let eof_offset = Offset {
-        lines: lines_number,
-        columns: 0,
+    let mut errors = vec![];
+
+    let (output, parsing_errors) = {
+        let token_iter = lexer.map(|(tok, loc)| match tok {
+            Ok(tok) => (tok, loc),
+            Err(err) => {
+                errors.push(err.into());
+                (Token::Err, loc)
+            }
+        });
+
+        let lines_number = text.lines().count() + 1;
+        let eof_offset = Offset {
+            lines: lines_number,
+            columns: 0,
+        };
+        let eof_location = Location::point(eof_offset);
+
+        let token_stream = Stream::from_iter(token_iter).map(eof_location, |(t, l)| (t, l));
+        let parser = parser::file_parser();
+
+        parser.parse(token_stream).into_output_errors()
     };
-    let eof_location = Location::point(eof_offset);
+    errors.extend(parsing_errors.into_iter().map(Into::into));
 
-    let token_stream = Stream::from_iter(token_iter).map(eof_location, |(t, l)| (t, l));
-    let parser = parser::file_parser();
-    parser.parse(token_stream)
+    (output, errors)
 }
 
 /// Convert CST to AST.

@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fs;
 use std::path;
+use std::process::exit;
 use std::sync::LazyLock;
 
 use dbuf_core::ast::elaborated;
@@ -13,6 +14,8 @@ use dbuf_gen::kotlin_gen;
 use dbuf_gen::swift_gen;
 
 use super::CompileParams;
+use super::file::File;
+use super::reporter::Reporter;
 
 struct LanguageConfig {
     extension: &'static str,
@@ -45,49 +48,84 @@ static LANGUAGES: LazyLock<HashMap<&str, LanguageConfig>> = LazyLock::new(|| {
     ])
 });
 
-pub fn run(params: CompileParams) {
-    let file = path::Path::new(&params.file);
-    let Some(file_name) = file.file_stem() else {
-        eprintln!("{0} is not a file name", params.file);
-        return;
+pub fn run(params: &CompileParams) -> ! {
+    let Ok(file) = get_file(params) else {
+        eprintln!("Bad input file");
+        exit(1);
     };
 
-    let out_dir = path::Path::new(&params.path);
+    let mut reporter = Reporter::new(&file);
+    let r = process(params, &file, &mut reporter);
 
-    for out in params.output {
-        let Some(config) = LANGUAGES.get(out.as_str()) else {
-            eprintln!("Unsupported language: {out}");
-            return;
-        };
+    reporter.print();
 
-        let file_name = file_name.to_str().expect("valid OsStr").to_owned() + config.extension;
-        let to = out_dir.join(file_name);
-        if produce(file, &to, config.codegen).is_err() {
-            eprintln!("Error in codegen to {out}");
-            return;
-        }
+    if r.is_ok() {
+        exit(0);
+    } else {
+        exit(1);
     }
 }
 
-fn get_parsed(file: &path::Path) -> Result<ParsedModule, ()> {
-    let input = fs::read_to_string(file).map_err(|e| {
-        eprintln!("Error while trying to open file: {e}");
-    })?;
+/// Reads input file based on compile params and return its name and content
+fn get_file(params: &CompileParams) -> Result<File, ()> {
+    let file = path::Path::new(&params.file);
+    let file_name = file
+        .file_stem()
+        .ok_or_else(|| eprintln!("'{0}' is not a file name", params.file))?
+        .to_str()
+        .expect("file name is valid unicode");
 
-    let parse_result = parse_to_cst(input.as_ref());
+    let content = fs::read_to_string(file)
+        .map_err(|e| eprintln!("Can't read file '{}': {e}", params.file))?;
 
-    let tree = parse_result.into_result().map_err(|errs| {
-        eprintln!("Parsing errors:");
-        for err in errs {
-            eprintln!("{err:#?}");
-        }
-    })?;
+    Ok(File {
+        name: file_name.to_string(),
+        content,
+    })
+}
 
-    Ok(convert_to_ast(&tree))
+fn process(params: &CompileParams, file: &File, reporter: &mut Reporter) -> Result<(), ()> {
+    let parsed = get_parsed(&file.content, reporter)?;
+    let _elaborated = get_elaborated(&parsed, reporter)?;
+
+    let out_dir = path::Path::new(&params.path);
+    for out in &params.output {
+        let Some(config) = LANGUAGES.get(out.as_str()) else {
+            eprintln!("Unsupported language: {out}");
+            continue;
+        };
+
+        let file_name = file.name.clone() + config.extension;
+        let to = out_dir.join(file_name);
+
+        // FIXME: codegens shouldn't consume elaborated tree
+        let elaborated = get_elaborated(&parsed, reporter)?;
+        let output = (config.codegen)(elaborated);
+        write_generated(output, &to)?;
+    }
+
+    Ok(())
+}
+
+fn get_parsed(input: &str, reporter: &mut Reporter) -> Result<ParsedModule, ()> {
+    let (tree, errors) = parse_to_cst(input);
+
+    for e in errors {
+        reporter.report(e);
+    }
+
+    if let Some(tree) = tree {
+        Ok(convert_to_ast(&tree))
+    } else {
+        Err(())
+    }
 }
 
 #[allow(clippy::unnecessary_wraps, reason = "elaboration could return errors")]
-fn get_elaborated(_module: ParsedModule) -> Result<ElaboratedModule, ()> {
+fn get_elaborated(
+    _module: &ParsedModule,
+    _reporter: &mut Reporter,
+) -> Result<ElaboratedModule, ()> {
     eprintln!("UNIMPLEMENTED: convertation from parsed module to elaborated");
 
     Ok(ElaboratedModule {
@@ -100,17 +138,6 @@ fn write_generated(generated: String, to: &path::Path) -> Result<(), ()> {
     fs::write(to, generated).map_err(|e| {
         eprintln!("Error while creating file: {e}");
     })
-}
-
-fn produce<T: FnOnce(ElaboratedModule) -> String>(
-    file: &path::Path,
-    to: &path::Path,
-    codegen: T,
-) -> Result<(), ()> {
-    let parsed = get_parsed(file)?;
-    let elaborated = get_elaborated(parsed)?;
-    let ans = codegen(elaborated);
-    write_generated(ans, to)
 }
 
 fn rust_codegen(module: ElaboratedModule) -> String {
