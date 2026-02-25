@@ -10,6 +10,7 @@ lsp = ["dbuf-lsp"]
 # The dbuf-lsp crate cannot be included as a workspace dependency because it needs to be optional
 dbuf-lsp = { path = "../dbuf-lsp", optional = true}
 
+ariadne.workspace = true
 clap.workspace = true
 dbuf-core.workspace = true
 

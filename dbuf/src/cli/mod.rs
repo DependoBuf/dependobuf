@@ -1,3 +1,5 @@
+mod file;
+mod reporter;
 mod run_compile;
 mod run_lsp;
 
@@ -37,6 +39,6 @@ struct CompileParams {
 pub fn parse_cli(cli: Cli) {
     match cli.command {
         Commands::Lsp => run_lsp::run(),
-        Commands::Compile(compile_params) => run_compile::run(compile_params),
+        Commands::Compile(compile_params) => run_compile::run(&compile_params),
     }
 }

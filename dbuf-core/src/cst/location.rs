@@ -45,6 +45,16 @@ impl Location {
             end: point,
         }
     }
+
+    #[must_use]
+    pub fn start(&self) -> Offset {
+        self.start
+    }
+
+    #[must_use]
+    pub fn end(&self) -> Offset {
+        self.end
+    }
 }
 
 impl Span for Location {
