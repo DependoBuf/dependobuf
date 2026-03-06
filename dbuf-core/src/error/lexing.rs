@@ -7,7 +7,7 @@ use strum::EnumMessage;
 use strum_macros::EnumMessage;
 use thiserror::Error;
 
-use crate::ast::parsed::location::Offset;
+use crate::location::Offset;
 
 /// General lexing errors structure.
 #[derive(Debug, Clone, PartialEq, Error)]

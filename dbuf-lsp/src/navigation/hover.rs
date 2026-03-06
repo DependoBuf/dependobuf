@@ -7,19 +7,23 @@ use crate::core::dbuf_language::get_builtin_types;
 use crate::core::navigator::Symbol;
 use crate::core::pretty_printer::PrettyPrinter;
 
-pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
-    let elaborated = file.get_elaborated();
+pub fn get_hover(symbol: Symbol, file: &File) -> Option<Vec<MarkedString>> {
+    let elaborated = file.get_elaborated().take()?;
 
-    match symbol {
+    Some(match symbol {
         Symbol::Type { type_name } => vec![MarkedString::LanguageString(get_explicit_type(
             type_name, file,
-        ))],
+        )?)],
         Symbol::Dependency {
             type_name,
             dependency,
         } => vec![
-            MarkedString::LanguageString(get_type_header(&type_name, file, false)),
-            MarkedString::LanguageString(get_dependency_declaration(&type_name, &dependency, file)),
+            MarkedString::LanguageString(get_type_header(&type_name, file, false)?),
+            MarkedString::LanguageString(get_dependency_declaration(
+                &type_name,
+                &dependency,
+                file,
+            )?),
             MarkedString::String(format!("dependency of `{type_name}`")),
         ],
         Symbol::Field {
@@ -31,7 +35,7 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
 
             strings.push(MarkedString::LanguageString(get_type_header(
                 &type_name, file, false,
-            )));
+            )?));
             if !elaborated.is_message(&type_name) {
                 strings.push(MarkedString::LanguageString(get_constructor_header(
                     &constructor,
@@ -42,7 +46,7 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
                 &constructor,
                 &field,
                 file,
-            )));
+            )?));
             strings.push(MarkedString::String(format!("field of `{constructor}`")));
             strings
         }
@@ -51,8 +55,8 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
             branch_id,
             alias,
         } => vec![
-            MarkedString::LanguageString(get_type_header(&type_name, file, true)),
-            MarkedString::LanguageString(get_explicit_branch(&type_name, branch_id, file)),
+            MarkedString::LanguageString(get_type_header(&type_name, file, true)?),
+            MarkedString::LanguageString(get_explicit_branch(&type_name, branch_id, file)?),
             MarkedString::String(format!("alias `{alias}`")),
         ],
         Symbol::Constructor {
@@ -60,61 +64,65 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Vec<MarkedString> {
             constructor,
         } => {
             vec![
-                MarkedString::LanguageString(get_type_header(&type_name, file, false)),
+                MarkedString::LanguageString(get_type_header(&type_name, file, false)?),
                 MarkedString::LanguageString(get_explicit_constructor(
                     &type_name,
                     &constructor,
                     file,
-                )),
+                )?),
                 MarkedString::String(format!("constructor of `{type_name}`")),
             ]
         }
         Symbol::None => Vec::new(),
-    }
+    })
 }
 
-fn get_explicit_type(type_name: String, file: &File) -> LanguageString {
+fn get_explicit_type(type_name: String, file: &File) -> Option<LanguageString> {
     if get_builtin_types().contains(&type_name) {
-        LanguageString {
+        Some(LanguageString {
             language: "dbuf".to_owned(),
             value: type_name,
-        }
+        })
     } else {
         let mut code = String::new();
         let mut printer = PrettyPrinter::new(&mut code);
-        printer.print_selected_type(file.get_parsed(), type_name.as_ref());
+        printer.print_selected_type(file.get_parsed().take()?, type_name.as_ref());
 
-        LanguageString {
+        Some(LanguageString {
             language: "dbuf".to_owned(),
             value: code,
-        }
+        })
     }
 }
 
-fn get_explicit_constructor(type_name: &str, constructor: &str, file: &File) -> LanguageString {
+fn get_explicit_constructor(
+    type_name: &str,
+    constructor: &str,
+    file: &File,
+) -> Option<LanguageString> {
     let mut code = String::new();
 
     let mut printer = PrettyPrinter::new(&mut code);
-    printer.print_selected_constructor(file.get_parsed(), type_name, constructor);
+    printer.print_selected_constructor(file.get_parsed().take()?, type_name, constructor);
 
-    LanguageString {
+    Some(LanguageString {
         language: "dbuf".to_owned(),
         value: code,
-    }
+    })
 }
 
-fn get_type_header(type_name: &str, file: &File, dependencies: bool) -> LanguageString {
+fn get_type_header(type_name: &str, file: &File, dependencies: bool) -> Option<LanguageString> {
     let mut header = String::new();
     let mut printer = PrettyPrinter::new(&mut header).header_only();
     if !dependencies {
         printer = printer.no_dependencies();
     }
-    printer.print_selected_type(file.get_parsed(), type_name);
+    printer.print_selected_type(file.get_parsed().take()?, type_name);
 
-    LanguageString {
+    Some(LanguageString {
         language: "dbuf".to_owned(),
         value: header,
-    }
+    })
 }
 
 fn get_constructor_header(constructor: &str) -> LanguageString {
@@ -126,28 +134,32 @@ fn get_constructor_header(constructor: &str) -> LanguageString {
     }
 }
 
-fn get_explicit_branch(type_name: &str, branch_id: usize, file: &File) -> LanguageString {
+fn get_explicit_branch(type_name: &str, branch_id: usize, file: &File) -> Option<LanguageString> {
     let mut branch = String::new();
 
     let mut printer = PrettyPrinter::new(&mut branch);
-    printer.print_selected_branch(file.get_parsed(), type_name, branch_id);
+    printer.print_selected_branch(file.get_parsed().take()?, type_name, branch_id);
 
-    LanguageString {
+    Some(LanguageString {
         language: "dbuf".to_owned(),
         value: branch,
-    }
+    })
 }
 
-fn get_dependency_declaration(type_name: &str, dependency: &str, file: &File) -> LanguageString {
+fn get_dependency_declaration(
+    type_name: &str,
+    dependency: &str,
+    file: &File,
+) -> Option<LanguageString> {
     let mut dependency_declaration = String::new();
 
     let mut printer = PrettyPrinter::new(&mut dependency_declaration);
-    printer.print_selected_dependency(file.get_parsed(), type_name, dependency);
+    printer.print_selected_dependency(file.get_parsed().take()?, type_name, dependency);
 
-    LanguageString {
+    Some(LanguageString {
         language: "dbuf".to_owned(),
         value: dependency_declaration,
-    }
+    })
 }
 
 fn get_field_declaration(
@@ -155,14 +167,14 @@ fn get_field_declaration(
     constructor: &str,
     field: &str,
     file: &File,
-) -> LanguageString {
+) -> Option<LanguageString> {
     let mut field_declaration = String::new();
 
     let mut printer = PrettyPrinter::new(&mut field_declaration);
-    printer.print_selected_field(file.get_parsed(), type_name, constructor, field);
+    printer.print_selected_field(file.get_parsed().take()?, type_name, constructor, field);
 
-    LanguageString {
+    Some(LanguageString {
         language: "dbuf".to_owned(),
         value: field_declaration,
-    }
+    })
 }

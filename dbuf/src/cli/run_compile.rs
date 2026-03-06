@@ -5,10 +5,15 @@ use std::path;
 use std::process::exit;
 use std::sync::LazyLock;
 
+use dbuf_core::arena::InternedString;
 use dbuf_core::ast::elaborated;
-use dbuf_core::cst::{ParsedModule, convert_to_ast, parse_to_cst};
+use dbuf_core::ast::parsed::Module;
+use dbuf_core::cst::{convert_to_ast, parse_to_cst};
 type ElaboratedModule = elaborated::Module<String>;
 
+use dbuf_core::location::LocatedName;
+use dbuf_core::location::Location;
+use dbuf_core::location::Offset;
 use dbuf_gen::codegen;
 use dbuf_gen::kotlin_gen;
 use dbuf_gen::swift_gen;
@@ -16,6 +21,8 @@ use dbuf_gen::swift_gen;
 use super::CompileParams;
 use super::file::File;
 use super::reporter::Reporter;
+
+type ParsedModule = Module<Location<Offset>, LocatedName<InternedString, Offset>>;
 
 struct LanguageConfig {
     extension: &'static str,

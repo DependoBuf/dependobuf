@@ -11,17 +11,21 @@ use crate::core::ast_visitor::*;
 use dbuf_core::ast::elaborated::TypeExpression;
 use tower_lsp::lsp_types::*;
 
-pub fn get_inlay_hint(range: Range, file: &File) -> Vec<InlayHint> {
+pub fn get_inlay_hint(range: Range, file: &File) -> Option<Vec<InlayHint>> {
     let mut visitor = InlayVisitor {
         range,
-        elaborated: file.get_elaborated(),
-        scope: ScopeVisitor::new(file.get_elaborated()),
+        elaborated: file.get_elaborated().take()?,
+        scope: ScopeVisitor::new(file.get_elaborated().take()?),
         ans: vec![],
     };
 
-    visit_ast(file.get_parsed(), &mut visitor, file.get_elaborated());
+    visit_ast(
+        file.get_parsed().take()?,
+        &mut visitor,
+        file.get_elaborated().take()?,
+    );
 
-    visitor.collect()
+    Some(visitor.collect())
 }
 
 struct InlayVisitor<'a> {

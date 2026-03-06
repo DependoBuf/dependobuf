@@ -5,7 +5,7 @@
 use tower_lsp::lsp_types::Range;
 use tower_lsp::lsp_types::{self};
 
-use dbuf_core::ast::parsed::location::{self, Offset};
+use dbuf_core::location::{self, Offset};
 
 pub type Position = location::Offset;
 pub type Location = location::Location<Position>;

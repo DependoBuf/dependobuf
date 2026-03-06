@@ -328,6 +328,7 @@ dependencies = [
  "dashmap 6.1.0",
  "dbuf-core",
  "pretty",
+ "pretty_assertions",
  "strum",
  "strum_macros",
  "thiserror",

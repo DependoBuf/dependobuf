@@ -16,7 +16,7 @@ struct Backend {
     client: Client,
     workspace: WorkspaceAccess,
     action_handler: HandlerBox<action::Handler>,
-    completition_handler: HandlerBox<completion::Handler>,
+    completion_handler: HandlerBox<completion::Handler>,
     diagnostic_handler: HandlerBox<diagnostic::Handler>,
     navigation_handler: HandlerBox<navigation::Handler>,
 }
@@ -28,7 +28,7 @@ impl Backend {
             client,
             workspace: WorkspaceAccess::new(),
             action_handler: HandlerBox::default(),
-            completition_handler: HandlerBox::default(),
+            completion_handler: HandlerBox::default(),
             diagnostic_handler: HandlerBox::default(),
             navigation_handler: HandlerBox::default(),
         }
@@ -56,7 +56,7 @@ impl LanguageServer for Backend {
             current_capabilities.document_formatting_provider;
         capabilities.rename_provider = current_capabilities.rename_provider;
 
-        let _current_capabilites = self.completition_handler.init(&init);
+        let _current_capabilities = self.completion_handler.init(&init);
 
         let current_capabilities = self.diagnostic_handler.init(&init);
         capabilities.document_symbol_provider = current_capabilities.document_symbol_provider;
@@ -64,6 +64,7 @@ impl LanguageServer for Backend {
         capabilities.references_provider = current_capabilities.references_provider;
         capabilities.document_highlight_provider = current_capabilities.document_highlight_provider;
         capabilities.code_lens_provider = current_capabilities.code_lens_provider;
+        capabilities.diagnostic_provider = current_capabilities.diagnostic_provider;
 
         let current_capabilities = self.navigation_handler.init(&init);
         capabilities.definition_provider = current_capabilities.definition_provider;
@@ -207,6 +208,15 @@ impl LanguageServer for Backend {
 
         self.diagnostic_handler
             .document_highlight(&self.workspace, pos, &uri)
+    }
+
+    async fn diagnostic(
+        &self,
+        params: DocumentDiagnosticParams,
+    ) -> Result<DocumentDiagnosticReportResult> {
+        let uri = params.text_document.uri;
+
+        self.diagnostic_handler.diagnostic(&self.workspace, &uri)
     }
 
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {

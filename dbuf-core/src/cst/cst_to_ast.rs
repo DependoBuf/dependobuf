@@ -1,19 +1,21 @@
 //! Module exports:
 //!   * `convert` function, which converts CST to AST
+
+use crate::arena::InternedString;
 use crate::ast::{
     operators::*,
-    parsed::{self, definition::*, location, *},
+    parsed::{definition::*, *},
 };
 
-use crate::arena::InernedString;
+use crate::location::{LocatedName, Location, Offset};
 
 use super::{Child, Token, Tree, TreeKind};
 
-type LocationCST = super::Location;
+type LocationCST = Location<Offset>;
 
-type OffsetAST = location::Offset;
-type LocationAST = location::Location<OffsetAST>;
-type NameAST = parsed::located_name::LocatedName<InernedString, OffsetAST>;
+type OffsetAST = Offset;
+type LocationAST = Location<Offset>;
+type NameAST = LocatedName<InternedString, OffsetAST>;
 
 pub type ParsedModule = Module<LocationAST, NameAST>;
 
@@ -37,14 +39,14 @@ fn to_name(child: &Child, kind: NameKind) -> Option<NameAST> {
         UC => match child {
             Child::Token(Token::UCIdentifier(name), loc) => Some(NameAST {
                 content: name.to_owned().into(),
-                start: loc.start(),
+                start: loc.start,
             }),
             _ => None,
         },
         LC => match child {
             Child::Token(Token::LCIdentifier(name), loc) => Some(NameAST {
                 content: name.to_owned().into(),
-                start: loc.start(),
+                start: loc.start,
             }),
             _ => None,
         },
@@ -59,10 +61,7 @@ impl From<&Tree> for LocationAST {
 
 impl From<&LocationCST> for LocationAST {
     fn from(value: &LocationCST) -> Self {
-        LocationAST {
-            start: value.start(),
-            length: (value.end() - value.start()).expect("correct location cst"),
-        }
+        value.to_owned()
     }
 }
 
@@ -316,7 +315,7 @@ fn convert_expression_identifier(ei: &Tree) -> Expression<LocationAST, NameAST> 
         node: ExpressionNode::Variable { name: first_ident },
     };
 
-    let start = ei.location.start();
+    let start = ei.location.start;
 
     for i in ident {
         let Some(name) = i else {

@@ -13,6 +13,8 @@ use tower_lsp::lsp_types::FormattingOptions;
 
 use super::get_handler;
 
+use pretty_assertions::assert_eq;
+
 const CANON_FILE_PATH: &str = "./tests/sample.dbuf";
 
 fn get_canon_strign() -> String {
@@ -38,7 +40,7 @@ fn canon_formatting() {
         assert!(edits.len() == 1);
 
         let edit = edits.first().unwrap();
-        assert!(edit.new_text == get_canon_strign());
+        assert_eq!(edit.new_text, get_canon_strign());
     } else {
         panic!("bad result for canon formatting:\n{res:#?}");
     }

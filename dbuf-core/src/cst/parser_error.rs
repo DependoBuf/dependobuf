@@ -10,8 +10,9 @@ use chumsky::prelude::*;
 use chumsky::util::Maybe;
 use chumsky::util::MaybeRef;
 
-use super::Location;
 use super::Token;
+use crate::location::Location;
+use crate::location::Offset;
 
 use crate::error::parsing;
 use crate::error::parsing::{ErrorExtra, ExpectedPattern};
@@ -39,13 +40,13 @@ impl From<&'static str> for ExpectedPattern {
 
 impl<'src, I, L> LabelError<'src, I, L> for ParsingError
 where
-    I: Input<'src, Span = Location, Token = Token>,
+    I: Input<'src, Span = Location<Offset>, Token = Token>,
     L: Into<ExpectedPattern>,
 {
     fn expected_found<E: IntoIterator<Item = L>>(
         expected: E,
         found: Option<MaybeRef<'src, Token>>,
-        span: Location,
+        span: Location<Offset>,
     ) -> Self {
         let found = found.map(|maybe| match maybe {
             Maybe::Ref(r) => r.to_owned(),
@@ -67,7 +68,7 @@ where
 
 impl<'src, I> Error<'src, I> for ParsingError
 where
-    I: ValueInput<'src, Span = Location, Token = Token>,
+    I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
     fn merge(mut self, other: Self) -> Self {
         other.expected.into_iter().for_each(|e| {
@@ -79,7 +80,7 @@ where
 
 impl<'src, 'b, I, E> From<&mut MapExtra<'src, 'b, I, E>> for ParsingError
 where
-    I: ValueInput<'src, Span = Location, Token = Token>,
+    I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
     E: ParserExtra<'src, I>,
 {
     fn from(value: &mut MapExtra<'src, 'b, I, E>) -> Self {
@@ -94,7 +95,7 @@ where
 
 impl ParsingError {
     #[must_use]
-    pub(super) fn bad_call_chain(mut self, loc: Location) -> Self {
+    pub(super) fn bad_call_chain(mut self, loc: Location<Offset>) -> Self {
         self.extra = Some(ErrorExtra::BadCallChain(loc));
         self
     }

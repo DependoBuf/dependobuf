@@ -6,10 +6,14 @@ use crate::core::ast_access::{
 use crate::core::ast_visitor::*;
 
 /// Returns all document symbols of file.
-pub fn provide_document_symbols(file: &File) -> Vec<DocumentSymbol> {
-    let mut visitor = SymbolVisitor::new(file);
-    visit_ast(file.get_parsed(), &mut visitor, file.get_elaborated());
-    visitor.collect()
+pub fn provide_document_symbols(file: &File) -> Option<Vec<DocumentSymbol>> {
+    let mut visitor = SymbolVisitor::new(file)?;
+    visit_ast(
+        file.get_parsed().take()?,
+        &mut visitor,
+        file.get_elaborated().take()?,
+    );
+    Some(visitor.collect())
 }
 
 #[allow(
@@ -229,11 +233,11 @@ struct SymbolVisitor<'a> {
 }
 
 impl SymbolVisitor<'_> {
-    fn new(file: &File) -> SymbolVisitor<'_> {
-        SymbolVisitor {
-            elaborated: file.get_elaborated(),
+    fn new(file: &File) -> Option<SymbolVisitor<'_>> {
+        Some(SymbolVisitor {
+            elaborated: file.get_elaborated().take()?,
             builder: SymbolBuilder::new(),
-        }
+        })
     }
     fn collect(self) -> Vec<DocumentSymbol> {
         let empty_builder = match self.builder {

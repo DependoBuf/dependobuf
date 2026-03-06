@@ -2,8 +2,9 @@ use std::ops::Range;
 
 use ariadne::{Color, Fmt, Label, Report, ReportKind, Source};
 
-use dbuf_core::ast::parsed::location::Offset;
-use dbuf_core::cst::Location;
+use dbuf_core::location::Location;
+use dbuf_core::location::Offset;
+
 use dbuf_core::error::parsing::ErrorExtra;
 use dbuf_core::error::{Error, elaborating, lexing, parsing};
 
@@ -133,8 +134,8 @@ impl<'a> Reporter<'a> {
         }
     }
 
-    fn convert_location(&self, loc: &Location) -> Range<usize> {
-        let location_start = self.convert_offset(loc.start());
+    fn convert_location(&self, loc: &Location<Offset>) -> Range<usize> {
+        let location_start = self.convert_offset(loc.start);
         let location_end = self.convert_offset(loc.end());
         location_start..location_end
     }

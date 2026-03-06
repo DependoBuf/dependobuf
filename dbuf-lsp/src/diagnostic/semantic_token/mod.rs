@@ -24,14 +24,18 @@ use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
 use crate::core::ast_visitor::*;
 
 /// Returns all semantic tokens of file
-pub fn provide_semantic_tokens(file: &File) -> SemanticTokens {
-    let mut visitor = SemanticTokenVisitor::new(file);
-    visit_ast(file.get_parsed(), &mut visitor, file.get_elaborated());
+pub fn provide_semantic_tokens(file: &File) -> Option<SemanticTokens> {
+    let mut visitor = SemanticTokenVisitor::new(file)?;
+    visit_ast(
+        file.get_parsed().take()?,
+        &mut visitor,
+        file.get_elaborated().take()?,
+    );
 
-    SemanticTokens {
+    Some(SemanticTokens {
         result_id: None,
         data: visitor.result,
-    }
+    })
 }
 
 /// Returns all semantic tokens types in correct order.
@@ -98,18 +102,18 @@ struct SemanticTokenVisitor<'a> {
 }
 
 impl SemanticTokenVisitor<'_> {
-    fn new(file: &File) -> SemanticTokenVisitor<'_> {
-        SemanticTokenVisitor {
-            elaborated: file.get_elaborated(),
+    fn new(file: &File) -> Option<SemanticTokenVisitor<'_>> {
+        Some(SemanticTokenVisitor {
+            elaborated: file.get_elaborated().take()?,
             last_line: 0,
             last_char: 0,
             result: vec![],
-            scope: ScopeVisitor::new(file.get_elaborated()),
-        }
+            scope: ScopeVisitor::new(file.get_elaborated().take()?),
+        })
     }
 
-    fn push_string(&mut self, str: &Str, token: Token, is_declaration: bool) {
-        let mut builder = TokenBuilder::new(token).at(str.get_location());
+    fn push_string(&mut self, loc: Loc, token: Token, is_declaration: bool) {
+        let mut builder = TokenBuilder::new(token).at(loc);
         if is_declaration {
             builder = builder.with_modifier(Modifier::Declaration);
         }
@@ -132,9 +136,8 @@ impl SemanticTokenVisitor<'_> {
         self.result.push(token);
     }
 
-    fn push_str(&mut self, text: &str, location: Loc, token: Token) {
-        let str = Str::new(text, location);
-        self.push_string(&str, token, false);
+    fn push_str(&mut self, _text: &str, location: Loc, token: Token) {
+        self.push_string(location, token, false);
     }
 
     fn push_keyword(&mut self, text: &str, location: &Loc) {
@@ -215,55 +218,59 @@ impl<'a> Visitor<'a> for SemanticTokenVisitor<'a> {
             Visit::Keyword(keyword, location) => self.push_keyword(keyword, location),
             Visit::Type(type_name, _) => {
                 let token = self.get_type_token(type_name);
-                self.push_string(type_name, token, true);
+                self.push_string(type_name.get_location(), token, true);
             }
-            Visit::Dependency(dep_name, _) => self.push_string(dep_name, Token::Parameter, true),
+            Visit::Dependency(dep_name, _) => {
+                self.push_string(dep_name.get_location(), Token::Parameter, true);
+            }
             Visit::Branch => {}
             Visit::PatternAlias(alias) => {
-                self.push_string(alias, Token::Property, true);
+                self.push_string(alias.get_location(), Token::Property, true);
             }
             Visit::PatternCall(call_name, _) => {
                 let token = self.get_constructor_token(call_name);
-                self.push_string(call_name, token, false);
+                self.push_string(call_name.get_location(), token, false);
             }
             Visit::PatternCallArgument(arg_name) => {
-                self.push_string(arg_name, Token::Property, false);
+                self.push_string(arg_name.get_location(), Token::Property, false);
             }
             Visit::PatternCallStop => {}
             Visit::PatternLiteral(literal, location) => self.push_literal(literal, location),
             Visit::PatternUnderscore(location) => self.push_keyword("*", location),
             Visit::Constructor(ctr) => {
                 if !ctr.of_message {
-                    self.push_string(ctr.name, Token::EnumConstructor, true);
+                    self.push_string(ctr.name.get_location(), Token::EnumConstructor, true);
                 }
             }
-            Visit::Filed(field_name, _) => self.push_string(field_name, Token::Property, true),
+            Visit::Filed(field_name, _) => {
+                self.push_string(field_name.get_location(), Token::Property, true);
+            }
             Visit::TypeExpression(type_name, _) => {
                 let token = self.get_type_token(type_name);
-                self.push_string(type_name, token, false);
+                self.push_string(type_name.get_location(), token, false);
             }
             Visit::Expression(_) => {}
             Visit::AccessChainStart => {}
             Visit::AccessChain(access) => {
                 let token = self.get_access_token(access);
-                self.push_string(access, token, false);
+                self.push_string(access.get_location(), token, false);
             }
             Visit::AccessDot(loc) => self.push_operator(".", loc),
             Visit::AccessChainLast(access) => {
                 let token = self.get_access_token(access);
-                self.push_string(access, token, false);
+                self.push_string(access.get_location(), token, false);
             }
             Visit::ConstructorExpr(cons_name) => {
                 let token = self.get_constructor_token(cons_name);
-                self.push_string(cons_name, token, false);
+                self.push_string(cons_name.get_location(), token, false);
             }
             Visit::ConstructorExprArgument(arg_name) => {
-                self.push_string(arg_name, Token::Property, false);
+                self.push_string(arg_name.get_location(), Token::Property, false);
             }
             Visit::ConstructorExprStop => {}
             Visit::VarAccess(access) => {
                 let token = self.get_access_token(access);
-                self.push_string(access, token, false);
+                self.push_string(access.get_location(), token, false);
             }
             Visit::Operator(op, location) => self.push_operator(op, location),
             Visit::Literal(literal, location) => self.push_literal(literal, location),

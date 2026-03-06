@@ -19,7 +19,9 @@ use std::{
     sync::LazyLock,
 };
 
-use super::location::{Locatable, Location, Offset};
+use super::location::Locatable;
+use crate::location::Location;
+use crate::location::Offset;
 
 use crate::error::lexing::{Error, ErrorData, ErrorKind};
 
@@ -196,7 +198,7 @@ pub enum Token {
 }
 
 impl Locatable for Lexer<'_, Token> {
-    fn location(&self) -> Location {
+    fn location(&self) -> Location<Offset> {
         Location::new(
             self.extras.token_start,
             self.extras.get_offset(self.span().end),

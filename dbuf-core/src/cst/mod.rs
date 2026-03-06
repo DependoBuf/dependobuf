@@ -13,14 +13,18 @@ use chumsky::Parser;
 use chumsky::input::{Input, Stream};
 use logos::Logos;
 
-use crate::ast::parsed::location::Offset;
 use cst_to_ast::convert;
 use located_token::LocatedLexer;
 
-pub use crate::error::Error;
-pub use cst_to_ast::ParsedModule;
+use crate::arena::InternedString;
+use crate::ast::parsed::Module;
+use crate::error::Error;
+use crate::location::LocatedName;
+
+use crate::location::Location;
+use crate::location::Offset;
+
 pub use lexer::Token;
-pub use location::Location;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TreeKind {
@@ -55,13 +59,13 @@ pub enum TreeKind {
 #[derive(Debug)]
 pub struct Tree {
     pub kind: TreeKind,
-    pub location: Location,
+    pub location: Location<Offset>,
     pub children: Vec<Child>,
 }
 
 #[derive(Debug)]
 pub enum Child {
-    Token(Token, Location),
+    Token(Token, Location<Offset>),
     Tree(Tree),
 }
 
@@ -100,6 +104,8 @@ pub fn parse_to_cst(text: &str) -> (Option<Tree>, Vec<Error>) {
 
 /// Convert CST to AST.
 #[must_use]
-pub fn convert_to_ast(tree: &Tree) -> ParsedModule {
+pub fn convert_to_ast(
+    tree: &Tree,
+) -> Module<Location<Offset>, LocatedName<InternedString, Offset>> {
     convert(tree)
 }

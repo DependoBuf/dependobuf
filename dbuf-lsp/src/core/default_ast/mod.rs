@@ -8,22 +8,29 @@
 //! ```
 //!
 
-mod ast_builder;
-mod ast_fix_locations;
-mod mutable_pretty_printer;
-
 mod elaborated_ast_example;
-mod parsed_ast_example;
 
 use elaborated_ast_example::*;
-use parsed_ast_example::*;
 
-use super::ast_access::{ElaboratedAst, ParsedAst};
-
-pub fn default_parsed_ast() -> ParsedAst {
-    rename_parsed_ast()
-}
+use super::ast_access::ElaboratedAst;
 
 pub fn default_elaborated_ast() -> ElaboratedAst {
     rename_elaborated_ast()
+}
+
+#[cfg(test)]
+use super::ast_access::ParsedAst;
+#[cfg(test)]
+pub fn default_parsed_ast() -> ParsedAst {
+    use dbuf_core::cst::convert_to_ast;
+    use dbuf_core::cst::parse_to_cst;
+
+    let code = include_str!("sample.dbuf");
+
+    let (tree, err) = parse_to_cst(code);
+
+    assert!(err.is_empty());
+    assert!(tree.is_some());
+
+    convert_to_ast(&tree.unwrap())
 }

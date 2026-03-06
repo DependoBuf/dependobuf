@@ -1,5 +1,5 @@
 //! Module exports:
-//! * type `ParsedAst` - alias for parsed ast wich implements `ParsedHelper`
+//! * type `ParsedAst` - alias for parsed ast which implements `ParsedHelper`
 //!
 
 use dbuf_core::ast::parsed;
