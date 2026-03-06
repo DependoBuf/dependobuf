@@ -4,6 +4,8 @@ edition.workspace = true
 version.workspace = true
 
 [dependencies]
+internment.workspace = true
+
 chumsky.workspace = true
 logos.workspace = true
 unescape.workspace = true

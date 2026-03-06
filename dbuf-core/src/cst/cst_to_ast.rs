@@ -5,13 +5,15 @@ use crate::ast::{
     parsed::{self, definition::*, location, *},
 };
 
+use crate::arena::InernedString;
+
 use super::{Child, Token, Tree, TreeKind};
 
 type LocationCST = super::Location;
 
 type OffsetAST = location::Offset;
 type LocationAST = location::Location<OffsetAST>;
-type NameAST = parsed::located_name::LocatedName<String, OffsetAST>;
+type NameAST = parsed::located_name::LocatedName<InernedString, OffsetAST>;
 
 pub type ParsedModule = Module<LocationAST, NameAST>;
 
@@ -34,14 +36,14 @@ fn to_name(child: &Child, kind: NameKind) -> Option<NameAST> {
     match kind {
         UC => match child {
             Child::Token(Token::UCIdentifier(name), loc) => Some(NameAST {
-                content: name.to_owned(),
+                content: name.to_owned().into(),
                 start: loc.start(),
             }),
             _ => None,
         },
         LC => match child {
             Child::Token(Token::LCIdentifier(name), loc) => Some(NameAST {
-                content: name.to_owned(),
+                content: name.to_owned().into(),
                 start: loc.start(),
             }),
             _ => None,
