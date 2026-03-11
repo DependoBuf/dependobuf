@@ -48,11 +48,11 @@ pub struct Navigator<'a> {
 
 impl Navigator<'_> {
     /// Creates navigator for file.
-    pub fn new(file: &File) -> Navigator<'_> {
-        Navigator {
-            parsed: file.get_parsed(),
-            elaborated: file.get_elaborated(),
-        }
+    pub fn new(file: &File) -> Option<Navigator<'_>> {
+        Some(Navigator {
+            parsed: file.get_parsed().take()?,
+            elaborated: file.get_elaborated().take()?,
+        })
     }
 
     /// Returns symbol in `pos`.

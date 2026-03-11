@@ -25,6 +25,7 @@
 //!
 
 mod code_lens;
+mod diagnostic_impl;
 mod document_symbol;
 mod semantic_token;
 
@@ -48,6 +49,7 @@ pub struct Capabilities {
     pub references_provider: Option<OneOf<bool, ReferencesOptions>>,
     pub document_highlight_provider: Option<OneOf<bool, DocumentHighlightOptions>>,
     pub code_lens_provider: Option<CodeLensOptions>,
+    pub diagnostic_provider: Option<DiagnosticServerCapabilities>,
 }
 
 impl handler_box::Handler for Handler {
@@ -74,6 +76,16 @@ impl handler_box::Handler for Handler {
                 code_lens_provider: Some(CodeLensOptions {
                     resolve_provider: Some(false),
                 }),
+                diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
+                    DiagnosticOptions {
+                        identifier: Some("dbuf language server".into()),
+                        inter_file_dependencies: true,
+                        workspace_diagnostics: false,
+                        work_done_progress_options: WorkDoneProgressOptions {
+                            work_done_progress: None,
+                        },
+                    },
+                )),
             },
             Handler {},
         )
@@ -92,7 +104,9 @@ impl Handler {
         document: &Url,
     ) -> Result<Option<DocumentSymbolResponse>> {
         let file = access.read(document);
-        let symbols = document_symbol::provide_document_symbols(&file);
+        let Some(symbols) = document_symbol::provide_document_symbols(&file) else {
+            return Ok(None);
+        };
         Ok(Some(DocumentSymbolResponse::Nested(symbols)))
     }
 
@@ -107,7 +121,9 @@ impl Handler {
         document: &Url,
     ) -> Result<Option<SemanticTokensResult>> {
         let file = access.read(document);
-        let tokens = semantic_token::provide_semantic_tokens(&file);
+        let Some(tokens) = semantic_token::provide_semantic_tokens(&file) else {
+            return Ok(None);
+        };
 
         Ok(Some(tokens.into()))
     }
@@ -124,7 +140,9 @@ impl Handler {
         document: &Url,
     ) -> Result<Option<Vec<Location>>> {
         let file = access.read(document);
-        let navigator = Navigator::new(&file);
+        let Some(navigator) = Navigator::new(&file) else {
+            return Ok(None);
+        };
 
         let symbol = navigator.get_symbol(pos);
         let ranges = navigator.find_symbols(&symbol);
@@ -151,7 +169,9 @@ impl Handler {
         document: &Url,
     ) -> Result<Option<Vec<DocumentHighlight>>> {
         let file = access.read(document);
-        let navigator = Navigator::new(&file);
+        let Some(navigator) = Navigator::new(&file) else {
+            return Ok(None);
+        };
 
         let symbol = navigator.get_symbol(pos);
         let ranges = navigator.find_symbols(&symbol);
@@ -180,8 +200,34 @@ impl Handler {
         document: &Url,
     ) -> Result<Option<Vec<CodeLens>>> {
         let file = access.read(document);
-        let lens = code_lens::provide_code_lens(&file);
+        let Some(lens) = code_lens::provide_code_lens(&file) else {
+            return Ok(None);
+        };
 
         Ok(Some(lens))
+    }
+
+    /// `textDocument/diagnostic` implementation.
+    ///
+    /// # Errors
+    ///
+    /// Errors are never return.
+    pub fn diagnostic(
+        &self,
+        access: &WorkspaceAccess,
+        document: &Url,
+    ) -> Result<DocumentDiagnosticReportResult> {
+        let file = access.read(document);
+        let diag = diagnostic_impl::provide_diagnostic(&file);
+
+        Ok(DocumentDiagnosticReportResult::Report(
+            DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
+                related_documents: None,
+                full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                    result_id: None,
+                    items: diag,
+                },
+            }),
+        ))
     }
 }

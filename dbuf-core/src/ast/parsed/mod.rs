@@ -1,6 +1,4 @@
 pub mod definition;
-pub mod located_name;
-pub mod location;
 
 use super::operators::{Literal, OpCall};
 use definition::Definitions;

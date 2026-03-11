@@ -6,8 +6,8 @@ use std::fmt::Display;
 use strum_macros::EnumMessage;
 use thiserror::Error;
 
-use crate::cst::Location;
 use crate::cst::Token;
+use crate::location::{Location, Offset};
 
 /// General parsing error structure.
 #[derive(Clone, Debug, Error)]
@@ -15,7 +15,7 @@ use crate::cst::Token;
 pub struct Error {
     pub found: Option<Token>,
     pub expected: Vec<ExpectedPattern>,
-    pub at: Location,
+    pub at: Location<Offset>,
     pub extra: Option<ErrorExtra>,
 }
 
@@ -23,7 +23,7 @@ pub struct Error {
 #[derive(Clone, Debug, EnumMessage)]
 pub enum ErrorExtra {
     /// Call chain ends with dot.
-    BadCallChain(Location),
+    BadCallChain(Location<Offset>),
     /// Typed hole found.
     TypedHole,
 }

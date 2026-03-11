@@ -9,7 +9,9 @@ use chumsky::Parser;
 use chumsky::extra::ParserExtra;
 use chumsky::input::Input;
 
-use super::Location;
+use crate::location::Location;
+use crate::location::Offset;
+
 use super::{Child, Token, Tree, TreeKind};
 
 /// Trait implemented for every `Token` parser.
@@ -27,7 +29,7 @@ where
 
 impl<'src, I, E, P> MapToken<'src, I, E> for P
 where
-    I: Input<'src, Span = Location, Token = Token>,
+    I: Input<'src, Span = Location<Offset>, Token = Token>,
     E: ParserExtra<'src, I>,
     P: Parser<'src, I, Token, E> + Clone,
 {
@@ -57,7 +59,7 @@ where
 
 impl<'src, I, O, E, P> MapTree<'src, I, O, E> for P
 where
-    I: Input<'src, Span = Location, Token = Token>,
+    I: Input<'src, Span = Location<Offset>, Token = Token>,
     E: ParserExtra<'src, I>,
     P: Parser<'src, I, O, E> + Clone,
     O: ChildFlatten,
@@ -91,7 +93,7 @@ where
 
 impl<'src, I, E, P> MapChild<'src, I, E> for P
 where
-    I: Input<'src, Span = Location, Token = Token>,
+    I: Input<'src, Span = Location<Offset>, Token = Token>,
     E: ParserExtra<'src, I>,
     P: Parser<'src, I, Tree, E> + Clone,
 {

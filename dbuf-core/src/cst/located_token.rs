@@ -1,7 +1,10 @@
 //! Module that exports `LocatedLexer` - a lexer which iterator
 //! returns `(Token, Location)`
 //!
-use super::location::{Locatable, Location};
+use super::location::Locatable;
+
+use crate::location::Location;
+use crate::location::Offset;
 
 /// Lexer abstraction that returns its tokens
 /// with their locations.
@@ -18,7 +21,7 @@ impl<Lex: Locatable + Iterator> LocatedLexer<Lex> {
 }
 
 impl<Lex: Locatable + Iterator> Iterator for LocatedLexer<Lex> {
-    type Item = (<Lex as Iterator>::Item, Location);
+    type Item = (<Lex as Iterator>::Item, Location<Offset>);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.lex.next().map(|token| (token, self.lex.location()))

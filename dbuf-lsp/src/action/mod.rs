@@ -27,7 +27,7 @@ use tower_lsp::lsp_types::*;
 
 use crate::handler_box;
 
-use crate::core::ast_access::WorkspaceAccess;
+use crate::core::ast_access::{Saved, WorkspaceAccess};
 use crate::core::navigator::Navigator;
 use crate::core::pretty_printer::PrettyPrinter;
 
@@ -86,7 +86,9 @@ impl Handler {
         };
 
         let file = access.read(document);
-        let ast = file.get_parsed();
+        let Saved::Current(ast) = file.get_parsed() else {
+            return Ok(None);
+        };
 
         let mut writer =
             PrettyPrinter::new(&mut edit.new_text).with_tab_size(options.tab_size as usize);
@@ -112,7 +114,9 @@ impl Handler {
         let file = access.read(document);
         let doc_version = file.get_version();
 
-        let navigator = Navigator::new(&file);
+        let Some(navigator) = Navigator::new(&file) else {
+            return Ok(None);
+        };
         let symbol = navigator.get_symbol(pos);
 
         if rename::renameable_symbol(&symbol) {
@@ -142,14 +146,19 @@ impl Handler {
         document: &Url,
     ) -> Result<Option<WorkspaceEdit>> {
         let file = access.read(document);
-        let navigator = Navigator::new(&file);
+        let Some(elaborated) = file.get_elaborated().take() else {
+            return Ok(None);
+        };
+        let Some(navigator) = Navigator::new(&file) else {
+            return Ok(None);
+        };
 
         let symbol = self
             .rename_cache
             .get(document, file.get_version(), pos)
             .map_or_else(|| navigator.get_symbol(pos), |cached| cached);
 
-        rename::renameable_to_symbol(&symbol, new_name, file.get_elaborated())?;
+        rename::renameable_to_symbol(&symbol, new_name, elaborated)?;
 
         let ranges = navigator.find_symbols(&symbol);
 

@@ -83,7 +83,9 @@ impl Handler {
         document: &Url,
     ) -> Result<Option<GotoDefinitionResponse>> {
         let file = access.read(document);
-        let navigator = Navigator::new(&file);
+        let Some(navigator) = Navigator::new(&file) else {
+            return Ok(None);
+        };
 
         let symbol = navigator.get_symbol(pos);
         let range = navigation_impl::find_definition(&navigator, &symbol);
@@ -108,7 +110,9 @@ impl Handler {
         document: &Url,
     ) -> Result<Option<GotoTypeDefinitionResponse>> {
         let file = access.read(document);
-        let navigator = Navigator::new(&file);
+        let Some(navigator) = Navigator::new(&file) else {
+            return Ok(None);
+        };
 
         let symbol = navigator.get_symbol(pos);
         let t = navigation_impl::find_type(&navigator, symbol);
@@ -142,11 +146,15 @@ impl Handler {
         document: &Url,
     ) -> Result<Option<Hover>> {
         let file = access.read(document);
-        let navigator = Navigator::new(&file);
+        let Some(navigator) = Navigator::new(&file) else {
+            return Ok(None);
+        };
 
         let symbol = navigator.get_symbol(pos);
 
-        let strings = hover::get_hover(symbol, &file);
+        let Some(strings) = hover::get_hover(symbol, &file) else {
+            return Ok(None);
+        };
         if strings.is_empty() {
             Ok(None)
         } else {
@@ -172,6 +180,6 @@ impl Handler {
     ) -> Result<Option<Vec<InlayHint>>> {
         let file = access.read(document);
 
-        Ok(Some(inlay_hint::get_inlay_hint(range, &file)))
+        Ok(inlay_hint::get_inlay_hint(range, &file))
     }
 }

@@ -15,6 +15,6 @@ pub static TEST_URL: LazyLock<Url> =
     LazyLock::new(|| Url::from_file_path("/testing.dbuf").unwrap());
 pub static TEST_WORKSPACE: LazyLock<WorkspaceAccess> = LazyLock::new(|| {
     let ans = WorkspaceAccess::new();
-    ans.open(TEST_URL.clone(), 0, "");
+    ans.open(TEST_URL.clone(), 0, include_str!("../sample.dbuf"));
     ans
 });

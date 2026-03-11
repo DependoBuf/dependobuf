@@ -1,4 +1,5 @@
-//! `LocatedName` for parsed AST.
+//! Module exports `LocatedName` a single line name with location.
+//!
 
 use std::{fmt, ops::Add};
 

@@ -17,8 +17,11 @@ mod string;
 
 use dashmap::DashMap;
 use dashmap::mapref::one::Ref;
-use dbuf_core::ast::parsed::located_name::LocatedName;
-use dbuf_core::ast::parsed::location::Offset;
+
+use dbuf_core::arena::InternedString;
+use dbuf_core::cst;
+use dbuf_core::location::LocatedName;
+use dbuf_core::location::Offset;
 use tower_lsp::lsp_types::Url;
 
 use parsers::*;
@@ -29,9 +32,11 @@ pub use location::*;
 pub use string::*;
 
 /// String for `ParsedAst`
-pub type Str = LocatedName<String, Offset>;
+pub type Str = LocatedName<InternedString, Offset>;
 /// Location for `ParsedAst`
 pub type Loc = Location;
+/// Alias for `cst::Tree`
+pub type Cst = cst::Tree;
 /// Alias for `ElaboratedAst`
 pub use elaborated_ast::ElaboratedAst;
 /// Alias for `ParsedAst`
@@ -58,10 +63,27 @@ impl WorkspaceAccess {
 
     /// Builds asts for text and setup File for it.
     pub fn open(&self, url: Url, version: i32, text: &str) {
-        let parsed: ParsedAst = get_parsed(text);
-        let elaborated: ElaboratedAst = get_elaborated(text);
+        let mut errors = vec![];
 
-        let file = File::new(version, parsed, elaborated);
+        let cst = {
+            let (cst, err) = get_cst(text);
+            errors.extend(err);
+            cst
+        };
+
+        let parsed = cst.as_ref().and_then(|t| {
+            let (parsed, err) = get_parsed(t);
+            errors.extend(err);
+            parsed
+        });
+
+        let elaborated = parsed.as_ref().and_then(|t| {
+            let (elaborated, err) = get_elaborated(t);
+            errors.extend(err);
+            elaborated
+        });
+
+        let file = File::new(version, cst, parsed, elaborated, errors);
 
         self.files.insert(url, file);
     }
@@ -72,17 +94,29 @@ impl WorkspaceAccess {
     ///
     /// Will panic if version is not monotonic (old file version is higher than current).
     pub fn change(&self, url: &Url, version: i32, text: &str) {
-        let parsed: ParsedAst = get_parsed(text);
-        let elaborated: ElaboratedAst = get_elaborated(text);
+        let mut errors = vec![];
 
-        let file = File::new(version, parsed, elaborated);
+        let cst = {
+            let (cst, err) = get_cst(text);
+            errors.extend(err);
+            cst
+        };
 
-        let old = self
-            .files
-            .insert(url.to_owned(), file)
-            .expect("file should be opened");
+        let parsed = cst.as_ref().and_then(|t| {
+            let (parsed, err) = get_parsed(t);
+            errors.extend(err);
+            parsed
+        });
 
-        assert!(old.get_version() < version, "versions shoud be monotonic");
+        let elaborated = parsed.as_ref().and_then(|t| {
+            let (elaborated, err) = get_elaborated(t);
+            errors.extend(err);
+            elaborated
+        });
+
+        self.files.alter(&url.to_owned(), |_u, f| {
+            f.modify(version, cst, parsed, elaborated, errors)
+        });
     }
 
     /// Returns File by `url`.

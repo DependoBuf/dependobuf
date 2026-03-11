@@ -1,4 +1,7 @@
-//! Locations for parsed AST.
+//! Module exports
+//! * `Offset` - difference between positions in a file
+//! * `Location` - starting location of any entrance in file
+//!
 
 use std::ops::{Add, Range, Sub};
 
@@ -72,11 +75,11 @@ pub struct Location<Pos> {
 
 impl<Pos> Location<Pos>
 where
-    Pos: Add<Offset, Output = Pos>,
+    Pos: Add<Offset, Output = Pos> + Clone,
 {
     /// Ending position of an entity.
-    pub fn end(self) -> Pos {
-        self.start + self.length
+    pub fn end(&self) -> Pos {
+        self.start.clone() + self.length
     }
 }
 
