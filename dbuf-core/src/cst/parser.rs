@@ -725,18 +725,20 @@ where
         .repeated()
         .collect::<Vec<_>>();
 
-    let recovery = var_ident
+    // recover on extra dot
+    let finish = dot
         .clone()
-        .then(dot_call.clone())
-        .then(dot.clone())
-        .map_tree(TreeKind::ExprIdentifier);
+        .map_with(|ch, extra| {
+            let l = extra.span();
+            extra.emit(ParsingError::new(Token::Dot, l).bad_call_chain(l));
+            ch
+        })
+        .or_not();
 
     var_ident
         .then(dot_call)
-        .then(dot.not().rewind())
+        .then(finish)
         .map_tree(TreeKind::ExprIdentifier)
-        .map_err_with_state(|e, l, ()| e.bad_call_chain(l))
-        .recover_with(via_parser(recovery))
 }
 
 /// Parses var identifier (`LCIdentifier`).

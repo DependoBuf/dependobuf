@@ -95,6 +95,16 @@ where
 
 impl ParsingError {
     #[must_use]
+    pub(super) fn new(found: Token, at: Location<Offset>) -> Self {
+        Self {
+            found: Some(found),
+            expected: vec![],
+            at,
+            extra: None,
+        }
+    }
+
+    #[must_use]
     pub(super) fn bad_call_chain(mut self, loc: Location<Offset>) -> Self {
         self.extra = Some(ErrorExtra::BadCallChain(loc));
         self
