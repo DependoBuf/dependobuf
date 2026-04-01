@@ -95,9 +95,9 @@ where
 
 impl ParsingError {
     #[must_use]
-    pub(super) fn new(found: Token, at: Location<Offset>) -> Self {
+    pub(super) fn new(found: Option<Token>, at: Location<Offset>) -> Self {
         Self {
-            found: Some(found),
+            found,
             expected: vec![],
             at,
             extra: None,
@@ -113,7 +113,12 @@ impl ParsingError {
     #[must_use]
     pub(super) fn typed_hole(mut self) -> Self {
         self.extra = Some(ErrorExtra::TypedHole);
-        self.found = Some(Token::Underscore);
+        self
+    }
+
+    #[must_use]
+    pub(super) fn missing_comma(mut self, loc: Location<Offset>) -> Self {
+        self.extra = Some(ErrorExtra::MissingComma(loc));
         self
     }
 }

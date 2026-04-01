@@ -20,10 +20,16 @@ pub struct Error {
 }
 
 /// Extra information about error.
-#[derive(Clone, Debug, EnumMessage)]
+#[derive(Clone, Debug, EnumMessage, PartialEq, Eq)]
 pub enum ErrorExtra {
     /// Call chain ends with dot.
+    ///
+    /// Argument: Location of whole call chain
     BadCallChain(Location<Offset>),
+    /// Missing comma in defintion.
+    ///
+    /// Argument: Location of line with no comma
+    MissingComma(Location<Offset>),
     /// Typed hole found.
     TypedHole,
 }

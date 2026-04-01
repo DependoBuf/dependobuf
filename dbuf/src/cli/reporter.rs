@@ -2,6 +2,7 @@ use std::ops::Range;
 
 use ariadne::{Color, Fmt, Label, Report, ReportKind, Source};
 
+use dbuf_core::cst::Token;
 use dbuf_core::location::Location;
 use dbuf_core::location::Offset;
 
@@ -43,7 +44,7 @@ impl<'a> Reporter<'a> {
     pub fn report(&mut self, err: Error) {
         match err {
             Error::LexingError(error) => self.lexing_error(error),
-            Error::ParsingError(error) => self.parsing_error(error),
+            Error::ParsingError(error) => self.parsing_error(&error),
             Error::ElaboratingError(error) => self.elaborating_error(error),
         }
     }
@@ -66,62 +67,139 @@ impl<'a> Reporter<'a> {
             .finish();
         self.reports.push(report);
     }
-    fn parsing_error(&mut self, err: parsing::Error) {
-        let (kind, c) = match err.extra {
-            Some(ErrorExtra::BadCallChain(_)) => (ReportKind::Warning, Color::Yellow),
-            Some(ErrorExtra::TypedHole) => (ReportKind::Warning, Color::Cyan),
-            None => (ReportKind::Error, Color::Red),
-        };
+    fn parsing_error(&mut self, err: &parsing::Error) {
+        match err.extra {
+            Some(ErrorExtra::BadCallChain(l)) => self.parsing_bad_call_chain(err, l),
+            Some(ErrorExtra::TypedHole) => self.parsing_type_hole(err),
+            Some(ErrorExtra::MissingComma(l)) => self.parsing_missing_comma(err, l),
+            None => self.parsing_regular_error(err),
+        }
+    }
+
+    /// Reports parsing bad call chain error.
+    ///
+    /// Arguments:
+    /// * `err`: error to report.
+    /// * `location`: definition of whole call chain
+    fn parsing_bad_call_chain(&mut self, err: &parsing::Error, location: Location<Offset>) {
+        assert!(matches!(err.extra, Some(ErrorExtra::BadCallChain(_))));
+        assert!(err.found == Some(Token::Dot));
+
+        let kind = ReportKind::Warning;
+
+        let span = self.convert_location(&err.at);
+        let loc1 = (self.file.name.as_ref(), span);
+        let label1 = Label::new(loc1.clone())
+            .with_color(Color::Yellow)
+            .with_message(format!("Found {}", (Token::Dot).fg(Color::Yellow)));
+
+        let span = self.convert_location(&location);
+        let loc2 = (self.file.name.as_ref(), span);
+        let label2 = Label::new(loc2)
+            .with_color(Color::Cyan)
+            .with_message("Unfinished call chain");
+
+        let report = Report::build(kind, loc1)
+            .with_label(label1)
+            .with_label(label2)
+            .with_message("Call chain not finished".to_string())
+            .finish();
+
+        self.reports.push(report);
+    }
+
+    /// Reports parsing missing comma error.
+    fn parsing_missing_comma(&mut self, err: &parsing::Error, location: Location<Offset>) {
+        assert!(matches!(err.extra, Some(ErrorExtra::MissingComma(_))));
+        assert!(err.found.is_none());
+
+        let kind = ReportKind::Warning;
+
+        let span = self.convert_location(&location);
+        let loc = (self.file.name.as_ref(), span);
+        let label = Label::new(loc.clone())
+            .with_color(Color::Cyan)
+            .with_message("Line has no ending with comma".to_string());
+
+        let report = Report::build(kind, loc)
+            .with_label(label)
+            .with_message(
+                "Line has no ending with comma"
+                    .fg(Color::Yellow)
+                    .to_string(),
+            )
+            .finish();
+
+        self.reports.push(report);
+    }
+
+    /// Reports parsing type hole error.
+    fn parsing_type_hole(&mut self, err: &parsing::Error) {
+        assert!(err.extra == Some(ErrorExtra::TypedHole));
+        assert!(err.found == Some(Token::Underscore));
+
+        let kind = ReportKind::Warning;
+
+        let span = self.convert_location(&err.at);
+        let loc = (self.file.name.as_ref(), span);
+        let label = Label::new(loc.clone())
+            .with_color(Color::Cyan)
+            .with_message(format!("Found {}", (Token::Underscore).fg(Color::Cyan)));
+
+        let report = Report::build(kind, loc)
+            .with_label(label)
+            .with_message(format!("Found {}.", "TypeHole".fg(Color::Cyan)))
+            .finish();
+
+        self.reports.push(report);
+    }
+
+    /// Reports regular parsing error.
+    fn parsing_regular_error(&mut self, err: &parsing::Error) {
+        assert!(err.extra.is_none());
+
+        let kind = ReportKind::Error;
 
         let span = self.convert_location(&err.at);
         let loc = (self.file.name.as_ref(), span);
 
-        let mut label = Label::new(loc.clone()).with_color(c);
-        let mut eof = true;
-        if let Some(t) = err.found {
-            eof = false;
-            label = label.with_message(format!("Found {}", t.fg(c)));
-        }
-
-        let mut report = Report::build(kind, loc).with_label(label);
-
-        let message = match err.extra {
-            Some(ErrorExtra::BadCallChain(loc)) => {
-                let span = self.convert_location(&loc);
-                let span_correct = span.start..(span.end + 1);
-                let loc = (self.file.name.as_ref(), span_correct);
-                let label = Label::new(loc)
-                    .with_color(Color::Cyan)
-                    .with_message("Unfinished call chain");
-
-                report = report.with_label(label);
-                "Call chain not finished.".to_string()
-            }
-            Some(ErrorExtra::TypedHole) => {
-                format!("Found {}.", "TypeHole".fg(Color::Cyan))
-            }
-            None => {
-                let mut ans = if eof {
-                    "Unexpected end of input.".to_string()
-                } else {
-                    "Unexpected token.".to_string()
-                };
-
-                if !err.expected.is_empty() {
-                    ans += " Expected one of:";
-                    for p in err.expected {
-                        let cur = format!("\"{p}\"");
-                        ans = format!("{ans} {}", cur.fg(Color::BrightGreen));
-                    }
-                }
-                ans
-            }
+        let (label, eof) = if let Some(t) = &err.found {
+            (
+                Label::new(loc.clone())
+                    .with_color(Color::Red)
+                    .with_message(format!("Found {}", t.fg(Color::Red)))
+                    .into(),
+                false,
+            )
+        } else {
+            (None, true)
         };
 
-        let report = report.with_message(message).finish();
+        let mut message = if eof {
+            "Unexpected end of input.".to_string()
+        } else {
+            "Unexpected token.".to_string()
+        };
 
-        self.reports.push(report);
+        if !err.expected.is_empty() {
+            let expected = err
+                .expected
+                .iter()
+                .map(|p| format!(" {}", format!("\"{p}\"").fg(Color::BrightGreen)));
+            message = format!(
+                "{message} Expected one of:{}.",
+                expected.collect::<String>()
+            );
+        }
+
+        let mut report = Report::build(kind, loc).with_message(message);
+        if let Some(l) = label {
+            report = report.with_label(l);
+        }
+
+        self.reports.push(report.finish());
     }
+
     fn elaborating_error(&mut self, _err: elaborating::Error) {
         unimplemented!()
     }

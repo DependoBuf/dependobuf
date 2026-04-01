@@ -186,7 +186,7 @@ pub enum Token {
     Underscore,
 
     #[regex(r"\n", newline_callback)]
-    Newline,
+    NewLine,
     #[regex(r"[ \t\r\f]+", at_callback)]
     Space,
     #[regex(r"//[^\n]*", line_comment_callback, allow_greedy = true)]
@@ -430,7 +430,7 @@ mod tests {
             "// comment line\n// other comment",
             &[
                 Some(Token::LineComment("// comment line".into())),
-                Some(Token::Newline),
+                Some(Token::NewLine),
                 Some(Token::LineComment("// other comment".into())),
             ],
         );
@@ -454,7 +454,7 @@ mod tests {
             "/* comment */\n",
             &[
                 Some(Token::BlockComment("/* comment */".into())),
-                Some(Token::Newline),
+                Some(Token::NewLine),
             ],
         );
         test_same(
