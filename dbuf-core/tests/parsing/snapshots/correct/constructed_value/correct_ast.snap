@@ -1,0 +1,317 @@
+---
+source: dbuf-core/tests/parsing/parsing_correct.rs
+expression: ast
+input_file: dbuf-core/tests/parsing/correct_dbufs/constructed_value.dbuf
+---
+[
+    Definition {
+        loc: Location {
+            start: Offset {
+                lines: 0,
+                columns: 0,
+            },
+            length: Offset {
+                lines: 2,
+                columns: 1,
+            },
+        },
+        name: LocatedName {
+            content: InternedString {
+                inner: "CtrValMesssage",
+            },
+            start: Offset {
+                lines: 0,
+                columns: 8,
+            },
+        },
+        data: TypeDeclaration {
+            dependencies: [],
+            body: Message(
+                [
+                    Definition {
+                        loc: Location {
+                            start: Offset {
+                                lines: 0,
+                                columns: 24,
+                            },
+                            length: Offset {
+                                lines: 1,
+                                columns: 54,
+                            },
+                        },
+                        name: LocatedName {
+                            content: InternedString {
+                                inner: "hard",
+                            },
+                            start: Offset {
+                                lines: 1,
+                                columns: 4,
+                            },
+                        },
+                        data: Expression {
+                            loc: Location {
+                                start: Offset {
+                                    lines: 1,
+                                    columns: 9,
+                                },
+                                length: Offset {
+                                    lines: 0,
+                                    columns: 44,
+                                },
+                            },
+                            node: FunCall {
+                                fun: LocatedName {
+                                    content: InternedString {
+                                        inner: "Dep",
+                                    },
+                                    start: Offset {
+                                        lines: 1,
+                                        columns: 9,
+                                    },
+                                },
+                                args: [
+                                    Expression {
+                                        loc: Location {
+                                            start: Offset {
+                                                lines: 1,
+                                                columns: 13,
+                                            },
+                                            length: Offset {
+                                                lines: 0,
+                                                columns: 40,
+                                            },
+                                        },
+                                        node: ConstructorCall {
+                                            name: LocatedName {
+                                                content: InternedString {
+                                                    inner: "Ctr1",
+                                                },
+                                                start: Offset {
+                                                    lines: 1,
+                                                    columns: 13,
+                                                },
+                                            },
+                                            fields: [
+                                                Definition {
+                                                    loc: Location {
+                                                        start: Offset {
+                                                            lines: 1,
+                                                            columns: 18,
+                                                        },
+                                                        length: Offset {
+                                                            lines: 0,
+                                                            columns: 29,
+                                                        },
+                                                    },
+                                                    name: LocatedName {
+                                                        content: InternedString {
+                                                            inner: "a",
+                                                        },
+                                                        start: Offset {
+                                                            lines: 1,
+                                                            columns: 18,
+                                                        },
+                                                    },
+                                                    data: Expression {
+                                                        loc: Location {
+                                                            start: Offset {
+                                                                lines: 1,
+                                                                columns: 21,
+                                                            },
+                                                            length: Offset {
+                                                                lines: 0,
+                                                                columns: 25,
+                                                            },
+                                                        },
+                                                        node: ConstructorCall {
+                                                            name: LocatedName {
+                                                                content: InternedString {
+                                                                    inner: "Ctr2",
+                                                                },
+                                                                start: Offset {
+                                                                    lines: 1,
+                                                                    columns: 21,
+                                                                },
+                                                            },
+                                                            fields: [
+                                                                Definition {
+                                                                    loc: Location {
+                                                                        start: Offset {
+                                                                            lines: 1,
+                                                                            columns: 26,
+                                                                        },
+                                                                        length: Offset {
+                                                                            lines: 0,
+                                                                            columns: 9,
+                                                                        },
+                                                                    },
+                                                                    name: LocatedName {
+                                                                        content: InternedString {
+                                                                            inner: "b",
+                                                                        },
+                                                                        start: Offset {
+                                                                            lines: 1,
+                                                                            columns: 26,
+                                                                        },
+                                                                    },
+                                                                    data: Expression {
+                                                                        loc: Location {
+                                                                            start: Offset {
+                                                                                lines: 1,
+                                                                                columns: 29,
+                                                                            },
+                                                                            length: Offset {
+                                                                                lines: 0,
+                                                                                columns: 5,
+                                                                            },
+                                                                        },
+                                                                        node: OpCall(
+                                                                            Binary(
+                                                                                Minus,
+                                                                                Expression {
+                                                                                    loc: Location {
+                                                                                        start: Offset {
+                                                                                            lines: 1,
+                                                                                            columns: 29,
+                                                                                        },
+                                                                                        length: Offset {
+                                                                                            lines: 0,
+                                                                                            columns: 2,
+                                                                                        },
+                                                                                    },
+                                                                                    node: OpCall(
+                                                                                        Literal(
+                                                                                            Int(
+                                                                                                1,
+                                                                                            ),
+                                                                                        ),
+                                                                                    ),
+                                                                                },
+                                                                                Expression {
+                                                                                    loc: Location {
+                                                                                        start: Offset {
+                                                                                            lines: 1,
+                                                                                            columns: 32,
+                                                                                        },
+                                                                                        length: Offset {
+                                                                                            lines: 0,
+                                                                                            columns: 2,
+                                                                                        },
+                                                                                    },
+                                                                                    node: OpCall(
+                                                                                        Literal(
+                                                                                            Int(
+                                                                                                1,
+                                                                                            ),
+                                                                                        ),
+                                                                                    ),
+                                                                                },
+                                                                            ),
+                                                                        ),
+                                                                    },
+                                                                },
+                                                                Definition {
+                                                                    loc: Location {
+                                                                        start: Offset {
+                                                                            lines: 1,
+                                                                            columns: 35,
+                                                                        },
+                                                                        length: Offset {
+                                                                            lines: 0,
+                                                                            columns: 10,
+                                                                        },
+                                                                    },
+                                                                    name: LocatedName {
+                                                                        content: InternedString {
+                                                                            inner: "c",
+                                                                        },
+                                                                        start: Offset {
+                                                                            lines: 1,
+                                                                            columns: 36,
+                                                                        },
+                                                                    },
+                                                                    data: Expression {
+                                                                        loc: Location {
+                                                                            start: Offset {
+                                                                                lines: 1,
+                                                                                columns: 39,
+                                                                            },
+                                                                            length: Offset {
+                                                                                lines: 0,
+                                                                                columns: 6,
+                                                                            },
+                                                                        },
+                                                                        node: ConstructorCall {
+                                                                            name: LocatedName {
+                                                                                content: InternedString {
+                                                                                    inner: "Ctr3",
+                                                                                },
+                                                                                start: Offset {
+                                                                                    lines: 1,
+                                                                                    columns: 39,
+                                                                                },
+                                                                            },
+                                                                            fields: [],
+                                                                        },
+                                                                    },
+                                                                },
+                                                            ],
+                                                        },
+                                                    },
+                                                },
+                                                Definition {
+                                                    loc: Location {
+                                                        start: Offset {
+                                                            lines: 1,
+                                                            columns: 47,
+                                                        },
+                                                        length: Offset {
+                                                            lines: 0,
+                                                            columns: 5,
+                                                        },
+                                                    },
+                                                    name: LocatedName {
+                                                        content: InternedString {
+                                                            inner: "f",
+                                                        },
+                                                        start: Offset {
+                                                            lines: 1,
+                                                            columns: 48,
+                                                        },
+                                                    },
+                                                    data: Expression {
+                                                        loc: Location {
+                                                            start: Offset {
+                                                                lines: 1,
+                                                                columns: 51,
+                                                            },
+                                                            length: Offset {
+                                                                lines: 0,
+                                                                columns: 1,
+                                                            },
+                                                        },
+                                                        node: Variable {
+                                                            name: LocatedName {
+                                                                content: InternedString {
+                                                                    inner: "f",
+                                                                },
+                                                                start: Offset {
+                                                                    lines: 1,
+                                                                    columns: 51,
+                                                                },
+                                                            },
+                                                        },
+                                                    },
+                                                },
+                                            ],
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                ],
+            ),
+        },
+    },
+]

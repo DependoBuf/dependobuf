@@ -1,0 +1,9 @@
+enum ExampleEnum {
+    Ctr1 {
+        x Int;
+        y String;
+    }
+    Ctr2 {
+        z String;
+    }
+}

@@ -1,0 +1,17 @@
+enum Simple (x Int) {
+    1 => {
+        Ctr1
+    }
+    * => {
+        Ctr2
+    }
+}
+
+enum Hard (x String) (y Dep) {
+    "a", a => {
+        Ctr1
+    }
+    *, Ctr{a:a, b:Ctr{c:Ctr{d:*, e:1}}} => {
+        Ctr2
+    }
+}

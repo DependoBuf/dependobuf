@@ -1,0 +1,9 @@
+message LexerUnfriendly {
+    hugeInt Dep 100000000000000000000;
+    badInt Dep 1000aba0000;
+    badFloat Dep 1000.000aba0000;
+    badString Dep "aaa\aaaa";
+    badLC Dep aba_aba;
+    badUC Dep Aba_Aba;
+    unknow Dep @;
+}

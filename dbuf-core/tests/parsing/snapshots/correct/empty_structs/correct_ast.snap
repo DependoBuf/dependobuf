@@ -1,0 +1,267 @@
+---
+source: dbuf-core/tests/parsing/parsing_correct.rs
+expression: ast
+input_file: dbuf-core/tests/parsing/correct_dbufs/empty_structs.dbuf
+---
+[
+    Definition {
+        loc: Location {
+            start: Offset {
+                lines: 0,
+                columns: 0,
+            },
+            length: Offset {
+                lines: 0,
+                columns: 24,
+            },
+        },
+        name: LocatedName {
+            content: InternedString {
+                inner: "EmptyMesssage",
+            },
+            start: Offset {
+                lines: 0,
+                columns: 8,
+            },
+        },
+        data: TypeDeclaration {
+            dependencies: [],
+            body: Message(
+                [],
+            ),
+        },
+    },
+    Definition {
+        loc: Location {
+            start: Offset {
+                lines: 0,
+                columns: 24,
+            },
+            length: Offset {
+                lines: 2,
+                columns: 17,
+            },
+        },
+        name: LocatedName {
+            content: InternedString {
+                inner: "EmptyEnum",
+            },
+            start: Offset {
+                lines: 2,
+                columns: 5,
+            },
+        },
+        data: TypeDeclaration {
+            dependencies: [],
+            body: Enum(
+                [],
+            ),
+        },
+    },
+    Definition {
+        loc: Location {
+            start: Offset {
+                lines: 2,
+                columns: 17,
+            },
+            length: Offset {
+                lines: 4,
+                columns: 1,
+            },
+        },
+        name: LocatedName {
+            content: InternedString {
+                inner: "EmptyBranchEnum1",
+            },
+            start: Offset {
+                lines: 4,
+                columns: 5,
+            },
+        },
+        data: TypeDeclaration {
+            dependencies: [
+                Definition {
+                    loc: Location {
+                        start: Offset {
+                            lines: 4,
+                            columns: 22,
+                        },
+                        length: Offset {
+                            lines: 0,
+                            columns: 7,
+                        },
+                    },
+                    name: LocatedName {
+                        content: InternedString {
+                            inner: "x",
+                        },
+                        start: Offset {
+                            lines: 4,
+                            columns: 23,
+                        },
+                    },
+                    data: Expression {
+                        loc: Location {
+                            start: Offset {
+                                lines: 4,
+                                columns: 25,
+                            },
+                            length: Offset {
+                                lines: 0,
+                                columns: 3,
+                            },
+                        },
+                        node: FunCall {
+                            fun: LocatedName {
+                                content: InternedString {
+                                    inner: "Int",
+                                },
+                                start: Offset {
+                                    lines: 4,
+                                    columns: 25,
+                                },
+                            },
+                            args: [],
+                        },
+                    },
+                },
+            ],
+            body: Enum(
+                [
+                    EnumBranch {
+                        patterns: [
+                            Pattern {
+                                loc: Location {
+                                    start: Offset {
+                                        lines: 5,
+                                        columns: 4,
+                                    },
+                                    length: Offset {
+                                        lines: 0,
+                                        columns: 1,
+                                    },
+                                },
+                                node: Underscore,
+                            },
+                        ],
+                        constructors: [],
+                    },
+                ],
+            ),
+        },
+    },
+    Definition {
+        loc: Location {
+            start: Offset {
+                lines: 6,
+                columns: 1,
+            },
+            length: Offset {
+                lines: 5,
+                columns: 1,
+            },
+        },
+        name: LocatedName {
+            content: InternedString {
+                inner: "EmptyBranchEnum2",
+            },
+            start: Offset {
+                lines: 8,
+                columns: 5,
+            },
+        },
+        data: TypeDeclaration {
+            dependencies: [
+                Definition {
+                    loc: Location {
+                        start: Offset {
+                            lines: 8,
+                            columns: 22,
+                        },
+                        length: Offset {
+                            lines: 0,
+                            columns: 7,
+                        },
+                    },
+                    name: LocatedName {
+                        content: InternedString {
+                            inner: "x",
+                        },
+                        start: Offset {
+                            lines: 8,
+                            columns: 23,
+                        },
+                    },
+                    data: Expression {
+                        loc: Location {
+                            start: Offset {
+                                lines: 8,
+                                columns: 25,
+                            },
+                            length: Offset {
+                                lines: 0,
+                                columns: 3,
+                            },
+                        },
+                        node: FunCall {
+                            fun: LocatedName {
+                                content: InternedString {
+                                    inner: "Int",
+                                },
+                                start: Offset {
+                                    lines: 8,
+                                    columns: 25,
+                                },
+                            },
+                            args: [],
+                        },
+                    },
+                },
+            ],
+            body: Enum(
+                [
+                    EnumBranch {
+                        patterns: [
+                            Pattern {
+                                loc: Location {
+                                    start: Offset {
+                                        lines: 9,
+                                        columns: 4,
+                                    },
+                                    length: Offset {
+                                        lines: 0,
+                                        columns: 1,
+                                    },
+                                },
+                                node: Literal(
+                                    Int(
+                                        1,
+                                    ),
+                                ),
+                            },
+                        ],
+                        constructors: [],
+                    },
+                    EnumBranch {
+                        patterns: [
+                            Pattern {
+                                loc: Location {
+                                    start: Offset {
+                                        lines: 10,
+                                        columns: 4,
+                                    },
+                                    length: Offset {
+                                        lines: 0,
+                                        columns: 1,
+                                    },
+                                },
+                                node: Underscore,
+                            },
+                        ],
+                        constructors: [],
+                    },
+                ],
+            ),
+        },
+    },
+]

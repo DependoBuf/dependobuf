@@ -28,6 +28,7 @@ pretty_assertions = "1.4.1"
 ariadne = "0.6.0"
 thiserror = "2.0.12"
 clap = { version = "4.5.52", features = ["derive"] }
+insta = { version = "1.47.2", features = [ "glob" ] }
 
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }

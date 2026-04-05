@@ -1,0 +1,3 @@
+message CtrValMesssage {
+    hard Dep Ctr1{a: Ctr2{b: 1 - 1, c: Ctr3{}}, f: f};
+}

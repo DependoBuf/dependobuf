@@ -1,0 +1,20 @@
+message ToCtr {
+    x Int;
+    y Unsigned;
+    z Float;
+    b Bool;
+    s String;
+}
+
+message MessageExpressionBasic {
+    lit Dep 1 1.0 1u true false "text";
+    math Dep (a + b) (a - b) (a * b) (a / b) (- a) (a & b) (a | b) (! a);
+    ctrs Dep ToCtr{x: 0, y: 0u, z: 0.0, b: true, s: "str"};
+}
+
+message MessageExpressionMathOrder {
+    plus Dep (a + b * c) ((a + b) * c) (a * b + c) (a * (b + c));
+    minus Dep (a - b * c) ((a - b) * c) (a * b - c) (a * (b - c));
+    pm Dep (a - b + c) (a - (b + c)) (a + b - c);
+    unary Dep (-a + -a) (-a - -a) (-a * -a) (- - - - -a);
+}

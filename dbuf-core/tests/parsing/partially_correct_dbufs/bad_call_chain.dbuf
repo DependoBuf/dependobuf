@@ -1,0 +1,4 @@
+message BadCallChain {
+    f1 Dep a. 0;
+    f2 Dep a.b.c. 0;
+}

@@ -913,8 +913,8 @@ where
         .map_token()
         .map_tree(TreeKind::ExprHole)
         .map_with(|t, extra| {
-            let err: ParsingError = extra.into();
-            extra.emit(err.typed_hole());
+            let loc = extra.span();
+            extra.emit(ParsingError::new(Some(Token::Underscore), loc).typed_hole());
             t
         })
 }

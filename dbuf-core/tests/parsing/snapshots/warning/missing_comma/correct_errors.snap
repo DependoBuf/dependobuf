@@ -1,0 +1,127 @@
+---
+source: dbuf-core/tests/parsing/parsing_warnings.rs
+expression: errors
+input_file: dbuf-core/tests/parsing/partially_correct_dbufs/missing_comma.dbuf
+---
+[
+    ParsingError(
+        Error {
+            found: None,
+            expected: [],
+            at: Location {
+                start: Offset {
+                    lines: 4,
+                    columns: 4,
+                },
+                length: Offset {
+                    lines: 0,
+                    columns: 0,
+                },
+            },
+            extra: Some(
+                MissingComma(
+                    Location {
+                        start: Offset {
+                            lines: 3,
+                            columns: 4,
+                        },
+                        length: Offset {
+                            lines: 0,
+                            columns: 5,
+                        },
+                    },
+                ),
+            ),
+        },
+    ),
+    ParsingError(
+        Error {
+            found: None,
+            expected: [],
+            at: Location {
+                start: Offset {
+                    lines: 5,
+                    columns: 0,
+                },
+                length: Offset {
+                    lines: 0,
+                    columns: 0,
+                },
+            },
+            extra: Some(
+                MissingComma(
+                    Location {
+                        start: Offset {
+                            lines: 4,
+                            columns: 4,
+                        },
+                        length: Offset {
+                            lines: 0,
+                            columns: 7,
+                        },
+                    },
+                ),
+            ),
+        },
+    ),
+    ParsingError(
+        Error {
+            found: None,
+            expected: [],
+            at: Location {
+                start: Offset {
+                    lines: 10,
+                    columns: 8,
+                },
+                length: Offset {
+                    lines: 0,
+                    columns: 0,
+                },
+            },
+            extra: Some(
+                MissingComma(
+                    Location {
+                        start: Offset {
+                            lines: 9,
+                            columns: 8,
+                        },
+                        length: Offset {
+                            lines: 0,
+                            columns: 5,
+                        },
+                    },
+                ),
+            ),
+        },
+    ),
+    ParsingError(
+        Error {
+            found: None,
+            expected: [],
+            at: Location {
+                start: Offset {
+                    lines: 11,
+                    columns: 4,
+                },
+                length: Offset {
+                    lines: 0,
+                    columns: 0,
+                },
+            },
+            extra: Some(
+                MissingComma(
+                    Location {
+                        start: Offset {
+                            lines: 10,
+                            columns: 8,
+                        },
+                        length: Offset {
+                            lines: 0,
+                            columns: 7,
+                        },
+                    },
+                ),
+            ),
+        },
+    ),
+]

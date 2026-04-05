@@ -1,0 +1,33 @@
+/* just a comment */
+
+// another comment
+
+/*
+   comment for message
+ */
+message /* next is name */ Name /* dep 1 */ (/* simple dependency */ d1 /* its type */ Int /* ending */) /* dep 2 */ (d2 Int) /* no more deps */ { // futher is body
+    // comment in body
+
+    /*
+       another comment in body
+     */
+
+    // to field comment
+    f1 /* its type */ Dep /* dependencies */ a /* next */ Ctr/*next is params for Ctr constructor*/{/* f1 */f1 /* is */:/* sets to zero */ 0} /* that is optional but prefered -> */; // end of line
+    /*
+       comment to second field
+     */
+    f2 Dep /* next is comments in expressions */ ( /*a*/ a /*end of a*/ + /*minus b*/ - /* b*/ b /* end of b*/) /* parens */ (/* first */ (/* second */ (/* body */ a /* end body */) /* end second */) /* end first */);
+}
+
+// comment for enum
+enum /* next is enum name */ EnumName /* dep 1*/ (d1 Dep) {
+    /* match on 1 */ 1 /* branch */ => /* brach variants */ {
+        /* comment for Ctr */
+        Ctr /* next same as message */ {
+            // field of Ctr
+            field Int;
+        }
+    }
+    /* Constructed */ Ctr /* with params */ {/* first */ p1 /* is */:/* sets to alias a*/ a /* not last */, /*second (BAD PLACEMENT!)*/ p2: /* sets to one*/ 1 } /* end of ctr */ => {} // nothing
+}
