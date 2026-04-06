@@ -29,5 +29,9 @@ enum /* next is enum name */ EnumName /* dep 1*/ (d1 Dep) {
             field Int;
         }
     }
-    /* Constructed */ Ctr /* with params */ {/* first */ p1 /* is */:/* sets to alias a*/ a /* not last */, /*second (BAD PLACEMENT!)*/ p2: /* sets to one*/ 1 } /* end of ctr */ => {} // nothing
+    /* Constructed */ Ctr /* with params */ {/* first */ p1 /* is */:/* sets to alias a*/ a /* not last */, /*second*/ p2: /* sets to one*/ 1 } /* end of ctr */ => {} // nothing
 }
+
+// that not a binding comment
+
+message Empty {}

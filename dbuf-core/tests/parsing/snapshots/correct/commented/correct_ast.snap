@@ -1,7 +1,6 @@
 ---
 source: dbuf-core/tests/parsing/parsing_correct.rs
 expression: ast
-input_file: dbuf-core/tests/parsing/correct_dbufs/commented.dbuf
 ---
 [
     Definition {
@@ -409,11 +408,11 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/commented.dbuf
     Definition {
         loc: Location {
             start: Offset {
-                lines: 20,
-                columns: 1,
+                lines: 22,
+                columns: 0,
             },
             length: Offset {
-                lines: 12,
+                lines: 10,
                 columns: 1,
             },
         },
@@ -500,11 +499,11 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/commented.dbuf
                             Definition {
                                 loc: Location {
                                     start: Offset {
-                                        lines: 24,
-                                        columns: 61,
+                                        lines: 25,
+                                        columns: 8,
                                     },
                                     length: Offset {
-                                        lines: 5,
+                                        lines: 4,
                                         columns: 9,
                                     },
                                 },
@@ -521,11 +520,11 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/commented.dbuf
                                     Definition {
                                         loc: Location {
                                             start: Offset {
-                                                lines: 26,
-                                                columns: 40,
+                                                lines: 27,
+                                                columns: 12,
                                             },
                                             length: Offset {
-                                                lines: 2,
+                                                lines: 1,
                                                 columns: 22,
                                             },
                                         },
@@ -577,7 +576,7 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/commented.dbuf
                                     },
                                     length: Offset {
                                         lines: 0,
-                                        columns: 138,
+                                        columns: 121,
                                     },
                                 },
                                 node: ConstructorCall {
@@ -599,7 +598,7 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/commented.dbuf
                                                 },
                                                 length: Offset {
                                                     lines: 0,
-                                                    columns: 91,
+                                                    columns: 62,
                                                 },
                                             },
                                             name: LocatedName {
@@ -639,11 +638,11 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/commented.dbuf
                                             loc: Location {
                                                 start: Offset {
                                                     lines: 31,
-                                                    columns: 136,
+                                                    columns: 107,
                                                 },
                                                 length: Offset {
                                                     lines: 0,
-                                                    columns: 23,
+                                                    columns: 35,
                                                 },
                                             },
                                             name: LocatedName {
@@ -652,14 +651,14 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/commented.dbuf
                                                 },
                                                 start: Offset {
                                                     lines: 31,
-                                                    columns: 136,
+                                                    columns: 119,
                                                 },
                                             },
                                             data: Pattern {
                                                 loc: Location {
                                                     start: Offset {
                                                         lines: 31,
-                                                        columns: 157,
+                                                        columns: 140,
                                                     },
                                                     length: Offset {
                                                         lines: 0,
@@ -680,6 +679,33 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/commented.dbuf
                         constructors: [],
                     },
                 ],
+            ),
+        },
+    },
+    Definition {
+        loc: Location {
+            start: Offset {
+                lines: 36,
+                columns: 0,
+            },
+            length: Offset {
+                lines: 0,
+                columns: 16,
+            },
+        },
+        name: LocatedName {
+            content: InternedString {
+                inner: "Empty",
+            },
+            start: Offset {
+                lines: 36,
+                columns: 8,
+            },
+        },
+        data: TypeDeclaration {
+            dependencies: [],
+            body: Message(
+                [],
             ),
         },
     },

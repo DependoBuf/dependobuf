@@ -110,46 +110,46 @@ Tree {
                                         },
                                     },
                                 ),
+                                Token(
+                                    NewLine,
+                                    Location {
+                                        start: Offset {
+                                            lines: 0,
+                                            columns: 25,
+                                        },
+                                        length: Offset {
+                                            lines: 1,
+                                            columns: 0,
+                                        },
+                                    },
+                                ),
+                                Token(
+                                    Space,
+                                    Location {
+                                        start: Offset {
+                                            lines: 1,
+                                            columns: 0,
+                                        },
+                                        length: Offset {
+                                            lines: 0,
+                                            columns: 4,
+                                        },
+                                    },
+                                ),
                                 Tree(
                                     Tree {
                                         kind: Definition,
                                         location: Location {
                                             start: Offset {
-                                                lines: 0,
-                                                columns: 25,
+                                                lines: 1,
+                                                columns: 4,
                                             },
                                             length: Offset {
-                                                lines: 1,
-                                                columns: 38,
+                                                lines: 0,
+                                                columns: 34,
                                             },
                                         },
                                         children: [
-                                            Token(
-                                                NewLine,
-                                                Location {
-                                                    start: Offset {
-                                                        lines: 0,
-                                                        columns: 25,
-                                                    },
-                                                    length: Offset {
-                                                        lines: 1,
-                                                        columns: 0,
-                                                    },
-                                                },
-                                            ),
-                                            Token(
-                                                Space,
-                                                Location {
-                                                    start: Offset {
-                                                        lines: 1,
-                                                        columns: 0,
-                                                    },
-                                                    length: Offset {
-                                                        lines: 0,
-                                                        columns: 4,
-                                                    },
-                                                },
-                                            ),
                                             Token(
                                                 LCIdentifier(
                                                     "hugeInt",
@@ -235,46 +235,46 @@ Tree {
                                         ],
                                     },
                                 ),
+                                Token(
+                                    NewLine,
+                                    Location {
+                                        start: Offset {
+                                            lines: 1,
+                                            columns: 38,
+                                        },
+                                        length: Offset {
+                                            lines: 1,
+                                            columns: 0,
+                                        },
+                                    },
+                                ),
+                                Token(
+                                    Space,
+                                    Location {
+                                        start: Offset {
+                                            lines: 2,
+                                            columns: 0,
+                                        },
+                                        length: Offset {
+                                            lines: 0,
+                                            columns: 4,
+                                        },
+                                    },
+                                ),
                                 Tree(
                                     Tree {
                                         kind: Definition,
                                         location: Location {
                                             start: Offset {
-                                                lines: 1,
-                                                columns: 38,
+                                                lines: 2,
+                                                columns: 4,
                                             },
                                             length: Offset {
-                                                lines: 1,
-                                                columns: 27,
+                                                lines: 0,
+                                                columns: 23,
                                             },
                                         },
                                         children: [
-                                            Token(
-                                                NewLine,
-                                                Location {
-                                                    start: Offset {
-                                                        lines: 1,
-                                                        columns: 38,
-                                                    },
-                                                    length: Offset {
-                                                        lines: 1,
-                                                        columns: 0,
-                                                    },
-                                                },
-                                            ),
-                                            Token(
-                                                Space,
-                                                Location {
-                                                    start: Offset {
-                                                        lines: 2,
-                                                        columns: 0,
-                                                    },
-                                                    length: Offset {
-                                                        lines: 0,
-                                                        columns: 4,
-                                                    },
-                                                },
-                                            ),
                                             Token(
                                                 LCIdentifier(
                                                     "badInt",
@@ -360,46 +360,46 @@ Tree {
                                         ],
                                     },
                                 ),
+                                Token(
+                                    NewLine,
+                                    Location {
+                                        start: Offset {
+                                            lines: 2,
+                                            columns: 27,
+                                        },
+                                        length: Offset {
+                                            lines: 1,
+                                            columns: 0,
+                                        },
+                                    },
+                                ),
+                                Token(
+                                    Space,
+                                    Location {
+                                        start: Offset {
+                                            lines: 3,
+                                            columns: 0,
+                                        },
+                                        length: Offset {
+                                            lines: 0,
+                                            columns: 4,
+                                        },
+                                    },
+                                ),
                                 Tree(
                                     Tree {
                                         kind: Definition,
                                         location: Location {
                                             start: Offset {
-                                                lines: 2,
-                                                columns: 27,
+                                                lines: 3,
+                                                columns: 4,
                                             },
                                             length: Offset {
-                                                lines: 1,
-                                                columns: 33,
+                                                lines: 0,
+                                                columns: 29,
                                             },
                                         },
                                         children: [
-                                            Token(
-                                                NewLine,
-                                                Location {
-                                                    start: Offset {
-                                                        lines: 2,
-                                                        columns: 27,
-                                                    },
-                                                    length: Offset {
-                                                        lines: 1,
-                                                        columns: 0,
-                                                    },
-                                                },
-                                            ),
-                                            Token(
-                                                Space,
-                                                Location {
-                                                    start: Offset {
-                                                        lines: 3,
-                                                        columns: 0,
-                                                    },
-                                                    length: Offset {
-                                                        lines: 0,
-                                                        columns: 4,
-                                                    },
-                                                },
-                                            ),
                                             Token(
                                                 LCIdentifier(
                                                     "badFloat",
@@ -485,46 +485,46 @@ Tree {
                                         ],
                                     },
                                 ),
+                                Token(
+                                    NewLine,
+                                    Location {
+                                        start: Offset {
+                                            lines: 3,
+                                            columns: 33,
+                                        },
+                                        length: Offset {
+                                            lines: 1,
+                                            columns: 0,
+                                        },
+                                    },
+                                ),
+                                Token(
+                                    Space,
+                                    Location {
+                                        start: Offset {
+                                            lines: 4,
+                                            columns: 0,
+                                        },
+                                        length: Offset {
+                                            lines: 0,
+                                            columns: 4,
+                                        },
+                                    },
+                                ),
                                 Tree(
                                     Tree {
                                         kind: Definition,
                                         location: Location {
                                             start: Offset {
-                                                lines: 3,
-                                                columns: 33,
+                                                lines: 4,
+                                                columns: 4,
                                             },
                                             length: Offset {
-                                                lines: 1,
-                                                columns: 29,
+                                                lines: 0,
+                                                columns: 25,
                                             },
                                         },
                                         children: [
-                                            Token(
-                                                NewLine,
-                                                Location {
-                                                    start: Offset {
-                                                        lines: 3,
-                                                        columns: 33,
-                                                    },
-                                                    length: Offset {
-                                                        lines: 1,
-                                                        columns: 0,
-                                                    },
-                                                },
-                                            ),
-                                            Token(
-                                                Space,
-                                                Location {
-                                                    start: Offset {
-                                                        lines: 4,
-                                                        columns: 0,
-                                                    },
-                                                    length: Offset {
-                                                        lines: 0,
-                                                        columns: 4,
-                                                    },
-                                                },
-                                            ),
                                             Token(
                                                 LCIdentifier(
                                                     "badString",
@@ -610,46 +610,46 @@ Tree {
                                         ],
                                     },
                                 ),
+                                Token(
+                                    NewLine,
+                                    Location {
+                                        start: Offset {
+                                            lines: 4,
+                                            columns: 29,
+                                        },
+                                        length: Offset {
+                                            lines: 1,
+                                            columns: 0,
+                                        },
+                                    },
+                                ),
+                                Token(
+                                    Space,
+                                    Location {
+                                        start: Offset {
+                                            lines: 5,
+                                            columns: 0,
+                                        },
+                                        length: Offset {
+                                            lines: 0,
+                                            columns: 4,
+                                        },
+                                    },
+                                ),
                                 Tree(
                                     Tree {
                                         kind: Definition,
                                         location: Location {
                                             start: Offset {
-                                                lines: 4,
-                                                columns: 29,
+                                                lines: 5,
+                                                columns: 4,
                                             },
                                             length: Offset {
-                                                lines: 1,
-                                                columns: 22,
+                                                lines: 0,
+                                                columns: 18,
                                             },
                                         },
                                         children: [
-                                            Token(
-                                                NewLine,
-                                                Location {
-                                                    start: Offset {
-                                                        lines: 4,
-                                                        columns: 29,
-                                                    },
-                                                    length: Offset {
-                                                        lines: 1,
-                                                        columns: 0,
-                                                    },
-                                                },
-                                            ),
-                                            Token(
-                                                Space,
-                                                Location {
-                                                    start: Offset {
-                                                        lines: 5,
-                                                        columns: 0,
-                                                    },
-                                                    length: Offset {
-                                                        lines: 0,
-                                                        columns: 4,
-                                                    },
-                                                },
-                                            ),
                                             Token(
                                                 LCIdentifier(
                                                     "badLC",
@@ -735,46 +735,46 @@ Tree {
                                         ],
                                     },
                                 ),
+                                Token(
+                                    NewLine,
+                                    Location {
+                                        start: Offset {
+                                            lines: 5,
+                                            columns: 22,
+                                        },
+                                        length: Offset {
+                                            lines: 1,
+                                            columns: 0,
+                                        },
+                                    },
+                                ),
+                                Token(
+                                    Space,
+                                    Location {
+                                        start: Offset {
+                                            lines: 6,
+                                            columns: 0,
+                                        },
+                                        length: Offset {
+                                            lines: 0,
+                                            columns: 4,
+                                        },
+                                    },
+                                ),
                                 Tree(
                                     Tree {
                                         kind: Definition,
                                         location: Location {
                                             start: Offset {
-                                                lines: 5,
-                                                columns: 22,
+                                                lines: 6,
+                                                columns: 4,
                                             },
                                             length: Offset {
-                                                lines: 1,
-                                                columns: 22,
+                                                lines: 0,
+                                                columns: 18,
                                             },
                                         },
                                         children: [
-                                            Token(
-                                                NewLine,
-                                                Location {
-                                                    start: Offset {
-                                                        lines: 5,
-                                                        columns: 22,
-                                                    },
-                                                    length: Offset {
-                                                        lines: 1,
-                                                        columns: 0,
-                                                    },
-                                                },
-                                            ),
-                                            Token(
-                                                Space,
-                                                Location {
-                                                    start: Offset {
-                                                        lines: 6,
-                                                        columns: 0,
-                                                    },
-                                                    length: Offset {
-                                                        lines: 0,
-                                                        columns: 4,
-                                                    },
-                                                },
-                                            ),
                                             Token(
                                                 LCIdentifier(
                                                     "badUC",
@@ -860,46 +860,46 @@ Tree {
                                         ],
                                     },
                                 ),
+                                Token(
+                                    NewLine,
+                                    Location {
+                                        start: Offset {
+                                            lines: 6,
+                                            columns: 22,
+                                        },
+                                        length: Offset {
+                                            lines: 1,
+                                            columns: 0,
+                                        },
+                                    },
+                                ),
+                                Token(
+                                    Space,
+                                    Location {
+                                        start: Offset {
+                                            lines: 7,
+                                            columns: 0,
+                                        },
+                                        length: Offset {
+                                            lines: 0,
+                                            columns: 4,
+                                        },
+                                    },
+                                ),
                                 Tree(
                                     Tree {
                                         kind: Definition,
                                         location: Location {
                                             start: Offset {
-                                                lines: 6,
-                                                columns: 22,
+                                                lines: 7,
+                                                columns: 4,
                                             },
                                             length: Offset {
-                                                lines: 1,
-                                                columns: 17,
+                                                lines: 0,
+                                                columns: 13,
                                             },
                                         },
                                         children: [
-                                            Token(
-                                                NewLine,
-                                                Location {
-                                                    start: Offset {
-                                                        lines: 6,
-                                                        columns: 22,
-                                                    },
-                                                    length: Offset {
-                                                        lines: 1,
-                                                        columns: 0,
-                                                    },
-                                                },
-                                            ),
-                                            Token(
-                                                Space,
-                                                Location {
-                                                    start: Offset {
-                                                        lines: 7,
-                                                        columns: 0,
-                                                    },
-                                                    length: Offset {
-                                                        lines: 0,
-                                                        columns: 4,
-                                                    },
-                                                },
-                                            ),
                                             Token(
                                                 LCIdentifier(
                                                     "unknow",

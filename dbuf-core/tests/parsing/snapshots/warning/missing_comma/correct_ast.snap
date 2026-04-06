@@ -1,17 +1,16 @@
 ---
 source: dbuf-core/tests/parsing/parsing_warnings.rs
 expression: ast
-input_file: dbuf-core/tests/parsing/partially_correct_dbufs/missing_comma.dbuf
 ---
 [
     Definition {
         loc: Location {
             start: Offset {
-                lines: 0,
+                lines: 2,
                 columns: 0,
             },
             length: Offset {
-                lines: 5,
+                lines: 3,
                 columns: 1,
             },
         },
@@ -31,12 +30,12 @@ input_file: dbuf-core/tests/parsing/partially_correct_dbufs/missing_comma.dbuf
                     Definition {
                         loc: Location {
                             start: Offset {
-                                lines: 2,
-                                columns: 24,
+                                lines: 3,
+                                columns: 4,
                             },
                             length: Offset {
-                                lines: 2,
-                                columns: 4,
+                                lines: 0,
+                                columns: 5,
                             },
                         },
                         name: LocatedName {
@@ -80,8 +79,8 @@ input_file: dbuf-core/tests/parsing/partially_correct_dbufs/missing_comma.dbuf
                                 columns: 4,
                             },
                             length: Offset {
-                                lines: 1,
-                                columns: 0,
+                                lines: 0,
+                                columns: 7,
                             },
                         },
                         name: LocatedName {
@@ -145,11 +144,11 @@ input_file: dbuf-core/tests/parsing/partially_correct_dbufs/missing_comma.dbuf
     Definition {
         loc: Location {
             start: Offset {
-                lines: 5,
-                columns: 1,
+                lines: 7,
+                columns: 0,
             },
             length: Offset {
-                lines: 7,
+                lines: 5,
                 columns: 1,
             },
         },
@@ -172,11 +171,11 @@ input_file: dbuf-core/tests/parsing/partially_correct_dbufs/missing_comma.dbuf
                             Definition {
                                 loc: Location {
                                     start: Offset {
-                                        lines: 7,
-                                        columns: 18,
+                                        lines: 8,
+                                        columns: 4,
                                     },
                                     length: Offset {
-                                        lines: 4,
+                                        lines: 3,
                                         columns: 5,
                                     },
                                 },
@@ -193,12 +192,12 @@ input_file: dbuf-core/tests/parsing/partially_correct_dbufs/missing_comma.dbuf
                                     Definition {
                                         loc: Location {
                                             start: Offset {
-                                                lines: 8,
-                                                columns: 9,
+                                                lines: 9,
+                                                columns: 8,
                                             },
                                             length: Offset {
-                                                lines: 2,
-                                                columns: 8,
+                                                lines: 0,
+                                                columns: 5,
                                             },
                                         },
                                         name: LocatedName {
@@ -242,8 +241,8 @@ input_file: dbuf-core/tests/parsing/partially_correct_dbufs/missing_comma.dbuf
                                                 columns: 8,
                                             },
                                             length: Offset {
-                                                lines: 1,
-                                                columns: 4,
+                                                lines: 0,
+                                                columns: 7,
                                             },
                                         },
                                         name: LocatedName {

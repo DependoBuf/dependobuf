@@ -1,7 +1,6 @@
 ---
 source: dbuf-core/tests/parsing/parsing_correct.rs
-expression: tree.unwrap()
-input_file: dbuf-core/tests/parsing/correct_dbufs/constructed_value.dbuf
+expression: tree
 ---
 Tree {
     kind: File,
@@ -111,46 +110,46 @@ Tree {
                                         },
                                     },
                                 ),
+                                Token(
+                                    NewLine,
+                                    Location {
+                                        start: Offset {
+                                            lines: 0,
+                                            columns: 24,
+                                        },
+                                        length: Offset {
+                                            lines: 1,
+                                            columns: 0,
+                                        },
+                                    },
+                                ),
+                                Token(
+                                    Space,
+                                    Location {
+                                        start: Offset {
+                                            lines: 1,
+                                            columns: 0,
+                                        },
+                                        length: Offset {
+                                            lines: 0,
+                                            columns: 4,
+                                        },
+                                    },
+                                ),
                                 Tree(
                                     Tree {
                                         kind: Definition,
                                         location: Location {
                                             start: Offset {
-                                                lines: 0,
-                                                columns: 24,
+                                                lines: 1,
+                                                columns: 4,
                                             },
                                             length: Offset {
-                                                lines: 1,
-                                                columns: 54,
+                                                lines: 0,
+                                                columns: 50,
                                             },
                                         },
                                         children: [
-                                            Token(
-                                                NewLine,
-                                                Location {
-                                                    start: Offset {
-                                                        lines: 0,
-                                                        columns: 24,
-                                                    },
-                                                    length: Offset {
-                                                        lines: 1,
-                                                        columns: 0,
-                                                    },
-                                                },
-                                            ),
-                                            Token(
-                                                Space,
-                                                Location {
-                                                    start: Offset {
-                                                        lines: 1,
-                                                        columns: 0,
-                                                    },
-                                                    length: Offset {
-                                                        lines: 0,
-                                                        columns: 4,
-                                                    },
-                                                },
-                                            ),
                                             Token(
                                                 LCIdentifier(
                                                     "hard",

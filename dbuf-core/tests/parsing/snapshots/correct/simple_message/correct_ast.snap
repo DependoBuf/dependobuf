@@ -1,7 +1,6 @@
 ---
 source: dbuf-core/tests/parsing/parsing_correct.rs
 expression: ast
-input_file: dbuf-core/tests/parsing/correct_dbufs/simple_message.dbuf
 ---
 [
     Definition {
@@ -31,12 +30,12 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/simple_message.dbuf
                     Definition {
                         loc: Location {
                             start: Offset {
-                                lines: 0,
-                                columns: 24,
+                                lines: 1,
+                                columns: 4,
                             },
                             length: Offset {
-                                lines: 1,
-                                columns: 11,
+                                lines: 0,
+                                columns: 7,
                             },
                         },
                         name: LocatedName {
@@ -76,12 +75,12 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/simple_message.dbuf
                     Definition {
                         loc: Location {
                             start: Offset {
-                                lines: 1,
-                                columns: 11,
+                                lines: 2,
+                                columns: 4,
                             },
                             length: Offset {
-                                lines: 1,
-                                columns: 14,
+                                lines: 0,
+                                columns: 10,
                             },
                         },
                         name: LocatedName {

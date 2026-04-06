@@ -1,7 +1,6 @@
 ---
 source: dbuf-core/tests/parsing/parsing_correct.rs
-expression: tree.unwrap()
-input_file: dbuf-core/tests/parsing/correct_dbufs/empty_structs.dbuf
+expression: tree
 ---
 Tree {
     kind: File,
@@ -130,46 +129,46 @@ Tree {
                 ],
             },
         ),
+        Token(
+            NewLine,
+            Location {
+                start: Offset {
+                    lines: 0,
+                    columns: 24,
+                },
+                length: Offset {
+                    lines: 1,
+                    columns: 0,
+                },
+            },
+        ),
+        Token(
+            NewLine,
+            Location {
+                start: Offset {
+                    lines: 1,
+                    columns: 0,
+                },
+                length: Offset {
+                    lines: 1,
+                    columns: 0,
+                },
+            },
+        ),
         Tree(
             Tree {
                 kind: Enum,
                 location: Location {
                     start: Offset {
-                        lines: 0,
-                        columns: 24,
+                        lines: 2,
+                        columns: 0,
                     },
                     length: Offset {
-                        lines: 2,
+                        lines: 0,
                         columns: 17,
                     },
                 },
                 children: [
-                    Token(
-                        NewLine,
-                        Location {
-                            start: Offset {
-                                lines: 0,
-                                columns: 24,
-                            },
-                            length: Offset {
-                                lines: 1,
-                                columns: 0,
-                            },
-                        },
-                    ),
-                    Token(
-                        NewLine,
-                        Location {
-                            start: Offset {
-                                lines: 1,
-                                columns: 0,
-                            },
-                            length: Offset {
-                                lines: 1,
-                                columns: 0,
-                            },
-                        },
-                    ),
                     Token(
                         Enum,
                         Location {
@@ -270,46 +269,46 @@ Tree {
                 ],
             },
         ),
+        Token(
+            NewLine,
+            Location {
+                start: Offset {
+                    lines: 2,
+                    columns: 17,
+                },
+                length: Offset {
+                    lines: 1,
+                    columns: 0,
+                },
+            },
+        ),
+        Token(
+            NewLine,
+            Location {
+                start: Offset {
+                    lines: 3,
+                    columns: 0,
+                },
+                length: Offset {
+                    lines: 1,
+                    columns: 0,
+                },
+            },
+        ),
         Tree(
             Tree {
                 kind: Enum,
                 location: Location {
                     start: Offset {
-                        lines: 2,
-                        columns: 17,
+                        lines: 4,
+                        columns: 0,
                     },
                     length: Offset {
-                        lines: 4,
+                        lines: 2,
                         columns: 1,
                     },
                 },
                 children: [
-                    Token(
-                        NewLine,
-                        Location {
-                            start: Offset {
-                                lines: 2,
-                                columns: 17,
-                            },
-                            length: Offset {
-                                lines: 1,
-                                columns: 0,
-                            },
-                        },
-                    ),
-                    Token(
-                        NewLine,
-                        Location {
-                            start: Offset {
-                                lines: 3,
-                                columns: 0,
-                            },
-                            length: Offset {
-                                lines: 1,
-                                columns: 0,
-                            },
-                        },
-                    ),
                     Token(
                         Enum,
                         Location {
@@ -677,46 +676,46 @@ Tree {
                 ],
             },
         ),
+        Token(
+            NewLine,
+            Location {
+                start: Offset {
+                    lines: 6,
+                    columns: 1,
+                },
+                length: Offset {
+                    lines: 1,
+                    columns: 0,
+                },
+            },
+        ),
+        Token(
+            NewLine,
+            Location {
+                start: Offset {
+                    lines: 7,
+                    columns: 0,
+                },
+                length: Offset {
+                    lines: 1,
+                    columns: 0,
+                },
+            },
+        ),
         Tree(
             Tree {
                 kind: Enum,
                 location: Location {
                     start: Offset {
-                        lines: 6,
-                        columns: 1,
+                        lines: 8,
+                        columns: 0,
                     },
                     length: Offset {
-                        lines: 5,
+                        lines: 3,
                         columns: 1,
                     },
                 },
                 children: [
-                    Token(
-                        NewLine,
-                        Location {
-                            start: Offset {
-                                lines: 6,
-                                columns: 1,
-                            },
-                            length: Offset {
-                                lines: 1,
-                                columns: 0,
-                            },
-                        },
-                    ),
-                    Token(
-                        NewLine,
-                        Location {
-                            start: Offset {
-                                lines: 7,
-                                columns: 0,
-                            },
-                            length: Offset {
-                                lines: 1,
-                                columns: 0,
-                            },
-                        },
-                    ),
                     Token(
                         Enum,
                         Location {

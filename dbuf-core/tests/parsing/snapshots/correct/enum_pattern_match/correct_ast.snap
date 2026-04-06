@@ -1,7 +1,6 @@
 ---
 source: dbuf-core/tests/parsing/parsing_correct.rs
 expression: ast
-input_file: dbuf-core/tests/parsing/correct_dbufs/enum_pattern_matcg.dbuf
 ---
 [
     Definition {
@@ -98,12 +97,12 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/enum_pattern_matcg.dbuf
                             Definition {
                                 loc: Location {
                                     start: Offset {
-                                        lines: 1,
-                                        columns: 10,
+                                        lines: 2,
+                                        columns: 8,
                                     },
                                     length: Offset {
-                                        lines: 1,
-                                        columns: 12,
+                                        lines: 0,
+                                        columns: 4,
                                     },
                                 },
                                 name: LocatedName {
@@ -139,12 +138,12 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/enum_pattern_matcg.dbuf
                             Definition {
                                 loc: Location {
                                     start: Offset {
-                                        lines: 4,
-                                        columns: 10,
+                                        lines: 5,
+                                        columns: 8,
                                     },
                                     length: Offset {
-                                        lines: 1,
-                                        columns: 12,
+                                        lines: 0,
+                                        columns: 4,
                                     },
                                 },
                                 name: LocatedName {
@@ -167,11 +166,11 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/enum_pattern_matcg.dbuf
     Definition {
         loc: Location {
             start: Offset {
-                lines: 7,
-                columns: 1,
+                lines: 9,
+                columns: 0,
             },
             length: Offset {
-                lines: 9,
+                lines: 7,
                 columns: 1,
             },
         },
@@ -326,12 +325,12 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/enum_pattern_matcg.dbuf
                             Definition {
                                 loc: Location {
                                     start: Offset {
-                                        lines: 10,
-                                        columns: 15,
+                                        lines: 11,
+                                        columns: 8,
                                     },
                                     length: Offset {
-                                        lines: 1,
-                                        columns: 12,
+                                        lines: 0,
+                                        columns: 4,
                                     },
                                 },
                                 name: LocatedName {
@@ -370,7 +369,7 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/enum_pattern_matcg.dbuf
                                     },
                                     length: Offset {
                                         lines: 0,
-                                        columns: 32,
+                                        columns: 42,
                                     },
                                 },
                                 node: ConstructorCall {
@@ -392,7 +391,7 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/enum_pattern_matcg.dbuf
                                                 },
                                                 length: Offset {
                                                     lines: 0,
-                                                    columns: 5,
+                                                    columns: 4,
                                                 },
                                             },
                                             name: LocatedName {
@@ -432,11 +431,11 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/enum_pattern_matcg.dbuf
                                             loc: Location {
                                                 start: Offset {
                                                     lines: 13,
-                                                    columns: 16,
+                                                    columns: 15,
                                                 },
                                                 length: Offset {
                                                     lines: 0,
-                                                    columns: 22,
+                                                    columns: 24,
                                                 },
                                             },
                                             name: LocatedName {
@@ -520,7 +519,7 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/enum_pattern_matcg.dbuf
                                                                                 },
                                                                                 length: Offset {
                                                                                     lines: 0,
-                                                                                    columns: 5,
+                                                                                    columns: 4,
                                                                                 },
                                                                             },
                                                                             name: LocatedName {
@@ -550,11 +549,11 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/enum_pattern_matcg.dbuf
                                                                             loc: Location {
                                                                                 start: Offset {
                                                                                     lines: 13,
-                                                                                    columns: 33,
+                                                                                    columns: 32,
                                                                                 },
                                                                                 length: Offset {
                                                                                     lines: 0,
-                                                                                    columns: 3,
+                                                                                    columns: 4,
                                                                                 },
                                                                             },
                                                                             name: LocatedName {
@@ -592,6 +591,51 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/enum_pattern_matcg.dbuf
                                                 },
                                             },
                                         },
+                                        Definition {
+                                            loc: Location {
+                                                start: Offset {
+                                                    lines: 13,
+                                                    columns: 39,
+                                                },
+                                                length: Offset {
+                                                    lines: 0,
+                                                    columns: 9,
+                                                },
+                                            },
+                                            name: LocatedName {
+                                                content: InternedString {
+                                                    inner: "f",
+                                                },
+                                                start: Offset {
+                                                    lines: 13,
+                                                    columns: 40,
+                                                },
+                                            },
+                                            data: Pattern {
+                                                loc: Location {
+                                                    start: Offset {
+                                                        lines: 13,
+                                                        columns: 43,
+                                                    },
+                                                    length: Offset {
+                                                        lines: 0,
+                                                        columns: 5,
+                                                    },
+                                                },
+                                                node: ConstructorCall {
+                                                    name: LocatedName {
+                                                        content: InternedString {
+                                                            inner: "Ctr",
+                                                        },
+                                                        start: Offset {
+                                                            lines: 13,
+                                                            columns: 43,
+                                                        },
+                                                    },
+                                                    fields: [],
+                                                },
+                                            },
+                                        },
                                     ],
                                 },
                             },
@@ -600,12 +644,12 @@ input_file: dbuf-core/tests/parsing/correct_dbufs/enum_pattern_matcg.dbuf
                             Definition {
                                 loc: Location {
                                     start: Offset {
-                                        lines: 13,
-                                        columns: 44,
+                                        lines: 14,
+                                        columns: 8,
                                     },
                                     length: Offset {
-                                        lines: 1,
-                                        columns: 12,
+                                        lines: 0,
+                                        columns: 4,
                                     },
                                 },
                                 name: LocatedName {
