@@ -83,6 +83,18 @@ where
     }
 }
 
+impl<Pos> TryFrom<Range<Location<Pos>>> for Location<Pos>
+where
+    Pos: Add<Offset, Output = Pos> + Clone,
+    Location<Pos>: TryFrom<Range<Pos>, Error = IncorrectRange>,
+{
+    type Error = IncorrectRange;
+
+    fn try_from(value: Range<Location<Pos>>) -> Result<Self, Self::Error> {
+        TryFrom::try_from(value.start.start..(value.end.start + value.end.length))
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct IncorrectRange;
 

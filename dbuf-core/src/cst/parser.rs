@@ -1,16 +1,51 @@
 //! Module exports:
 //!   * `file_parser` function, which builds `chumsky::Parser` for dbuf language.
-use chumsky::extra::Err;
+use chumsky::extra::*;
 use chumsky::input::ValueInput;
+use chumsky::inspector::Inspector;
 use chumsky::pratt::*;
 use chumsky::prelude::*;
 
 use super::{Child, Token, Tree, TreeKind};
+use crate::cst::parser_utils::ChildFlatten;
 use crate::location::Location;
 use crate::location::Offset;
 
 use super::parser_error::ParsingError;
 use super::parser_utils::{MapChild, MapToken, MapTree};
+
+/// State of parsing used for emitting correct locations of errors.
+#[derive(Clone, Default)]
+pub struct ParsingState {
+    call_chain_start: Option<Location<Offset>>,
+    definition_start: Option<Location<Offset>>,
+}
+
+impl<'src, I> Inspector<'src, I> for ParsingState
+where
+    I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
+{
+    type Checkpoint = ParsingState;
+
+    fn on_token(&mut self, _token: &Token) {}
+
+    fn on_save<'parse>(
+        &self,
+        _cursor: &chumsky::input::Cursor<'src, 'parse, I>,
+    ) -> Self::Checkpoint {
+        self.clone()
+    }
+
+    fn on_rewind<'parse>(
+        &mut self,
+        marker: &chumsky::input::Checkpoint<'src, 'parse, I, Self::Checkpoint>,
+    ) {
+        *self = marker.inspector().clone();
+    }
+}
+
+/// type for extra of parser
+type ExtraData = Full<ParsingError, ParsingState, ()>;
 
 /// Parses one dbuf file.
 ///
@@ -24,14 +59,17 @@ use super::parser_utils::{MapChild, MapToken, MapTree};
 /// [not (/* one comment */ message | /* one comment */ enum)]
 /// ```
 ///
-pub fn file_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+pub fn file_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
-    let message = message_parser().map_child().map(Option::Some);
-    let enum_parser = enum_parser().map_child().map(Option::Some);
-    let comment = comment_parser().map(Option::Some);
-    let ws = white_space_parser(true).map(|()| Option::None);
+    let message = message_parser().map_child().map(|c| vec![c]);
+    let enum_parser = enum_parser().map_child().map(|c| vec![c]);
+    let comment = WhiteSpaceConfig::new()
+        .with_limit_comment()
+        .with_progress()
+        .parser();
+    let ws = WhiteSpaceConfig::new().with_progress().parser();
 
     let recovery_on = comment
         .clone()
@@ -47,7 +85,7 @@ where
         .then(recovery_skip)
         .map_tree(TreeKind::ErrorTree)
         .map_child()
-        .map(Option::Some);
+        .map(|c| vec![c]);
 
     let one_block = choice((message, enum_parser, comment, ws)).recover_with(via_parser(recovery));
 
@@ -65,24 +103,24 @@ where
 /// message /*comments*/ UCIdentifier /*comments*/ [<dependency definition> /* comments */]
 ///   <body>
 /// ```
-fn message_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+fn message_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
-    let one_comment = one_comment_parser();
-    let comment_r = comment_r_parser();
+    let one_comment = WhiteSpaceConfig::new().with_limit_comment().parser();
+    let ws = WhiteSpaceConfig::new().parser();
     let message_kw = just(Token::Message).map_token();
     let type_ident = type_identifier_parser();
-    let dependency = dependency_parser().then(comment_r.clone());
+    let dependency = dependency_parser().then(ws.clone());
     let dependency_r = dependency.repeated().collect::<Vec<_>>();
     let body = body_parser();
 
     one_comment
         .or_not()
         .then(message_kw)
-        .then(comment_r.clone())
+        .then(ws.clone())
         .then(type_ident)
-        .then(comment_r)
+        .then(ws)
         .then(dependency_r)
         .then(body)
         .map_tree(TreeKind::Message)
@@ -94,19 +132,20 @@ where
 /// ```dbuf
 /// (/* comments (all) */ <definition> /* comments */)
 /// ```
-fn dependency_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+fn dependency_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
+    let ws = WhiteSpaceConfig::new().parser();
+
     let lparen = just(Token::LParen).map_token();
-    let comment_r = comment_r_parser();
     let definition = definition_parser();
     let rparen = just(Token::RParen).map_token();
 
     lparen
-        .then(comment_r.clone())
+        .then(ws.clone())
         .then(definition)
-        .then(comment_r)
+        .then(ws)
         .then(rparen)
         .map_with(|((((lp, mut comm1), mut tree), mut comm2), rp), extra| {
             let mut ans = vec![lp];
@@ -129,18 +168,23 @@ where
 ///   [ <field> | /* comment */ | /* whitespaces */ ]
 /// }
 /// ```
-fn body_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+fn body_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
+    let ws = WhiteSpaceConfig::new()
+        .with_limit_comment()
+        .with_progress()
+        .parser();
+
     let lbrace = just(Token::LBrace).map_token();
-    let field = field_parser().map_child().map(Option::Some);
-    let comment = comment_parser().map(Option::Some);
     let rbrace = just(Token::RBrace).map_token();
 
-    let ws = white_space_parser(true).map(|()| Option::None);
-
-    let inside = choice((field, comment, ws)).repeated().collect::<Vec<_>>();
+    let field = field_parser().map_child().map(|c| vec![c]);
+    let inside = choice((field, ws))
+        .repeated()
+        .collect::<Vec<_>>()
+        .map(Vec::flatten);
 
     lbrace
         .then(inside)
@@ -154,23 +198,46 @@ where
 ///
 /// Pattern:
 /// ```dbuf
+/// /* one comment */
 /// <definition> /* comments */;
 /// ```
-fn field_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+fn field_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
-    let definition = definition_parser();
-    let comment_r = comment_r_parser();
-    let semicolon = just(Token::Semicolon).map_token();
+    let one_comment = WhiteSpaceConfig::new().with_limit_comment().parser();
+    let ws = WhiteSpaceConfig::new().parser();
 
-    definition
-        .then(comment_r)
-        .then(semicolon)
-        .map_with(|((mut tree, mut comm), t), extra| {
-            tree.children.append(&mut comm);
-            tree.children.push(t);
+    let definition = definition_parser();
+
+    let semicolon = just(Token::Semicolon).map_token().map(Option::Some);
+    let no_semicolon = semicolon.clone().not().rewind().map_with(|(), extra| {
+        let loc = extra.span();
+        let s: &mut ParsingState = extra.state();
+        let def = s.definition_start.unwrap_or(loc);
+        extra.emit(ParsingError::new(None, loc).missing_comma(def));
+        None
+    });
+    let maybe_semicolon = semicolon.or(no_semicolon);
+
+    one_comment
+        .or_not()
+        .then(definition.map_with(|d, extra| {
+            let l = extra.span();
+            extra.state().definition_start = Some(l);
+            d
+        }))
+        .then(ws)
+        .then(maybe_semicolon)
+        .map_with(|(((comm1, mut tree), comm2), t), extra| {
+            let mut nchildren = vec![];
+            nchildren.extend(comm1.into_iter().flatten());
+            nchildren.extend(tree.children);
+            nchildren.extend(comm2);
+            nchildren.extend(t);
+            tree.children = nchildren;
             tree.location = extra.span();
+            extra.state().definition_start = None;
             tree
         })
         .labelled("Field")
@@ -180,16 +247,15 @@ where
 ///
 /// Pattern:
 /// ```dbuf
-/// /*one comment*/
 /// lcIdentifier /* comments */ UCIdentifier /* comments */
 ///   [/* comments */ (<parened expression>|<var chain>|<literal>|<constructed value>|<hole>)]
 /// ```
-fn definition_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+fn definition_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
-    let one_comment = one_comment_parser();
-    let comment_r = comment_r_parser();
+    let ws = WhiteSpaceConfig::new().with_no_new_line().parser();
+
     let var_ident = var_identifier_parser();
     let type_ident = type_identifier_parser();
 
@@ -201,18 +267,12 @@ where
     let hole = typed_hole_parser();
 
     let arguments = choice((paren_expr, chain, literal, cv, hole));
-    let commented_arguments = comment_r
-        .clone()
-        .then(arguments)
-        .repeated()
-        .collect::<Vec<_>>();
+    let commented_arguments = ws.clone().then(arguments).repeated().collect::<Vec<_>>();
 
-    one_comment
-        .or_not()
-        .then(var_ident)
-        .then(comment_r.clone())
+    var_ident
+        .then(ws.clone())
         .then(type_ident)
-        .then(comment_r)
+        .then(ws)
         .then(commented_arguments)
         .map_tree(TreeKind::Definition)
         .labelled("Definition")
@@ -224,7 +284,7 @@ where
 /// ```dbuf
 /// UCIdentifier /* c */{[/* c */ lcIdentifier /* c */: /* c */ (<expression>|<constructed value>) /* c */,] | /* c */}
 /// ```
-fn constructed_value_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+fn constructed_value_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
@@ -233,13 +293,14 @@ where
 
 /// Implementation of constructed value parser.
 fn constructed_value_parser_impl<'src, I>(
-    cv_parser: impl Parser<'src, I, Tree, Err<ParsingError>> + Clone,
-) -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+    cv_parser: impl Parser<'src, I, Tree, ExtraData> + Clone,
+) -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
+    let ws = WhiteSpaceConfig::new().parser();
+
     let type_indent = type_identifier_parser();
-    let comment_r = comment_r_parser();
     let lbrace = just(Token::LBrace).map_token();
     let var_indent = var_identifier_parser();
     let colon = just(Token::Colon).map_token();
@@ -249,14 +310,14 @@ where
 
     let field_value = choice((cv_parser, expr));
 
-    let field_init = comment_r
+    let field_init = ws
         .clone()
         .then(var_indent)
-        .then(comment_r.clone())
+        .then(ws.clone())
         .then(colon)
-        .then(comment_r.clone())
+        .then(ws.clone())
         .then(field_value)
-        .then(comment_r.clone())
+        .then(ws.clone())
         .then(comma.or_not())
         .map_tree(TreeKind::ConstructedValueField)
         .map_child();
@@ -264,10 +325,10 @@ where
     let field_r = field_init.repeated().at_least(1).collect::<Vec<_>>();
 
     type_indent
-        .then(comment_r.clone())
+        .then(ws.clone())
         .then(lbrace)
-        .then(choice((field_r, comment_r.clone())))
-        .then(comment_r.clone())
+        .then(choice((field_r, ws.clone())))
+        .then(ws.clone())
         .then(rbrace)
         .map_tree(TreeKind::ConstructedValue)
 }
@@ -297,7 +358,7 @@ where
 ///            /                   \
 /// [/* c2 */ 1 /* c3 */] [/* c4 */ 2 /* c5 */]
 /// ```
-fn expression_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+fn expression_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
@@ -306,36 +367,37 @@ where
 
 /// Implementation of expression parser.
 fn expression_parser_impl<'src, I>(
-    e_parser: impl Parser<'src, I, Tree, Err<ParsingError>> + Clone,
-) -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+    e_parser: impl Parser<'src, I, Tree, ExtraData> + Clone,
+) -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
+    let ws = WhiteSpaceConfig::new().with_no_new_line().parser();
+
     let literal_atom = literal_parser().map_tree(TreeKind::ExprLiteral);
     let identifier_atom = var_chain_parser();
     let parented_atom = parened_expression_parser(e_parser);
     let hole_atom = typed_hole_parser();
 
     let atom = choice((literal_atom, identifier_atom, parented_atom, hole_atom));
-    let comment_r = comment_r_parser();
 
-    let commented_atom = comment_r
-        .clone()
-        .then(atom)
-        .then(comment_r.clone())
-        .map_with(|((c1, mut a), mut c2), extra| {
-            let mut nchildren = c1;
-            nchildren.append(&mut a.children);
-            nchildren.append(&mut c2);
-            Tree {
-                kind: a.kind,
-                location: extra.span(),
-                children: nchildren,
-            }
-        });
+    let commented_atom =
+        ws.clone()
+            .then(atom)
+            .then(ws.clone())
+            .map_with(|((c1, mut a), mut c2), extra| {
+                let mut nchildren = c1;
+                nchildren.append(&mut a.children);
+                nchildren.append(&mut c2);
+                Tree {
+                    kind: a.kind,
+                    location: extra.span(),
+                    children: nchildren,
+                }
+            });
 
     let binary_op = |c| just(c).map_token();
-    let unary_op = |c| comment_r.clone().then(just(c).map_token());
+    let unary_op = |c| ws.clone().then(just(c).map_token());
 
     macro_rules! binary_fold {
         () => {
@@ -386,8 +448,8 @@ where
 /// (<expression>)
 /// ```
 fn parened_expression_parser<'src, I>(
-    e_parser: impl Parser<'src, I, Tree, Err<ParsingError>> + Clone,
-) -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+    e_parser: impl Parser<'src, I, Tree, ExtraData> + Clone,
+) -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
@@ -409,24 +471,25 @@ where
 /// enum /* comments */ UCIdentifier /*comments*/ [<dependency definition> /* comments */]
 ///     <enumBody>
 /// ```
-fn enum_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+fn enum_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
-    let one_comment = one_comment_parser();
-    let comment_r = comment_r_parser();
+    let one_comment = WhiteSpaceConfig::new().with_limit_comment().parser();
+    let ws = WhiteSpaceConfig::new().parser();
+
     let enum_kw = just(Token::Enum).map_token();
     let type_ident = type_identifier_parser();
-    let dependency = dependency_parser().then(comment_r.clone());
+    let dependency = dependency_parser().then(ws.clone());
     let dependency_r = dependency.repeated().collect::<Vec<_>>();
     let enum_body = enum_body_parser();
 
     one_comment
         .or_not()
         .then(enum_kw)
-        .then(comment_r.clone())
+        .then(ws.clone())
         .then(type_ident)
-        .then(comment_r)
+        .then(ws)
         .then(dependency_r)
         .then(enum_body)
         .map_tree(TreeKind::Enum)
@@ -444,17 +507,23 @@ where
 /// ```dbuf
 /// <constructor_enum>
 /// ```
-fn enum_body_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+fn enum_body_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
+    let ws = WhiteSpaceConfig::new()
+        .with_limit_comment()
+        .with_progress()
+        .parser();
+
     let lbrace = just(Token::LBrace).map_token();
-    let branch = branch_parser().map_child().map(Option::Some);
-    let comment = comment_parser().map(Option::Some);
-    let ws = white_space_parser(true).map(|()| Option::None);
     let rbrace = just(Token::RBrace).map_token();
 
-    let inside = choice((branch, comment, ws)).repeated().collect::<Vec<_>>();
+    let branch = branch_parser().map_child().map(|c| vec![c]);
+    let inside = choice((branch, ws))
+        .repeated()
+        .collect::<Vec<_>>()
+        .map(Vec::flatten);
     let branched = lbrace
         .then(inside)
         .then(rbrace)
@@ -473,28 +542,29 @@ where
 /// ```dbuf
 /// <pattern> /* comment */ [, /* comment */ <pattern> /* comment */] => /* comment_r */ <constructor_enum>
 /// ```
-fn branch_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+fn branch_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
+    let ws = WhiteSpaceConfig::new().parser();
+
     let pattern = pattern_parser();
-    let comment_r = comment_r_parser();
     let comma = just(Token::Comma).map_token();
     let arrow = just(Token::Arrow).map_token();
     let ce = constructor_enum_parser();
 
     let pattern_r = comma
-        .then(comment_r.clone())
+        .then(ws.clone())
         .then(pattern.clone())
-        .then(comment_r.clone())
+        .then(ws.clone())
         .repeated()
         .collect::<Vec<_>>();
 
     pattern
-        .then(comment_r.clone())
+        .then(ws.clone())
         .then(pattern_r)
         .then(arrow)
-        .then(comment_r)
+        .then(ws)
         .then(ce)
         .map_tree(TreeKind::Branch)
 }
@@ -506,7 +576,7 @@ where
 ///     (* | <literal> | lcIdentifier |
 ///      UCIdentifier /* c */ { [/* c */ lcIdentifier /* c */ : /* c */ <pattern> /* c */, /* c */] | /* c */ } )
 /// ```
-fn pattern_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+fn pattern_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
@@ -515,41 +585,42 @@ where
 
 /// Implementation of pattern parser.
 fn pattern_parser_impl<'src, I>(
-    p_parser: impl Parser<'src, I, Tree, Err<ParsingError>> + Clone,
-) -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+    p_parser: impl Parser<'src, I, Tree, ExtraData> + Clone,
+) -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
+    let ws = WhiteSpaceConfig::new().parser();
+
     let star = just(Token::Star).map_token();
     let literal = literal_parser();
     let alias = var_identifier_parser();
 
     let type_indent = type_identifier_parser();
-    let comment_r = comment_r_parser();
     let lbrace = just(Token::LBrace).map_token();
     let colon = just(Token::Colon).map_token();
     let comma = just(Token::Comma).map_token();
     let rbrace = just(Token::RBrace).map_token();
 
-    let field_init = comment_r
+    let field_init = ws
         .clone()
         .then(alias.clone())
-        .then(comment_r.clone())
+        .then(ws.clone())
         .then(colon)
-        .then(comment_r.clone())
+        .then(ws.clone())
         .then(p_parser)
-        .then(comment_r.clone())
+        .then(ws.clone())
         .then(comma.or_not())
-        .then(comment_r.clone())
+        .then(ws.clone())
         .map_tree(TreeKind::ConstructedPatternField)
         .map_child();
 
     let field_r = field_init.repeated().at_least(1).collect::<Vec<_>>();
 
     let constructed_pattern = type_indent
-        .then(comment_r.clone())
+        .then(ws.clone())
         .then(lbrace)
-        .then(choice((field_r, comment_r)))
+        .then(choice((field_r, ws)))
         .then(rbrace)
         .map_tree(TreeKind::ConstructedPattern)
         .map_child();
@@ -565,20 +636,23 @@ where
 ///    [<Constructor> | /* comment */ | /* whitespace */]
 /// }
 /// ```
-fn constructor_enum_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+fn constructor_enum_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
+    let ws = WhiteSpaceConfig::new()
+        .with_limit_comment()
+        .with_progress()
+        .parser();
+
     let lbrace = just(Token::LBrace).map_token();
-    let constructor = constructor_parser().map_child().map(Option::Some);
-    let comment = comment_parser().map(Option::Some);
     let rbrace = just(Token::RBrace).map_token();
 
-    let ws = white_space_parser(true).map(|()| Option::None);
-
-    let inside = choice((constructor, comment, ws))
+    let constructor = constructor_parser().map_child().map(|c| vec![c]);
+    let inside = choice((constructor, ws))
         .repeated()
-        .collect::<Vec<_>>();
+        .collect::<Vec<_>>()
+        .map(Vec::flatten);
 
     lbrace
         .then(inside)
@@ -599,19 +673,19 @@ where
 /// /* one comment */
 /// UCIdentifier
 /// ```
-fn constructor_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+fn constructor_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
-    let one_comment = one_comment_parser();
+    let one_comment = WhiteSpaceConfig::new().with_limit_comment().parser();
+    let ws = WhiteSpaceConfig::new().parser();
     let type_indent = type_identifier_parser();
-    let comment_r = comment_r_parser();
     let body = body_parser();
 
     let constructor_with_body = one_comment
         .clone()
         .then(type_indent.clone())
-        .then(comment_r)
+        .then(ws)
         .then(body)
         .map_tree(TreeKind::Constructor);
 
@@ -622,76 +696,123 @@ where
     choice((constructor_with_body, constructor_no_body))
 }
 
-/// Parses and ignores any number of whitespaces.
-///
-/// Param:
-///     `progress`. If true, require at least one white space.
-fn white_space_parser<'src, I>(
+/// Configuration for whitespace parser.
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "That not a state machine and all states are correct"
+)]
+struct WhiteSpaceConfig {
+    /// consume regular spaces.
+    consume_space: bool,
+    /// consume new lines.
+    consume_newline: bool,
+    /// consume block comments.
+    consume_block_comment: bool,
+    /// consume line comments.
+    consume_line_comment: bool,
+    /// consume error tokens.
+    consume_error: bool,
+    /// require at least one success token.
     progress: bool,
-) -> impl Parser<'src, I, (), Err<ParsingError>> + Clone
-where
-    I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
-{
-    let white_space = choice((just(Token::Newline), just(Token::Space)));
-
-    let at_least = usize::from(progress);
-    white_space
-        .repeated()
-        .at_least(at_least)
-        .labelled("Whitespace")
+    /// consume comment tokens no more that once.
+    limit_comment: bool,
 }
 
-/// Parses one comment with spaces.
-fn comment_parser<'src, I>() -> impl Parser<'src, I, Child, Err<ParsingError>> + Clone
-where
-    I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
-{
-    let line_comment = select! {
-        Token::LineComment(comment) => Token::LineComment(comment)
+impl WhiteSpaceConfig {
+    fn new() -> WhiteSpaceConfig {
+        WhiteSpaceConfig {
+            consume_space: true,
+            consume_newline: true,
+            consume_block_comment: true,
+            consume_line_comment: true,
+            consume_error: true,
+            progress: false,
+            limit_comment: false,
+        }
     }
-    .map_token()
-    .labelled("Line Comment");
 
-    let block_comment = select! {
-        Token::BlockComment(comment) => Token::BlockComment(comment)
+    fn with_progress(mut self) -> WhiteSpaceConfig {
+        self.progress = true;
+        self
     }
-    .map_token()
-    .labelled("Block Comment");
 
-    let ws = white_space_parser(false);
+    fn with_limit_comment(mut self) -> WhiteSpaceConfig {
+        self.limit_comment = true;
+        self
+    }
 
-    ws.clone()
-        .then(choice((line_comment, block_comment)))
-        .then(ws)
-        .map(|(((), c), ())| c)
-}
+    fn with_no_new_line(mut self) -> WhiteSpaceConfig {
+        self.consume_newline = false;
+        self
+    }
 
-/// Parses any number of comments/spaces.
-fn comment_r_parser<'src, I>() -> impl Parser<'src, I, Vec<Child>, Err<ParsingError>> + Clone
-where
-    I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
-{
-    let ws = white_space_parser(false).map(|()| vec![]);
+    fn parser<'src, I>(self) -> impl Parser<'src, I, Vec<Child>, ExtraData> + Clone
+    where
+        I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
+    {
+        let space = just(Token::Space).map_token().labelled("Space");
 
-    let comment = comment_parser();
-    let comment_r = comment.repeated().at_least(1).collect::<Vec<_>>();
+        let new_line = just(Token::NewLine).map_token().labelled("New Line");
 
-    choice((comment_r, ws))
-}
+        let line_comment = select! {
+            Token::LineComment(comment) => Token::LineComment(comment)
+        }
+        .map_token()
+        .labelled("Line Comment");
 
-/// Parsees one or zero comments with spaces.
-fn one_comment_parser<'src, I>() -> impl Parser<'src, I, Option<Child>, Err<ParsingError>> + Clone
-where
-    I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
-{
-    let ws = white_space_parser(false).map(|()| Option::None);
-    let comment = comment_parser().map(Option::Some);
+        let block_comment = select! {
+            Token::BlockComment(comment) => Token::BlockComment(comment)
+        }
+        .map_token()
+        .labelled("Block Comment");
 
-    choice((comment, ws))
+        let error = just(Token::Err).map_token().labelled("Error");
+
+        let mut comment_parser = any().filter(|_| false).map(|_| unreachable!()).boxed();
+        if self.consume_block_comment {
+            comment_parser = block_comment.or(comment_parser).boxed();
+        }
+        if self.consume_line_comment {
+            comment_parser = line_comment.or(comment_parser).boxed();
+        }
+
+        let mut ws = any().filter(|_| false).map(|_| unreachable!()).boxed();
+        if self.consume_space {
+            ws = space.or(ws).boxed();
+        }
+        if self.consume_newline {
+            ws = new_line.or(ws).boxed();
+        }
+        if self.consume_error {
+            ws = error.or(ws).boxed();
+        }
+
+        let no_lim = choice((comment_parser.clone(), ws.clone()))
+            .repeated()
+            .collect::<Vec<_>>();
+        let limited = ws
+            .clone()
+            .repeated()
+            .collect::<Vec<_>>()
+            .then(comment_parser.or_not())
+            .then(ws.repeated().collect::<Vec<_>>())
+            .map(|((mut ws1, comm), ws2)| {
+                ws1.extend(comm);
+                ws1.extend(ws2);
+                ws1
+            });
+
+        match (self.progress, self.limit_comment) {
+            (true, true) => limited.filter(|v| !v.is_empty()).boxed(),
+            (true, false) => no_lim.filter(|v| !v.is_empty()).boxed(),
+            (false, true) => limited.boxed(),
+            (false, false) => no_lim.boxed(),
+        }
+    }
 }
 
 /// Parses type identifier (`UCIdentifier`).
-fn type_identifier_parser<'src, I>() -> impl Parser<'src, I, Child, Err<ParsingError>> + Clone
+fn type_identifier_parser<'src, I>() -> impl Parser<'src, I, Child, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
@@ -713,7 +834,7 @@ where
 /// ```dbuf
 /// lcIdentifier [.lcIdentifier] .
 /// ```
-fn var_chain_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+fn var_chain_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
@@ -725,22 +846,39 @@ where
         .repeated()
         .collect::<Vec<_>>();
 
-    let recovery = var_ident
+    // recover on extra dot
+    let finish = dot
         .clone()
-        .then(dot_call.clone())
-        .then(dot.clone())
-        .map_tree(TreeKind::ExprIdentifier);
+        .map_with(|ch, extra| {
+            let l = extra.span();
+            let st = extra.state();
+            let from = st.call_chain_start.unwrap_or(l);
+            extra.emit(
+                ParsingError::new(Token::Dot.into(), l)
+                    .bad_call_chain((from..l).try_into().unwrap()),
+            );
+            ch
+        })
+        .or_not();
 
     var_ident
+        .map_with(|ch, extra| {
+            let loc = extra.span();
+            let state = extra.state();
+            state.call_chain_start = Some(loc);
+            ch
+        })
         .then(dot_call)
-        .then(dot.not().rewind())
+        .then(finish)
+        .map_with(|ch, extra| {
+            extra.state().call_chain_start = None;
+            ch
+        })
         .map_tree(TreeKind::ExprIdentifier)
-        .map_err_with_state(|e, l, ()| e.bad_call_chain(l))
-        .recover_with(via_parser(recovery))
 }
 
 /// Parses var identifier (`LCIdentifier`).
-fn var_identifier_parser<'src, I>() -> impl Parser<'src, I, Child, Err<ParsingError>> + Clone
+fn var_identifier_parser<'src, I>() -> impl Parser<'src, I, Child, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
@@ -752,7 +890,7 @@ where
 }
 
 /// Parses literals.
-fn literal_parser<'src, I>() -> impl Parser<'src, I, Child, Err<ParsingError>> + Clone
+fn literal_parser<'src, I>() -> impl Parser<'src, I, Child, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
@@ -767,7 +905,7 @@ where
     .labelled("Literal")
 }
 
-fn typed_hole_parser<'src, I>() -> impl Parser<'src, I, Tree, Err<ParsingError>> + Clone
+fn typed_hole_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
 where
     I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
 {
