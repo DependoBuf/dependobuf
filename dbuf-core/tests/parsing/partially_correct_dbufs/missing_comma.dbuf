@@ -1,5 +1,3 @@
-/* currently bad field locations */
-
 message MessageNoComma {
     x Int
     y Dep 0

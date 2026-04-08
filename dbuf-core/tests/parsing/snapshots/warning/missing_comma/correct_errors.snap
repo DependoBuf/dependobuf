@@ -9,7 +9,7 @@ expression: errors
             expected: [],
             at: Location {
                 start: Offset {
-                    lines: 3,
+                    lines: 1,
                     columns: 9,
                 },
                 length: Offset {
@@ -21,7 +21,7 @@ expression: errors
                 MissingComma(
                     Location {
                         start: Offset {
-                            lines: 3,
+                            lines: 1,
                             columns: 4,
                         },
                         length: Offset {
@@ -39,7 +39,7 @@ expression: errors
             expected: [],
             at: Location {
                 start: Offset {
-                    lines: 4,
+                    lines: 2,
                     columns: 11,
                 },
                 length: Offset {
@@ -51,7 +51,7 @@ expression: errors
                 MissingComma(
                     Location {
                         start: Offset {
-                            lines: 4,
+                            lines: 2,
                             columns: 4,
                         },
                         length: Offset {
@@ -69,7 +69,7 @@ expression: errors
             expected: [],
             at: Location {
                 start: Offset {
-                    lines: 9,
+                    lines: 7,
                     columns: 13,
                 },
                 length: Offset {
@@ -81,7 +81,7 @@ expression: errors
                 MissingComma(
                     Location {
                         start: Offset {
-                            lines: 9,
+                            lines: 7,
                             columns: 8,
                         },
                         length: Offset {
@@ -99,7 +99,7 @@ expression: errors
             expected: [],
             at: Location {
                 start: Offset {
-                    lines: 10,
+                    lines: 8,
                     columns: 15,
                 },
                 length: Offset {
@@ -111,7 +111,7 @@ expression: errors
                 MissingComma(
                     Location {
                         start: Offset {
-                            lines: 10,
+                            lines: 8,
                             columns: 8,
                         },
                         length: Offset {

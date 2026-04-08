@@ -10,58 +10,17 @@ Tree {
             columns: 0,
         },
         length: Offset {
-            lines: 13,
+            lines: 11,
             columns: 0,
         },
     },
     children: [
-        Token(
-            BlockComment(
-                "/* currently bad field locations */",
-            ),
-            Location {
-                start: Offset {
-                    lines: 0,
-                    columns: 0,
-                },
-                length: Offset {
-                    lines: 0,
-                    columns: 35,
-                },
-            },
-        ),
-        Token(
-            NewLine,
-            Location {
-                start: Offset {
-                    lines: 0,
-                    columns: 35,
-                },
-                length: Offset {
-                    lines: 1,
-                    columns: 0,
-                },
-            },
-        ),
-        Token(
-            NewLine,
-            Location {
-                start: Offset {
-                    lines: 1,
-                    columns: 0,
-                },
-                length: Offset {
-                    lines: 1,
-                    columns: 0,
-                },
-            },
-        ),
         Tree(
             Tree {
                 kind: Message,
                 location: Location {
                     start: Offset {
-                        lines: 2,
+                        lines: 0,
                         columns: 0,
                     },
                     length: Offset {
@@ -74,7 +33,7 @@ Tree {
                         Message,
                         Location {
                             start: Offset {
-                                lines: 2,
+                                lines: 0,
                                 columns: 0,
                             },
                             length: Offset {
@@ -87,7 +46,7 @@ Tree {
                         Space,
                         Location {
                             start: Offset {
-                                lines: 2,
+                                lines: 0,
                                 columns: 7,
                             },
                             length: Offset {
@@ -102,7 +61,7 @@ Tree {
                         ),
                         Location {
                             start: Offset {
-                                lines: 2,
+                                lines: 0,
                                 columns: 8,
                             },
                             length: Offset {
@@ -115,7 +74,7 @@ Tree {
                         Space,
                         Location {
                             start: Offset {
-                                lines: 2,
+                                lines: 0,
                                 columns: 22,
                             },
                             length: Offset {
@@ -129,7 +88,7 @@ Tree {
                             kind: Body,
                             location: Location {
                                 start: Offset {
-                                    lines: 2,
+                                    lines: 0,
                                     columns: 23,
                                 },
                                 length: Offset {
@@ -142,7 +101,7 @@ Tree {
                                     LBrace,
                                     Location {
                                         start: Offset {
-                                            lines: 2,
+                                            lines: 0,
                                             columns: 23,
                                         },
                                         length: Offset {
@@ -155,7 +114,7 @@ Tree {
                                     NewLine,
                                     Location {
                                         start: Offset {
-                                            lines: 2,
+                                            lines: 0,
                                             columns: 24,
                                         },
                                         length: Offset {
@@ -168,7 +127,7 @@ Tree {
                                     Space,
                                     Location {
                                         start: Offset {
-                                            lines: 3,
+                                            lines: 1,
                                             columns: 0,
                                         },
                                         length: Offset {
@@ -182,7 +141,7 @@ Tree {
                                         kind: Definition,
                                         location: Location {
                                             start: Offset {
-                                                lines: 3,
+                                                lines: 1,
                                                 columns: 4,
                                             },
                                             length: Offset {
@@ -197,7 +156,7 @@ Tree {
                                                 ),
                                                 Location {
                                                     start: Offset {
-                                                        lines: 3,
+                                                        lines: 1,
                                                         columns: 4,
                                                     },
                                                     length: Offset {
@@ -210,7 +169,7 @@ Tree {
                                                 Space,
                                                 Location {
                                                     start: Offset {
-                                                        lines: 3,
+                                                        lines: 1,
                                                         columns: 5,
                                                     },
                                                     length: Offset {
@@ -225,7 +184,7 @@ Tree {
                                                 ),
                                                 Location {
                                                     start: Offset {
-                                                        lines: 3,
+                                                        lines: 1,
                                                         columns: 6,
                                                     },
                                                     length: Offset {
@@ -241,7 +200,7 @@ Tree {
                                     NewLine,
                                     Location {
                                         start: Offset {
-                                            lines: 3,
+                                            lines: 1,
                                             columns: 9,
                                         },
                                         length: Offset {
@@ -254,7 +213,7 @@ Tree {
                                     Space,
                                     Location {
                                         start: Offset {
-                                            lines: 4,
+                                            lines: 2,
                                             columns: 0,
                                         },
                                         length: Offset {
@@ -268,7 +227,7 @@ Tree {
                                         kind: Definition,
                                         location: Location {
                                             start: Offset {
-                                                lines: 4,
+                                                lines: 2,
                                                 columns: 4,
                                             },
                                             length: Offset {
@@ -283,7 +242,7 @@ Tree {
                                                 ),
                                                 Location {
                                                     start: Offset {
-                                                        lines: 4,
+                                                        lines: 2,
                                                         columns: 4,
                                                     },
                                                     length: Offset {
@@ -296,7 +255,7 @@ Tree {
                                                 Space,
                                                 Location {
                                                     start: Offset {
-                                                        lines: 4,
+                                                        lines: 2,
                                                         columns: 5,
                                                     },
                                                     length: Offset {
@@ -311,7 +270,7 @@ Tree {
                                                 ),
                                                 Location {
                                                     start: Offset {
-                                                        lines: 4,
+                                                        lines: 2,
                                                         columns: 6,
                                                     },
                                                     length: Offset {
@@ -324,7 +283,7 @@ Tree {
                                                 Space,
                                                 Location {
                                                     start: Offset {
-                                                        lines: 4,
+                                                        lines: 2,
                                                         columns: 9,
                                                     },
                                                     length: Offset {
@@ -338,7 +297,7 @@ Tree {
                                                     kind: ExprLiteral,
                                                     location: Location {
                                                         start: Offset {
-                                                            lines: 4,
+                                                            lines: 2,
                                                             columns: 10,
                                                         },
                                                         length: Offset {
@@ -353,7 +312,7 @@ Tree {
                                                             ),
                                                             Location {
                                                                 start: Offset {
-                                                                    lines: 4,
+                                                                    lines: 2,
                                                                     columns: 10,
                                                                 },
                                                                 length: Offset {
@@ -372,7 +331,7 @@ Tree {
                                     NewLine,
                                     Location {
                                         start: Offset {
-                                            lines: 4,
+                                            lines: 2,
                                             columns: 11,
                                         },
                                         length: Offset {
@@ -385,7 +344,7 @@ Tree {
                                     RBrace,
                                     Location {
                                         start: Offset {
-                                            lines: 5,
+                                            lines: 3,
                                             columns: 0,
                                         },
                                         length: Offset {
@@ -404,7 +363,7 @@ Tree {
             NewLine,
             Location {
                 start: Offset {
-                    lines: 5,
+                    lines: 3,
                     columns: 1,
                 },
                 length: Offset {
@@ -417,7 +376,7 @@ Tree {
             NewLine,
             Location {
                 start: Offset {
-                    lines: 6,
+                    lines: 4,
                     columns: 0,
                 },
                 length: Offset {
@@ -431,7 +390,7 @@ Tree {
                 kind: Enum,
                 location: Location {
                     start: Offset {
-                        lines: 7,
+                        lines: 5,
                         columns: 0,
                     },
                     length: Offset {
@@ -444,7 +403,7 @@ Tree {
                         Enum,
                         Location {
                             start: Offset {
-                                lines: 7,
+                                lines: 5,
                                 columns: 0,
                             },
                             length: Offset {
@@ -457,7 +416,7 @@ Tree {
                         Space,
                         Location {
                             start: Offset {
-                                lines: 7,
+                                lines: 5,
                                 columns: 4,
                             },
                             length: Offset {
@@ -472,7 +431,7 @@ Tree {
                         ),
                         Location {
                             start: Offset {
-                                lines: 7,
+                                lines: 5,
                                 columns: 5,
                             },
                             length: Offset {
@@ -485,7 +444,7 @@ Tree {
                         Space,
                         Location {
                             start: Offset {
-                                lines: 7,
+                                lines: 5,
                                 columns: 16,
                             },
                             length: Offset {
@@ -499,7 +458,7 @@ Tree {
                             kind: EnumBody,
                             location: Location {
                                 start: Offset {
-                                    lines: 7,
+                                    lines: 5,
                                     columns: 17,
                                 },
                                 length: Offset {
@@ -513,7 +472,7 @@ Tree {
                                         kind: ConstructorEnum,
                                         location: Location {
                                             start: Offset {
-                                                lines: 7,
+                                                lines: 5,
                                                 columns: 17,
                                             },
                                             length: Offset {
@@ -526,7 +485,7 @@ Tree {
                                                 LBrace,
                                                 Location {
                                                     start: Offset {
-                                                        lines: 7,
+                                                        lines: 5,
                                                         columns: 17,
                                                     },
                                                     length: Offset {
@@ -539,7 +498,7 @@ Tree {
                                                 NewLine,
                                                 Location {
                                                     start: Offset {
-                                                        lines: 7,
+                                                        lines: 5,
                                                         columns: 18,
                                                     },
                                                     length: Offset {
@@ -552,7 +511,7 @@ Tree {
                                                 Space,
                                                 Location {
                                                     start: Offset {
-                                                        lines: 8,
+                                                        lines: 6,
                                                         columns: 0,
                                                     },
                                                     length: Offset {
@@ -566,7 +525,7 @@ Tree {
                                                     kind: Constructor,
                                                     location: Location {
                                                         start: Offset {
-                                                            lines: 8,
+                                                            lines: 6,
                                                             columns: 4,
                                                         },
                                                         length: Offset {
@@ -581,7 +540,7 @@ Tree {
                                                             ),
                                                             Location {
                                                                 start: Offset {
-                                                                    lines: 8,
+                                                                    lines: 6,
                                                                     columns: 4,
                                                                 },
                                                                 length: Offset {
@@ -594,7 +553,7 @@ Tree {
                                                             Space,
                                                             Location {
                                                                 start: Offset {
-                                                                    lines: 8,
+                                                                    lines: 6,
                                                                     columns: 7,
                                                                 },
                                                                 length: Offset {
@@ -608,7 +567,7 @@ Tree {
                                                                 kind: Body,
                                                                 location: Location {
                                                                     start: Offset {
-                                                                        lines: 8,
+                                                                        lines: 6,
                                                                         columns: 8,
                                                                     },
                                                                     length: Offset {
@@ -621,7 +580,7 @@ Tree {
                                                                         LBrace,
                                                                         Location {
                                                                             start: Offset {
-                                                                                lines: 8,
+                                                                                lines: 6,
                                                                                 columns: 8,
                                                                             },
                                                                             length: Offset {
@@ -634,7 +593,7 @@ Tree {
                                                                         NewLine,
                                                                         Location {
                                                                             start: Offset {
-                                                                                lines: 8,
+                                                                                lines: 6,
                                                                                 columns: 9,
                                                                             },
                                                                             length: Offset {
@@ -647,7 +606,7 @@ Tree {
                                                                         Space,
                                                                         Location {
                                                                             start: Offset {
-                                                                                lines: 9,
+                                                                                lines: 7,
                                                                                 columns: 0,
                                                                             },
                                                                             length: Offset {
@@ -661,7 +620,7 @@ Tree {
                                                                             kind: Definition,
                                                                             location: Location {
                                                                                 start: Offset {
-                                                                                    lines: 9,
+                                                                                    lines: 7,
                                                                                     columns: 8,
                                                                                 },
                                                                                 length: Offset {
@@ -676,7 +635,7 @@ Tree {
                                                                                     ),
                                                                                     Location {
                                                                                         start: Offset {
-                                                                                            lines: 9,
+                                                                                            lines: 7,
                                                                                             columns: 8,
                                                                                         },
                                                                                         length: Offset {
@@ -689,7 +648,7 @@ Tree {
                                                                                     Space,
                                                                                     Location {
                                                                                         start: Offset {
-                                                                                            lines: 9,
+                                                                                            lines: 7,
                                                                                             columns: 9,
                                                                                         },
                                                                                         length: Offset {
@@ -704,7 +663,7 @@ Tree {
                                                                                     ),
                                                                                     Location {
                                                                                         start: Offset {
-                                                                                            lines: 9,
+                                                                                            lines: 7,
                                                                                             columns: 10,
                                                                                         },
                                                                                         length: Offset {
@@ -720,7 +679,7 @@ Tree {
                                                                         NewLine,
                                                                         Location {
                                                                             start: Offset {
-                                                                                lines: 9,
+                                                                                lines: 7,
                                                                                 columns: 13,
                                                                             },
                                                                             length: Offset {
@@ -733,7 +692,7 @@ Tree {
                                                                         Space,
                                                                         Location {
                                                                             start: Offset {
-                                                                                lines: 10,
+                                                                                lines: 8,
                                                                                 columns: 0,
                                                                             },
                                                                             length: Offset {
@@ -747,7 +706,7 @@ Tree {
                                                                             kind: Definition,
                                                                             location: Location {
                                                                                 start: Offset {
-                                                                                    lines: 10,
+                                                                                    lines: 8,
                                                                                     columns: 8,
                                                                                 },
                                                                                 length: Offset {
@@ -762,7 +721,7 @@ Tree {
                                                                                     ),
                                                                                     Location {
                                                                                         start: Offset {
-                                                                                            lines: 10,
+                                                                                            lines: 8,
                                                                                             columns: 8,
                                                                                         },
                                                                                         length: Offset {
@@ -775,7 +734,7 @@ Tree {
                                                                                     Space,
                                                                                     Location {
                                                                                         start: Offset {
-                                                                                            lines: 10,
+                                                                                            lines: 8,
                                                                                             columns: 9,
                                                                                         },
                                                                                         length: Offset {
@@ -790,7 +749,7 @@ Tree {
                                                                                     ),
                                                                                     Location {
                                                                                         start: Offset {
-                                                                                            lines: 10,
+                                                                                            lines: 8,
                                                                                             columns: 10,
                                                                                         },
                                                                                         length: Offset {
@@ -803,7 +762,7 @@ Tree {
                                                                                     Space,
                                                                                     Location {
                                                                                         start: Offset {
-                                                                                            lines: 10,
+                                                                                            lines: 8,
                                                                                             columns: 13,
                                                                                         },
                                                                                         length: Offset {
@@ -817,7 +776,7 @@ Tree {
                                                                                         kind: ExprLiteral,
                                                                                         location: Location {
                                                                                             start: Offset {
-                                                                                                lines: 10,
+                                                                                                lines: 8,
                                                                                                 columns: 14,
                                                                                             },
                                                                                             length: Offset {
@@ -832,7 +791,7 @@ Tree {
                                                                                                 ),
                                                                                                 Location {
                                                                                                     start: Offset {
-                                                                                                        lines: 10,
+                                                                                                        lines: 8,
                                                                                                         columns: 14,
                                                                                                     },
                                                                                                     length: Offset {
@@ -851,7 +810,7 @@ Tree {
                                                                         NewLine,
                                                                         Location {
                                                                             start: Offset {
-                                                                                lines: 10,
+                                                                                lines: 8,
                                                                                 columns: 15,
                                                                             },
                                                                             length: Offset {
@@ -864,7 +823,7 @@ Tree {
                                                                         Space,
                                                                         Location {
                                                                             start: Offset {
-                                                                                lines: 11,
+                                                                                lines: 9,
                                                                                 columns: 0,
                                                                             },
                                                                             length: Offset {
@@ -877,7 +836,7 @@ Tree {
                                                                         RBrace,
                                                                         Location {
                                                                             start: Offset {
-                                                                                lines: 11,
+                                                                                lines: 9,
                                                                                 columns: 4,
                                                                             },
                                                                             length: Offset {
@@ -896,7 +855,7 @@ Tree {
                                                 NewLine,
                                                 Location {
                                                     start: Offset {
-                                                        lines: 11,
+                                                        lines: 9,
                                                         columns: 5,
                                                     },
                                                     length: Offset {
@@ -909,7 +868,7 @@ Tree {
                                                 RBrace,
                                                 Location {
                                                     start: Offset {
-                                                        lines: 12,
+                                                        lines: 10,
                                                         columns: 0,
                                                     },
                                                     length: Offset {
@@ -931,7 +890,7 @@ Tree {
             NewLine,
             Location {
                 start: Offset {
-                    lines: 12,
+                    lines: 10,
                     columns: 1,
                 },
                 length: Offset {

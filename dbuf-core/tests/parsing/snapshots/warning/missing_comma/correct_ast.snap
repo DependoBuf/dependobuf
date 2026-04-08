@@ -6,7 +6,7 @@ expression: ast
     Definition {
         loc: Location {
             start: Offset {
-                lines: 2,
+                lines: 0,
                 columns: 0,
             },
             length: Offset {
@@ -19,7 +19,7 @@ expression: ast
                 inner: "MessageNoComma",
             },
             start: Offset {
-                lines: 2,
+                lines: 0,
                 columns: 8,
             },
         },
@@ -30,7 +30,7 @@ expression: ast
                     Definition {
                         loc: Location {
                             start: Offset {
-                                lines: 3,
+                                lines: 1,
                                 columns: 4,
                             },
                             length: Offset {
@@ -43,14 +43,14 @@ expression: ast
                                 inner: "x",
                             },
                             start: Offset {
-                                lines: 3,
+                                lines: 1,
                                 columns: 4,
                             },
                         },
                         data: Expression {
                             loc: Location {
                                 start: Offset {
-                                    lines: 3,
+                                    lines: 1,
                                     columns: 6,
                                 },
                                 length: Offset {
@@ -64,7 +64,7 @@ expression: ast
                                         inner: "Int",
                                     },
                                     start: Offset {
-                                        lines: 3,
+                                        lines: 1,
                                         columns: 6,
                                     },
                                 },
@@ -75,7 +75,7 @@ expression: ast
                     Definition {
                         loc: Location {
                             start: Offset {
-                                lines: 4,
+                                lines: 2,
                                 columns: 4,
                             },
                             length: Offset {
@@ -88,14 +88,14 @@ expression: ast
                                 inner: "y",
                             },
                             start: Offset {
-                                lines: 4,
+                                lines: 2,
                                 columns: 4,
                             },
                         },
                         data: Expression {
                             loc: Location {
                                 start: Offset {
-                                    lines: 4,
+                                    lines: 2,
                                     columns: 6,
                                 },
                                 length: Offset {
@@ -109,7 +109,7 @@ expression: ast
                                         inner: "Dep",
                                     },
                                     start: Offset {
-                                        lines: 4,
+                                        lines: 2,
                                         columns: 6,
                                     },
                                 },
@@ -117,7 +117,7 @@ expression: ast
                                     Expression {
                                         loc: Location {
                                             start: Offset {
-                                                lines: 4,
+                                                lines: 2,
                                                 columns: 10,
                                             },
                                             length: Offset {
@@ -144,7 +144,7 @@ expression: ast
     Definition {
         loc: Location {
             start: Offset {
-                lines: 7,
+                lines: 5,
                 columns: 0,
             },
             length: Offset {
@@ -157,7 +157,7 @@ expression: ast
                 inner: "EnumNoComma",
             },
             start: Offset {
-                lines: 7,
+                lines: 5,
                 columns: 5,
             },
         },
@@ -171,7 +171,7 @@ expression: ast
                             Definition {
                                 loc: Location {
                                     start: Offset {
-                                        lines: 8,
+                                        lines: 6,
                                         columns: 4,
                                     },
                                     length: Offset {
@@ -184,7 +184,7 @@ expression: ast
                                         inner: "Ctr",
                                     },
                                     start: Offset {
-                                        lines: 8,
+                                        lines: 6,
                                         columns: 4,
                                     },
                                 },
@@ -192,7 +192,7 @@ expression: ast
                                     Definition {
                                         loc: Location {
                                             start: Offset {
-                                                lines: 9,
+                                                lines: 7,
                                                 columns: 8,
                                             },
                                             length: Offset {
@@ -205,14 +205,14 @@ expression: ast
                                                 inner: "x",
                                             },
                                             start: Offset {
-                                                lines: 9,
+                                                lines: 7,
                                                 columns: 8,
                                             },
                                         },
                                         data: Expression {
                                             loc: Location {
                                                 start: Offset {
-                                                    lines: 9,
+                                                    lines: 7,
                                                     columns: 10,
                                                 },
                                                 length: Offset {
@@ -226,7 +226,7 @@ expression: ast
                                                         inner: "Int",
                                                     },
                                                     start: Offset {
-                                                        lines: 9,
+                                                        lines: 7,
                                                         columns: 10,
                                                     },
                                                 },
@@ -237,7 +237,7 @@ expression: ast
                                     Definition {
                                         loc: Location {
                                             start: Offset {
-                                                lines: 10,
+                                                lines: 8,
                                                 columns: 8,
                                             },
                                             length: Offset {
@@ -250,14 +250,14 @@ expression: ast
                                                 inner: "y",
                                             },
                                             start: Offset {
-                                                lines: 10,
+                                                lines: 8,
                                                 columns: 8,
                                             },
                                         },
                                         data: Expression {
                                             loc: Location {
                                                 start: Offset {
-                                                    lines: 10,
+                                                    lines: 8,
                                                     columns: 10,
                                                 },
                                                 length: Offset {
@@ -271,7 +271,7 @@ expression: ast
                                                         inner: "Dep",
                                                     },
                                                     start: Offset {
-                                                        lines: 10,
+                                                        lines: 8,
                                                         columns: 10,
                                                     },
                                                 },
@@ -279,7 +279,7 @@ expression: ast
                                                     Expression {
                                                         loc: Location {
                                                             start: Offset {
-                                                                lines: 10,
+                                                                lines: 8,
                                                                 columns: 14,
                                                             },
                                                             length: Offset {
