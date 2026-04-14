@@ -21,11 +21,11 @@ pub trait ErrorStage: Display {
     fn location(&self) -> Location<Offset>;
 }
 
-#[derive(Debug, Error, PartialEq, Eq, Clone)]
 /// Error struct for every project error.
 ///
 /// Param:
 /// * `Stage` is the last compilation stage completed.
+#[derive(Debug, Error, PartialEq, Eq, Clone)]
 pub struct Error<Stage> {
     pub stage: Stage,
 }
