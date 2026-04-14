@@ -1,0 +1,12 @@
+message EmptyMesssage {}
+
+enum EmptyEnum {}
+
+enum EmptyBranchEnum1 (x Int) {
+    * => {}
+}
+
+enum EmptyBranchEnum2 (x Int) {
+    1 => {}
+    * => {}
+}

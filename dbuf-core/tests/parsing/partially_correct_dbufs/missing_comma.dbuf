@@ -1,0 +1,11 @@
+message MessageNoComma {
+    x Int
+    y Dep 0
+}
+
+enum EnumNoComma {
+    Ctr {
+        x Int
+        y Dep 0
+    }
+}

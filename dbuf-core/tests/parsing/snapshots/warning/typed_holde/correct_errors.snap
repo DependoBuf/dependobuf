@@ -1,0 +1,70 @@
+---
+source: dbuf-core/tests/parsing/parsing_warnings.rs
+expression: errors
+input_file: dbuf-core/tests/parsing/partially_correct_dbufs/typed_holde.dbuf
+---
+[
+    ParsingError(
+        Error {
+            found: Some(
+                Underscore,
+            ),
+            expected: [],
+            at: Location {
+                start: Offset {
+                    lines: 1,
+                    columns: 11,
+                },
+                length: Offset {
+                    lines: 0,
+                    columns: 1,
+                },
+            },
+            extra: Some(
+                TypedHole,
+            ),
+        },
+    ),
+    ParsingError(
+        Error {
+            found: Some(
+                Underscore,
+            ),
+            expected: [],
+            at: Location {
+                start: Offset {
+                    lines: 2,
+                    columns: 21,
+                },
+                length: Offset {
+                    lines: 0,
+                    columns: 1,
+                },
+            },
+            extra: Some(
+                TypedHole,
+            ),
+        },
+    ),
+    ParsingError(
+        Error {
+            found: Some(
+                Underscore,
+            ),
+            expected: [],
+            at: Location {
+                start: Offset {
+                    lines: 3,
+                    columns: 32,
+                },
+                length: Offset {
+                    lines: 0,
+                    columns: 1,
+                },
+            },
+            extra: Some(
+                TypedHole,
+            ),
+        },
+    ),
+]

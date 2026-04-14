@@ -6,6 +6,7 @@ mod location;
 mod parser;
 mod parser_error;
 mod parser_utils;
+mod parser_whitespace;
 
 mod cst_to_ast;
 

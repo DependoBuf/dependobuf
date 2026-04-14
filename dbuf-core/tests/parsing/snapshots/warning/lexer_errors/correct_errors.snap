@@ -1,0 +1,91 @@
+---
+source: dbuf-core/tests/parsing/parsing_warnings.rs
+expression: errors
+input_file: dbuf-core/tests/parsing/partially_correct_dbufs/lexer_errors.dbuf
+---
+[
+    LexingError(
+        Error {
+            data: ErrorData {
+                at: Offset {
+                    lines: 1,
+                    columns: 16,
+                },
+                current: "100000000000000000000",
+            },
+            kind: IntegerOverflow,
+        },
+    ),
+    LexingError(
+        Error {
+            data: ErrorData {
+                at: Offset {
+                    lines: 2,
+                    columns: 15,
+                },
+                current: "1000aba0000",
+            },
+            kind: InvalidInteger,
+        },
+    ),
+    LexingError(
+        Error {
+            data: ErrorData {
+                at: Offset {
+                    lines: 3,
+                    columns: 17,
+                },
+                current: "1000.000aba0000",
+            },
+            kind: InvalidFloat,
+        },
+    ),
+    LexingError(
+        Error {
+            data: ErrorData {
+                at: Offset {
+                    lines: 4,
+                    columns: 18,
+                },
+                current: "\"aaa\\aaaa\"",
+            },
+            kind: InvalidStringLiteral,
+        },
+    ),
+    LexingError(
+        Error {
+            data: ErrorData {
+                at: Offset {
+                    lines: 5,
+                    columns: 14,
+                },
+                current: "aba_aba",
+            },
+            kind: InvalidLCIdentifier,
+        },
+    ),
+    LexingError(
+        Error {
+            data: ErrorData {
+                at: Offset {
+                    lines: 6,
+                    columns: 14,
+                },
+                current: "Aba_Aba",
+            },
+            kind: InvalidUCIdentifier,
+        },
+    ),
+    LexingError(
+        Error {
+            data: ErrorData {
+                at: Offset {
+                    lines: 7,
+                    columns: 15,
+                },
+                current: "@",
+            },
+            kind: UnknownToken,
+        },
+    ),
+]

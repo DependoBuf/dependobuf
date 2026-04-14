@@ -1,0 +1,4 @@
+message ExampleMessage {
+    f1 Int;
+    f2 String;
+}

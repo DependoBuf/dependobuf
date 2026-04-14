@@ -1,0 +1,349 @@
+---
+source: dbuf-core/tests/parsing/parsing_warnings.rs
+expression: ast
+---
+[
+    Definition {
+        loc: Location {
+            start: Offset {
+                lines: 0,
+                columns: 0,
+            },
+            length: Offset {
+                lines: 8,
+                columns: 1,
+            },
+        },
+        name: LocatedName {
+            content: InternedString {
+                inner: "LexerUnfriendly",
+            },
+            start: Offset {
+                lines: 0,
+                columns: 8,
+            },
+        },
+        data: TypeDeclaration {
+            dependencies: [],
+            body: Message(
+                [
+                    Definition {
+                        loc: Location {
+                            start: Offset {
+                                lines: 1,
+                                columns: 4,
+                            },
+                            length: Offset {
+                                lines: 0,
+                                columns: 34,
+                            },
+                        },
+                        name: LocatedName {
+                            content: InternedString {
+                                inner: "hugeInt",
+                            },
+                            start: Offset {
+                                lines: 1,
+                                columns: 4,
+                            },
+                        },
+                        data: Expression {
+                            loc: Location {
+                                start: Offset {
+                                    lines: 1,
+                                    columns: 12,
+                                },
+                                length: Offset {
+                                    lines: 0,
+                                    columns: 3,
+                                },
+                            },
+                            node: FunCall {
+                                fun: LocatedName {
+                                    content: InternedString {
+                                        inner: "Dep",
+                                    },
+                                    start: Offset {
+                                        lines: 1,
+                                        columns: 12,
+                                    },
+                                },
+                                args: [],
+                            },
+                        },
+                    },
+                    Definition {
+                        loc: Location {
+                            start: Offset {
+                                lines: 2,
+                                columns: 4,
+                            },
+                            length: Offset {
+                                lines: 0,
+                                columns: 23,
+                            },
+                        },
+                        name: LocatedName {
+                            content: InternedString {
+                                inner: "badInt",
+                            },
+                            start: Offset {
+                                lines: 2,
+                                columns: 4,
+                            },
+                        },
+                        data: Expression {
+                            loc: Location {
+                                start: Offset {
+                                    lines: 2,
+                                    columns: 11,
+                                },
+                                length: Offset {
+                                    lines: 0,
+                                    columns: 3,
+                                },
+                            },
+                            node: FunCall {
+                                fun: LocatedName {
+                                    content: InternedString {
+                                        inner: "Dep",
+                                    },
+                                    start: Offset {
+                                        lines: 2,
+                                        columns: 11,
+                                    },
+                                },
+                                args: [],
+                            },
+                        },
+                    },
+                    Definition {
+                        loc: Location {
+                            start: Offset {
+                                lines: 3,
+                                columns: 4,
+                            },
+                            length: Offset {
+                                lines: 0,
+                                columns: 29,
+                            },
+                        },
+                        name: LocatedName {
+                            content: InternedString {
+                                inner: "badFloat",
+                            },
+                            start: Offset {
+                                lines: 3,
+                                columns: 4,
+                            },
+                        },
+                        data: Expression {
+                            loc: Location {
+                                start: Offset {
+                                    lines: 3,
+                                    columns: 13,
+                                },
+                                length: Offset {
+                                    lines: 0,
+                                    columns: 3,
+                                },
+                            },
+                            node: FunCall {
+                                fun: LocatedName {
+                                    content: InternedString {
+                                        inner: "Dep",
+                                    },
+                                    start: Offset {
+                                        lines: 3,
+                                        columns: 13,
+                                    },
+                                },
+                                args: [],
+                            },
+                        },
+                    },
+                    Definition {
+                        loc: Location {
+                            start: Offset {
+                                lines: 4,
+                                columns: 4,
+                            },
+                            length: Offset {
+                                lines: 0,
+                                columns: 25,
+                            },
+                        },
+                        name: LocatedName {
+                            content: InternedString {
+                                inner: "badString",
+                            },
+                            start: Offset {
+                                lines: 4,
+                                columns: 4,
+                            },
+                        },
+                        data: Expression {
+                            loc: Location {
+                                start: Offset {
+                                    lines: 4,
+                                    columns: 14,
+                                },
+                                length: Offset {
+                                    lines: 0,
+                                    columns: 3,
+                                },
+                            },
+                            node: FunCall {
+                                fun: LocatedName {
+                                    content: InternedString {
+                                        inner: "Dep",
+                                    },
+                                    start: Offset {
+                                        lines: 4,
+                                        columns: 14,
+                                    },
+                                },
+                                args: [],
+                            },
+                        },
+                    },
+                    Definition {
+                        loc: Location {
+                            start: Offset {
+                                lines: 5,
+                                columns: 4,
+                            },
+                            length: Offset {
+                                lines: 0,
+                                columns: 18,
+                            },
+                        },
+                        name: LocatedName {
+                            content: InternedString {
+                                inner: "badLC",
+                            },
+                            start: Offset {
+                                lines: 5,
+                                columns: 4,
+                            },
+                        },
+                        data: Expression {
+                            loc: Location {
+                                start: Offset {
+                                    lines: 5,
+                                    columns: 10,
+                                },
+                                length: Offset {
+                                    lines: 0,
+                                    columns: 3,
+                                },
+                            },
+                            node: FunCall {
+                                fun: LocatedName {
+                                    content: InternedString {
+                                        inner: "Dep",
+                                    },
+                                    start: Offset {
+                                        lines: 5,
+                                        columns: 10,
+                                    },
+                                },
+                                args: [],
+                            },
+                        },
+                    },
+                    Definition {
+                        loc: Location {
+                            start: Offset {
+                                lines: 6,
+                                columns: 4,
+                            },
+                            length: Offset {
+                                lines: 0,
+                                columns: 18,
+                            },
+                        },
+                        name: LocatedName {
+                            content: InternedString {
+                                inner: "badUC",
+                            },
+                            start: Offset {
+                                lines: 6,
+                                columns: 4,
+                            },
+                        },
+                        data: Expression {
+                            loc: Location {
+                                start: Offset {
+                                    lines: 6,
+                                    columns: 10,
+                                },
+                                length: Offset {
+                                    lines: 0,
+                                    columns: 3,
+                                },
+                            },
+                            node: FunCall {
+                                fun: LocatedName {
+                                    content: InternedString {
+                                        inner: "Dep",
+                                    },
+                                    start: Offset {
+                                        lines: 6,
+                                        columns: 10,
+                                    },
+                                },
+                                args: [],
+                            },
+                        },
+                    },
+                    Definition {
+                        loc: Location {
+                            start: Offset {
+                                lines: 7,
+                                columns: 4,
+                            },
+                            length: Offset {
+                                lines: 0,
+                                columns: 13,
+                            },
+                        },
+                        name: LocatedName {
+                            content: InternedString {
+                                inner: "unknow",
+                            },
+                            start: Offset {
+                                lines: 7,
+                                columns: 4,
+                            },
+                        },
+                        data: Expression {
+                            loc: Location {
+                                start: Offset {
+                                    lines: 7,
+                                    columns: 11,
+                                },
+                                length: Offset {
+                                    lines: 0,
+                                    columns: 3,
+                                },
+                            },
+                            node: FunCall {
+                                fun: LocatedName {
+                                    content: InternedString {
+                                        inner: "Dep",
+                                    },
+                                    start: Offset {
+                                        lines: 7,
+                                        columns: 11,
+                                    },
+                                },
+                                args: [],
+                            },
+                        },
+                    },
+                ],
+            ),
+        },
+    },
+]
