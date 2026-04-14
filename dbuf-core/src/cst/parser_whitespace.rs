@@ -3,6 +3,7 @@ use chumsky::input::ValueInput;
 use chumsky::label::LabelError;
 use chumsky::prelude::*;
 
+use super::Label::{self, *};
 use super::{Child, Token};
 use crate::location::Location;
 use crate::location::Offset;
@@ -45,13 +46,13 @@ impl WhiteSpaceConsumption {
     where
         I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
         E: ParserExtra<'src, I> + 'src,
-        E::Error: LabelError<'src, I, &'static str>,
+        E::Error: LabelError<'src, I, Label>,
     {
-        let space = just(Token::Space).map_token().labelled("Space");
+        let space = just(Token::Space).map_token().labelled(Space);
 
-        let new_line = just(Token::NewLine).map_token().labelled("New Line");
+        let new_line = just(Token::NewLine).map_token().labelled(NewLine);
 
-        let error = just(Token::Err).map_token().labelled("Error");
+        let error = just(Token::Err).map_token().labelled(Error);
 
         let mut ws = any().filter(|_| false).map(|_| unreachable!()).boxed();
         if self.consume_space {
@@ -71,19 +72,19 @@ impl WhiteSpaceConsumption {
     where
         I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
         E: ParserExtra<'src, I> + 'src,
-        E::Error: LabelError<'src, I, &'static str>,
+        E::Error: LabelError<'src, I, Label>,
     {
         let line_comment = select! {
             Token::LineComment(comment) => Token::LineComment(comment)
         }
         .map_token()
-        .labelled("Line Comment");
+        .labelled(Comment);
 
         let block_comment = select! {
             Token::BlockComment(comment) => Token::BlockComment(comment)
         }
         .map_token()
-        .labelled("Block Comment");
+        .labelled(Comment);
 
         let mut comment_parser = any().filter(|_| false).map(|_| unreachable!()).boxed();
         if self.consume_block_comment {
@@ -106,7 +107,7 @@ pub(super) trait CommentConsumption: Sized {
     where
         I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
         E: ParserExtra<'src, I> + 'src,
-        E::Error: LabelError<'src, I, &'static str>;
+        E::Error: LabelError<'src, I, Label>;
 }
 
 /// Consume any number of any comments
@@ -120,7 +121,7 @@ impl CommentConsumption for BasicCommentConsumption {
     where
         I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
         E: ParserExtra<'src, I> + 'src,
-        E::Error: LabelError<'src, I, &'static str>,
+        E::Error: LabelError<'src, I, Label>,
     {
         let comment = token_consumption.clone().comment_parser();
         let ws = token_consumption.ws_parser();
@@ -140,7 +141,7 @@ impl CommentConsumption for NoCommentConsumption {
     where
         I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
         E: ParserExtra<'src, I> + 'src,
-        E::Error: LabelError<'src, I, &'static str>,
+        E::Error: LabelError<'src, I, Label>,
     {
         token_consumption.ws_parser().repeated().collect()
     }
@@ -157,7 +158,7 @@ impl CommentConsumption for LimitedCommentConsumption {
     where
         I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
         E: ParserExtra<'src, I> + 'src,
-        E::Error: LabelError<'src, I, &'static str>,
+        E::Error: LabelError<'src, I, Label>,
     {
         let comment = token_consumption.clone().comment_parser();
         let ws = token_consumption.ws_parser();
@@ -186,7 +187,7 @@ impl CommentConsumption for BindedCommentConsumption {
     where
         I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
         E: ParserExtra<'src, I> + 'src,
-        E::Error: LabelError<'src, I, &'static str>,
+        E::Error: LabelError<'src, I, Label>,
     {
         let comment = token_consumption.clone().comment_parser();
         let ws = token_consumption.with_no_new_line().ws_parser();
@@ -286,7 +287,7 @@ impl<CommentConfig: CommentConsumption + 'static> WhiteSpaceConfig<CommentConfig
     where
         I: ValueInput<'src, Span = Location<Offset>, Token = Token>,
         E: ParserExtra<'src, I> + 'src,
-        E::Error: LabelError<'src, I, &'static str>,
+        E::Error: LabelError<'src, I, Label>,
     {
         let parser = self.comment_config.parse(self.token_consumption);
 

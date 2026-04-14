@@ -10,7 +10,9 @@ use chumsky::prelude::*;
 use chumsky::util::Maybe;
 use chumsky::util::MaybeRef;
 
+use super::Label;
 use super::Token;
+
 use crate::error;
 use crate::error::ErrorStage;
 use crate::error::LexingError;
@@ -36,8 +38,8 @@ impl<'src> From<DefaultExpected<'src, Token>> for ExpectedPattern {
     }
 }
 
-impl From<&'static str> for ExpectedPattern {
-    fn from(value: &'static str) -> Self {
+impl From<Label> for ExpectedPattern {
+    fn from(value: Label) -> Self {
         Self::Label(value)
     }
 }

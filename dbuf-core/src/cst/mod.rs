@@ -3,6 +3,8 @@ mod lexer;
 mod located_token;
 mod location;
 
+mod label;
+
 mod parser;
 mod parser_error;
 mod parser_utils;
@@ -26,6 +28,7 @@ use crate::location::LocatedName;
 use crate::location::Location;
 use crate::location::Offset;
 
+pub use label::Label;
 pub use lexer::Token;
 
 #[derive(Debug, Clone, PartialEq)]

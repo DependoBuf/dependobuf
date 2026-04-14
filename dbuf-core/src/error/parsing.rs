@@ -10,6 +10,7 @@ use thiserror::Error;
 
 use super::ErrorStage;
 
+use crate::cst::Label;
 use crate::cst::Token;
 use crate::error::LexingError;
 use crate::location::{Location, Offset};
@@ -73,7 +74,7 @@ pub enum ErrorExtra {
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExpectedPattern {
     Token(Token),
-    Label(&'static str),
+    Label(Label),
     Any,
     SomethingElse,
     EndOfInput,
@@ -82,11 +83,11 @@ pub enum ExpectedPattern {
 impl Display for ExpectedPattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ExpectedPattern::Token(token) => token.fmt(f),
-            ExpectedPattern::Label(l) => l.fmt(f),
-            ExpectedPattern::Any => "Any".fmt(f),
-            ExpectedPattern::SomethingElse => "Something else".fmt(f),
-            ExpectedPattern::EndOfInput => "End of input".fmt(f),
+            ExpectedPattern::Token(token) => write!(f, "{token}"),
+            ExpectedPattern::Label(l) => write!(f, "{l}"),
+            ExpectedPattern::Any => write!(f, "Any"),
+            ExpectedPattern::SomethingElse => write!(f, "Something else"),
+            ExpectedPattern::EndOfInput => write!(f, "End of input"),
         }
     }
 }

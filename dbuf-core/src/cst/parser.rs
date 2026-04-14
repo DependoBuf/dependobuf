@@ -11,6 +11,7 @@ use crate::cst::parser_utils::ChildFlatten;
 use crate::location::Location;
 use crate::location::Offset;
 
+use super::label::Label::*;
 use super::parser_error::ParsingError;
 use super::parser_utils::{MapChild, MapToken, MapTree};
 use super::parser_whitespace::WhiteSpace;
@@ -192,7 +193,7 @@ where
         .then(inside)
         .then(rbrace)
         .map_tree(TreeKind::Body)
-        .labelled("Body")
+        .labelled(Body)
         .boxed()
 }
 
@@ -241,7 +242,7 @@ where
             extra.state().definition_start = None;
             tree
         })
-        .labelled("Field")
+        .labelled(Field)
 }
 
 /// Parses definition.
@@ -276,7 +277,7 @@ where
         .then(ws)
         .then(commented_arguments)
         .map_tree(TreeKind::Definition)
-        .labelled("Definition")
+        .labelled(Definition)
 }
 
 /// Parses constructed value.
@@ -450,7 +451,7 @@ where
             infix(left(2), binary_op(Token::Amp), binary_fold!()),
             infix(left(1), binary_op(Token::Pipe), binary_fold!()),
         ))
-        .labelled("Expression")
+        .labelled(Expression)
 }
 
 /// Parses parened expression.
@@ -475,7 +476,7 @@ where
         .then(e_parser)
         .then(r_paren)
         .map_tree(TreeKind::ExprParen)
-        .labelled("Parened Expression")
+        .labelled(ParenedExpression)
 }
 
 /// Parses one enum.
@@ -736,7 +737,7 @@ where
         Token::UCIdentifier(name) => Token::UCIdentifier(name)
     }
     .map_token()
-    .labelled("Type Identifier")
+    .labelled(TypeIndentifier)
 }
 
 /// Parses var chain.
@@ -802,7 +803,7 @@ where
         Token::LCIdentifier(name) => Token::LCIdentifier(name)
     }
     .map_token()
-    .labelled("Variable Identifier")
+    .labelled(VariableIdentifier)
 }
 
 /// Parses literals.
@@ -818,7 +819,7 @@ where
         Token::StringLiteral(s) => Token::StringLiteral(s),
     }
     .map_token()
-    .labelled("Literal")
+    .labelled(Literal)
 }
 
 fn typed_hole_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
@@ -833,4 +834,5 @@ where
             extra.emit(ParsingError::new(Some(Token::Underscore), loc).typed_hole());
             t
         })
+        .labelled(TypedHole)
 }
