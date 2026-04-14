@@ -3,8 +3,8 @@ source: dbuf-core/tests/parsing/parsing_warnings.rs
 expression: errors
 ---
 [
-    ParsingError(
-        Error {
+    Error {
+        stage: ParsingStage {
             found: None,
             expected: [],
             at: Location {
@@ -19,22 +19,24 @@ expression: errors
             },
             extra: Some(
                 MissingComma(
-                    Location {
-                        start: Offset {
-                            lines: 1,
-                            columns: 4,
+                    MissingComma(
+                        Location {
+                            start: Offset {
+                                lines: 1,
+                                columns: 4,
+                            },
+                            length: Offset {
+                                lines: 0,
+                                columns: 5,
+                            },
                         },
-                        length: Offset {
-                            lines: 0,
-                            columns: 5,
-                        },
-                    },
+                    ),
                 ),
             ),
         },
-    ),
-    ParsingError(
-        Error {
+    },
+    Error {
+        stage: ParsingStage {
             found: None,
             expected: [],
             at: Location {
@@ -49,22 +51,24 @@ expression: errors
             },
             extra: Some(
                 MissingComma(
-                    Location {
-                        start: Offset {
-                            lines: 2,
-                            columns: 4,
+                    MissingComma(
+                        Location {
+                            start: Offset {
+                                lines: 2,
+                                columns: 4,
+                            },
+                            length: Offset {
+                                lines: 0,
+                                columns: 7,
+                            },
                         },
-                        length: Offset {
-                            lines: 0,
-                            columns: 7,
-                        },
-                    },
+                    ),
                 ),
             ),
         },
-    ),
-    ParsingError(
-        Error {
+    },
+    Error {
+        stage: ParsingStage {
             found: None,
             expected: [],
             at: Location {
@@ -79,22 +83,24 @@ expression: errors
             },
             extra: Some(
                 MissingComma(
-                    Location {
-                        start: Offset {
-                            lines: 7,
-                            columns: 8,
+                    MissingComma(
+                        Location {
+                            start: Offset {
+                                lines: 7,
+                                columns: 8,
+                            },
+                            length: Offset {
+                                lines: 0,
+                                columns: 5,
+                            },
                         },
-                        length: Offset {
-                            lines: 0,
-                            columns: 5,
-                        },
-                    },
+                    ),
                 ),
             ),
         },
-    ),
-    ParsingError(
-        Error {
+    },
+    Error {
+        stage: ParsingStage {
             found: None,
             expected: [],
             at: Location {
@@ -109,18 +115,20 @@ expression: errors
             },
             extra: Some(
                 MissingComma(
-                    Location {
-                        start: Offset {
-                            lines: 8,
-                            columns: 8,
+                    MissingComma(
+                        Location {
+                            start: Offset {
+                                lines: 8,
+                                columns: 8,
+                            },
+                            length: Offset {
+                                lines: 0,
+                                columns: 7,
+                            },
                         },
-                        length: Offset {
-                            lines: 0,
-                            columns: 7,
-                        },
-                    },
+                    ),
                 ),
             ),
         },
-    ),
+    },
 ]

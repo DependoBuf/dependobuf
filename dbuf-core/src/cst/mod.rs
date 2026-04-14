@@ -20,6 +20,7 @@ use located_token::LocatedLexer;
 use crate::arena::InternedString;
 use crate::ast::parsed::Module;
 use crate::error::Error;
+use crate::error::parsing::ParsingStage;
 use crate::location::LocatedName;
 
 use crate::location::Location;
@@ -72,7 +73,7 @@ pub enum Child {
 
 /// Parse text to CST.
 #[must_use]
-pub fn parse_to_cst(text: &str) -> (Option<Tree>, Vec<Error>) {
+pub fn parse_to_cst(text: &str) -> (Option<Tree>, Vec<Error<ParsingStage>>) {
     let lexer = LocatedLexer::from_lexer(Token::lexer(text));
 
     let mut errors = vec![];

@@ -3,8 +3,10 @@
 
 use std::{fmt, ops::Add};
 
+use crate::location::{Location, Offset};
+
 /// Single line name with location.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LocatedName<Str, Pos> {
     /// Name content.
     pub content: Str,
@@ -40,5 +42,17 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.content.as_ref().fmt(f)
+    }
+}
+
+impl<Str: AsRef<str>, Pos: Clone> From<&LocatedName<Str, Pos>> for Location<Pos> {
+    fn from(value: &LocatedName<Str, Pos>) -> Self {
+        Location {
+            start: value.start.clone(),
+            length: Offset {
+                lines: 0,
+                columns: value.content.as_ref().len(),
+            },
+        }
     }
 }

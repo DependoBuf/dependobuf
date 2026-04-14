@@ -8,14 +8,14 @@ use dbuf_core::ast::parsed::Module;
 use dbuf_core::cst::Tree;
 use dbuf_core::cst::convert_to_ast;
 use dbuf_core::cst::parse_to_cst;
-use dbuf_core::error::Error;
+use dbuf_core::error::ParsingError;
 use dbuf_core::location::LocatedName;
 use dbuf_core::location::Location;
 use dbuf_core::location::Offset;
 
 type DataParts = (
     Tree,
-    Vec<Error>,
+    Vec<ParsingError>,
     Module<Location<Offset>, LocatedName<InternedString, Offset>>,
 );
 

@@ -118,7 +118,7 @@ fn get_parsed(input: &str, reporter: &mut Reporter) -> Result<ParsedModule, ()> 
     let (tree, errors) = parse_to_cst(input);
 
     for e in errors {
-        reporter.report(e);
+        reporter.report(&e.into());
     }
 
     if let Some(tree) = tree {

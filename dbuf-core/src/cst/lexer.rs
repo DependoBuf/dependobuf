@@ -20,22 +20,13 @@ use std::{
 };
 
 use super::location::Locatable;
-use crate::location::Location;
 use crate::location::Offset;
+use crate::location::{LocatedName, Location};
 
-use crate::error::lexing::{Error, ErrorData, ErrorKind};
+use crate::error::LexingError;
+use crate::error::lexing::{ErrorKind, LexingStage};
 
-impl ErrorData {
-    /// Build `LexingErrorData` based on `lex` state (slice, span).
-    fn from_lexer(lex: &mut Lexer<'_, Token>) -> Self {
-        Self {
-            at: lex.extras.get_offset(lex.span().start),
-            current: lex.slice().to_string(),
-        }
-    }
-}
-
-impl Error {
+impl LexingError {
     /// Create `UnknownToken` error for current lexer state.
     ///
     /// Used as default for unknown tokens.
@@ -46,16 +37,21 @@ impl Error {
 
     /// Create `kind` error for current lexer state.
     fn from_lexer(lex: &mut logos::Lexer<'_, Token>, kind: ErrorKind) -> Self {
-        Error {
-            data: ErrorData::from_lexer(lex),
-            kind,
+        LexingError {
+            stage: LexingStage {
+                data: LocatedName {
+                    content: lex.slice().to_string(),
+                    start: lex.extras.get_offset(lex.span().start),
+                },
+                kind,
+            },
         }
     }
 }
 
 /// Required for `lex.slice().parse()` construction, since it returns result with
 /// Infallible error.
-impl From<Infallible> for Error {
+impl From<Infallible> for LexingError {
     fn from(_value: Infallible) -> Self {
         unreachable!("Since Infallible error couldn't be constructed");
     }
@@ -65,10 +61,10 @@ impl From<Infallible> for Error {
 ///
 /// Actually there is no need to implement `Default` for
 /// `LexingError`, since every unknown token generates
-/// error based on callback `bad_token`. But it is
+/// error based on callback `unknown_token`. But it is
 /// required by Logos to error implement `Default`
 /// trait, so here it is.
-impl Default for Error {
+impl Default for LexingError {
     fn default() -> Self {
         unreachable!();
     }
@@ -120,7 +116,7 @@ impl LexingExtra {
 }
 
 #[derive(Logos, Debug, PartialEq, Clone, Display)]
-#[logos(error(Error, Error::unknown_token))]
+#[logos(error(LexingError, LexingError::unknown_token))]
 #[logos(extras = LexingExtra)]
 pub enum Token {
     #[token("message", at_callback)]
@@ -229,7 +225,7 @@ fn newline_callback(lex: &mut Lexer<'_, Token>) {
 /// Callback for `LineComment` token.
 ///
 /// Parses content of comment (currently just saves it to `String`).
-fn line_comment_callback(lex: &mut Lexer<'_, Token>) -> Result<String, Error> {
+fn line_comment_callback(lex: &mut Lexer<'_, Token>) -> Result<String, LexingError> {
     at_callback(lex);
     lex.slice().parse().map_err(Into::into)
 }
@@ -241,7 +237,7 @@ fn line_comment_callback(lex: &mut Lexer<'_, Token>) -> Result<String, Error> {
 /// Math inside:
 ///   * `lex.span().start` is a start of token slice.
 ///   * `lex.span().start + pos` is a start of `\n` symbol.
-fn block_comment_callback(lex: &mut Lexer<'_, Token>) -> Result<String, Error> {
+fn block_comment_callback(lex: &mut Lexer<'_, Token>) -> Result<String, LexingError> {
     at_callback(lex);
     let s = lex.slice();
     s.match_indices('\n')
@@ -256,14 +252,14 @@ fn block_comment_callback(lex: &mut Lexer<'_, Token>) -> Result<String, Error> {
 ///   * `LexingErrorKind::IntegerOverflow` when integer can't be represented
 ///     as i64.
 ///   * `LexingErrorKind::InvalidInteger` when text is not integer.
-fn parse_int(lex: &mut Lexer<'_, Token>) -> Result<i64, Error> {
+fn parse_int(lex: &mut Lexer<'_, Token>) -> Result<i64, LexingError> {
     at_callback(lex);
     lex.slice().parse().map_err(|err: ParseIntError| {
         let kind = match err.kind() {
             PosOverflow | NegOverflow => ErrorKind::IntegerOverflow,
             _ => ErrorKind::InvalidInteger,
         };
-        Error::from_lexer(lex, kind)
+        LexingError::from_lexer(lex, kind)
     })
 }
 
@@ -273,7 +269,7 @@ fn parse_int(lex: &mut Lexer<'_, Token>) -> Result<i64, Error> {
 ///   * `LexingErrorKind::IntegerOverflow` when integer can't be represented
 ///     as i64.
 ///   * `LexingErrorKind::InvalidInteger` when text is not integer.
-fn parse_uint(lex: &mut Lexer<'_, Token>) -> Result<u64, Error> {
+fn parse_uint(lex: &mut Lexer<'_, Token>) -> Result<u64, LexingError> {
     at_callback(lex);
     let s = lex.slice();
 
@@ -282,7 +278,7 @@ fn parse_uint(lex: &mut Lexer<'_, Token>) -> Result<u64, Error> {
             PosOverflow | NegOverflow => ErrorKind::IntegerOverflow,
             _ => ErrorKind::InvalidInteger,
         };
-        Error::from_lexer(lex, kind)
+        LexingError::from_lexer(lex, kind)
     })
 }
 
@@ -290,11 +286,11 @@ fn parse_uint(lex: &mut Lexer<'_, Token>) -> Result<u64, Error> {
 ///
 /// Errors
 ///   * `LexingErrorKind::InvalidFloat` text is not float.
-fn parse_float(lex: &mut Lexer<'_, Token>) -> Result<f64, Error> {
+fn parse_float(lex: &mut Lexer<'_, Token>) -> Result<f64, LexingError> {
     at_callback(lex);
     lex.slice()
         .parse()
-        .map_err(|_| Error::from_lexer(lex, ErrorKind::InvalidFloat))
+        .map_err(|_| LexingError::from_lexer(lex, ErrorKind::InvalidFloat))
 }
 
 /// Parser for `StringLiteral` token. Parses string and return `Result`.
@@ -302,18 +298,21 @@ fn parse_float(lex: &mut Lexer<'_, Token>) -> Result<f64, Error> {
 /// Errors
 ///   * `LexingErrorKind::InvalidStringLiteral` when literal contains bad escape symbols
 ///     (such a `\a`, which is heavily outdated).
-fn parse_string_literal(lex: &mut Lexer<'_, Token>) -> Result<String, Error> {
+fn parse_string_literal(lex: &mut Lexer<'_, Token>) -> Result<String, LexingError> {
     at_callback(lex);
     let s = lex.slice();
     let trimmed = &s[1..s.len() - 1];
-    unescape(trimmed).ok_or(Error::from_lexer(lex, ErrorKind::InvalidStringLiteral))
+    unescape(trimmed).ok_or(LexingError::from_lexer(
+        lex,
+        ErrorKind::InvalidStringLiteral,
+    ))
 }
 
 /// Parser for `UCIdentifier` token. Parses string and return `Result`.
 ///
 /// Errors
 ///   * `LexingErrorKind::InvalidUCIdentifier` when uc identifier contains bad characters.
-fn parse_uc_identifier(lex: &mut Lexer<'_, Token>) -> Result<String, Error> {
+fn parse_uc_identifier(lex: &mut Lexer<'_, Token>) -> Result<String, LexingError> {
     static RE: LazyLock<Regex> =
         LazyLock::new(|| Regex::new("^[A-Z][a-zA-Z0-9]*$").expect("correct regular expression"));
 
@@ -321,7 +320,7 @@ fn parse_uc_identifier(lex: &mut Lexer<'_, Token>) -> Result<String, Error> {
     if RE.is_match(lex.slice()) {
         Ok(lex.slice().into())
     } else {
-        Err(Error::from_lexer(lex, ErrorKind::InvalidUCIdentifier))
+        Err(LexingError::from_lexer(lex, ErrorKind::InvalidUCIdentifier))
     }
 }
 
@@ -329,7 +328,7 @@ fn parse_uc_identifier(lex: &mut Lexer<'_, Token>) -> Result<String, Error> {
 ///
 /// Errors
 ///   * `LexingErrorKind::InvalidLCIdentifier` when lc identifier contains bad characters.
-fn parse_lc_identifier(lex: &mut Lexer<'_, Token>) -> Result<String, Error> {
+fn parse_lc_identifier(lex: &mut Lexer<'_, Token>) -> Result<String, LexingError> {
     static RE: LazyLock<Regex> =
         LazyLock::new(|| Regex::new("^[a-z][a-zA-Z0-9]*$").expect("correct regular expression"));
 
@@ -337,7 +336,7 @@ fn parse_lc_identifier(lex: &mut Lexer<'_, Token>) -> Result<String, Error> {
     if RE.is_match(lex.slice()) {
         Ok(lex.slice().into())
     } else {
-        Err(Error::from_lexer(lex, ErrorKind::InvalidLCIdentifier))
+        Err(LexingError::from_lexer(lex, ErrorKind::InvalidLCIdentifier))
     }
 }
 
@@ -369,7 +368,7 @@ mod tests {
                 }
                 (Err(_), None) => {}
                 (Err(err), Some(t)) => {
-                    panic!("[input='{input}'] Expected token '{t:?}', got error: '{err}'");
+                    panic!("[input='{input}'] Expected token '{t:?}', got error: '{err:?}'");
                 }
             }
         }
