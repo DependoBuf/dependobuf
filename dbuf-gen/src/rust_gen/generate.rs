@@ -539,7 +539,7 @@ mod type_declaration {
                     let constructor = self.constructors[0].as_ref();
                     alloc.intersperse(
                         generate_fields(&constructor.fields, &mut body_namespace),
-                        alloc.hardline(),
+                        alloc.text(",").append(alloc.hardline()),
                     )
                 }
                 ast::TypeKind::Enum => {
@@ -875,8 +875,15 @@ mod type_inherent_impl {
 
             let dependencies = dependencies
                 .iter()
-                .map(|expr| {
-                    alloc
+                .map(|expr| match expr {
+                    // Variables are already Box<T>, use directly without re-boxing
+                    ValueExpression::Variable(_) => expr
+                        .generate_as_value(
+                            (ctx, namespace.cursor()),
+                            &ConstructorObjectsLocator {},
+                        ),
+                    // Constructor calls and op calls return T, must be wrapped
+                    _ => alloc
                         .text("Box")
                         .append("::")
                         .append("new")
@@ -886,7 +893,7 @@ mod type_inherent_impl {
                             &ConstructorObjectsLocator {},
                         ))
                         .append(")")
-                        .into_doc()
+                        .into_doc(),
                 })
                 .collect();
 
@@ -1331,6 +1338,16 @@ mod type_inherent_impl {
                 .get_generated::<objects::Type>(objects::ObjectId::from_name("Body".to_owned()))
                 .expect("couldn't get generated Body type");
 
+            let (message_type_body_field, _) = namespace
+                .get_generated::<objects::Type>(objects::ObjectId(
+                    ast::NodeId::id(self),
+                    objects::Tag::String("type"),
+                ))
+                .expect("couldn't get generated message type")
+                .1
+                .get_generated::<objects::Variable>(objects::ObjectId::from_name("body".to_owned()))
+                .expect("couldn't get generated message type 'body' field");
+
             alloc
                 .text("let")
                 .append(alloc.space())
@@ -1354,9 +1371,12 @@ mod type_inherent_impl {
                 .append("=")
                 .append(alloc.space())
                 .append(self_parameter.to_doc(ctx))
+                .append(".")
+                .append(message_type_body_field.to_doc(ctx))
                 .append(";")
                 .append(alloc.hardline())
                 .append(constructor.generate_constructor_serialization((ctx, namespace)))
+                .append("Ok(())")
                 .into_doc()
         }
     }
@@ -1435,29 +1455,17 @@ mod type_inherent_impl {
             >,
             symbol: &Weak<Symbol>,
         ) -> BoxDoc<'a> {
-            let (dependencies_param, _) = namespace
-                .clone()
-                .get_generated::<objects::Variable>(ObjectId::from_name("dependencies".to_owned()))
-                .expect("couldn't get generated dependencies parameter");
-
-            let (_, dependencies_type_cursor) = namespace
-                .clone()
-                .get_generated::<objects::Type>(ObjectId::from_name("Dependencies".to_owned()))
-                .expect("couldn't get generated Dependencies type");
-
-            dependencies_param.to_doc(ctx).append(".").append(
-                dependencies_type_cursor
-                    .get_generated::<objects::Variable>(objects::ObjectId(
-                        ast::NodeId::id_weak(symbol),
-                        objects::Tag::None,
-                    ))
-                    .expect("couldn't get generated implicit")
-                    .0
-                    .to_doc(ctx)
-                    .append(".")
-                    .append("clone")
-                    .append("()"),
-            )
+            namespace
+                .get_generated::<objects::Variable>(objects::ObjectId(
+                    ast::NodeId::id_weak(symbol),
+                    objects::Tag::None,
+                ))
+                .expect("couldn't get generated implicit")
+                .0
+                .to_doc(ctx)
+                .append(".")
+                .append("clone")
+                .append("()")
         }
     }
 
@@ -1571,8 +1579,61 @@ mod type_inherent_impl {
             &self,
             (ctx, namespace): MutContext<'a, '_, '_>,
         ) -> BoxDoc<'a> {
+            let alloc = ctx.alloc;
             let constructor = &self.constructors[0];
-            constructor.generate_constructor_deserialization((ctx, namespace), false)
+
+            let bindings: Vec<(objects::GeneratedVariable, Rc<Symbol>)> = {
+                let (_, deps_type_cursor) = namespace
+                    .get_generated::<objects::Type>(ObjectId::from_name("Dependencies".to_owned()))
+                    .expect("couldn't get Dependencies type for implicit pre-binding");
+
+                constructor
+                    .implicits
+                    .iter()
+                    .zip(self.dependencies.iter())
+                    .map(|(implicit, type_dep)| {
+                        let (field, _) = deps_type_cursor
+                            .clone()
+                            .get_generated::<objects::Variable>(ObjectId(
+                                NodeId::id_rc(type_dep),
+                                Tag::None,
+                            ))
+                            .expect("couldn't get type dep field in Dependencies");
+                        (field, Rc::clone(implicit))
+                    })
+                    .collect()
+            };
+
+            let dependencies_param = namespace
+                .get_generated::<objects::Variable>(ObjectId::from_name("dependencies".to_owned()))
+                .expect("couldn't get dependencies parameter")
+                .0;
+
+            let implicit_bindings = alloc.concat(bindings.into_iter().map(
+                |(type_dep_field, implicit)| {
+                    let (implicit_var, _) =
+                        namespace.insert_object_auto_name(objects::Variable::from_object(
+                            ObjectId(NodeId::id_rc(&implicit), Tag::None),
+                            implicit.name.clone(),
+                        ));
+
+                    alloc
+                        .text("let ")
+                        .append(implicit_var.to_doc(ctx))
+                        .append(" = ")
+                        .append(dependencies_param.to_doc(ctx))
+                        .append(".")
+                        .append(type_dep_field.to_doc(ctx))
+                        .append(".clone();")
+                        .append(alloc.hardline())
+                },
+            ));
+
+            alloc
+                .nil()
+                .append(implicit_bindings)
+                .append(constructor.generate_constructor_deserialization((ctx, namespace), false))
+                .into_doc()
         }
 
         #[allow(clippy::too_many_lines, reason = "??? (103/100)")]
