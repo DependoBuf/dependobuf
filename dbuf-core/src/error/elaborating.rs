@@ -1,17 +1,26 @@
-//! Module contains `ElaboratingStage` struct - error data for elaborating stage.
+//! Module contains `elaborating::Error` - errors that appear
+//! during elaborating phase
 
+use std::fmt::{Display, Formatter};
 use thiserror::Error;
-
 use super::ErrorStage;
-
-#[derive(Debug)]
-enum Void {}
 
 /// TODO: implement
 #[derive(Debug, Error)]
+pub enum Error {
+    ElaboratingError,
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!("error display not implemented")
+    }
+}
+
+#[derive(Debug, Error)]
 #[error("Elaborating stage")]
 pub struct ElaboratingStage {
-    unconstructable: Void,
+    error: Error
 }
 
 impl ErrorStage for ElaboratingStage {

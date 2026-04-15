@@ -6,7 +6,7 @@ use std::{fmt, ops::Add};
 use crate::location::{Location, Offset};
 
 /// Single line name with location.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub struct LocatedName<Str, Pos> {
     /// Name content.
     pub content: Str,
@@ -42,6 +42,19 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.content.as_ref().fmt(f)
+    }
+}
+
+impl<Str, Pos> From<String> for LocatedName<Str, Pos>
+where
+    Pos: Default,
+    Str: From<String>,
+{
+    fn from(value: String) -> Self {
+        Self {
+            content: Str::from(value),
+            start: Pos::default(),
+        }
     }
 }
 
