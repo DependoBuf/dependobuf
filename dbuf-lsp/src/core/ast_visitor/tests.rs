@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
-use crate::core::ast_access::ElaboratedAst;
-use crate::core::ast_access::ParsedAst;
 use crate::core::default_ast::default_parsed_ast;
+use crate::core::workspace::ElaboratedAst;
+use crate::core::workspace::ParsedAst;
 
 use super::Visit;
 use super::VisitResult;

@@ -5,7 +5,7 @@
 
 pub(crate) mod core;
 
-pub use core::ast_access::WorkspaceAccess;
+pub use core::workspace::WorkspaceAccess;
 
 pub mod handler_box;
 

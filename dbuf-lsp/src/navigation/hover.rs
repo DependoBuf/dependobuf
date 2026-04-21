@@ -2,10 +2,10 @@
 ///
 use tower_lsp::lsp_types::{LanguageString, MarkedString};
 
-use crate::core::ast_access::{ElaboratedHelper, File};
 use crate::core::dbuf_language::get_builtin_types;
 use crate::core::navigator::Symbol;
 use crate::core::pretty_printer::PrettyPrinter;
+use crate::core::workspace::{ElaboratedHelper, File};
 
 pub fn get_hover(symbol: Symbol, file: &File) -> Option<Vec<MarkedString>> {
     let elaborated = file.get_elaborated().take()?;

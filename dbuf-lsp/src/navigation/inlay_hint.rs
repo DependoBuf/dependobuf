@@ -1,12 +1,12 @@
 //! Inlay hint provider.
 //!
 
-use crate::core::ast_access::{
-    ElaboratedAst, ElaboratedHelper, File, LocNameHelper, LocationHelper, PositionHelper, Str,
-};
 use crate::core::ast_visitor::VisitResult::*;
 use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
 use crate::core::ast_visitor::*;
+use crate::core::workspace::{
+    ElaboratedAst, ElaboratedHelper, File, LocNameHelper, LocationHelper, PositionHelper, Str,
+};
 
 use dbuf_core::ast::elaborated::TypeExpression;
 use tower_lsp::lsp_types::*;

@@ -3,9 +3,7 @@
 
 use tower_lsp::lsp_types::Position;
 
-use crate::core::ast_access::{
-    ElaboratedAst, ElaboratedHelper, LocNameHelper, LocationHelper, Str,
-};
+use crate::core::workspace::{ElaboratedAst, ElaboratedHelper, LocNameHelper, LocationHelper, Str};
 
 use crate::core::ast_visitor::VisitResult::*;
 use crate::core::ast_visitor::scope_visitor::ScopeVisitor;

@@ -4,8 +4,8 @@
 
 use dbuf_core::ast::elaborated::*;
 
-use crate::core::ast_access::ElaboratedAst;
-use crate::core::ast_access::ElaboratedHelper;
+use crate::core::workspace::ElaboratedAst;
+use crate::core::workspace::ElaboratedHelper;
 
 struct Cache<'a> {
     type_name: &'a str,

@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
-use crate::core::ast_access::ElaboratedAst;
+use crate::core::workspace::ElaboratedAst;
 
 use dbuf_core::ast::elaborated::*;
 use dbuf_core::ast::operators::*;

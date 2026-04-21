@@ -2,7 +2,7 @@
 //! scopes in parsed ast.
 //!
 
-use crate::core::ast_access::ElaboratedAst;
+use crate::core::workspace::ElaboratedAst;
 
 mod ast_constructors_stack;
 mod ast_scope;

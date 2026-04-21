@@ -35,8 +35,8 @@ use tower_lsp::lsp_types::*;
 
 use crate::handler_box;
 
-use crate::core::ast_access::WorkspaceAccess;
 use crate::core::navigator::Navigator;
+use crate::core::workspace::WorkspaceAccess;
 
 #[derive(Default)]
 pub struct Handler {}

@@ -20,13 +20,13 @@ use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::definition::Definitions;
 use dbuf_core::ast::parsed::*;
 
-use super::ast_access::{Loc, LocationHelper, PositionHelper, Str};
+use super::workspace::{Loc, LocationHelper, PositionHelper, Str};
 
-use super::ast_access::ElaboratedAst;
-use super::ast_access::ElaboratedHelper;
-use super::ast_access::LocNameHelper;
-use super::ast_access::ParsedAst;
-use super::ast_access::Position;
+use super::workspace::ElaboratedAst;
+use super::workspace::ElaboratedHelper;
+use super::workspace::LocNameHelper;
+use super::workspace::ParsedAst;
+use super::workspace::Position;
 
 /// Constructor characteristic. Do not confuse with constructor calls.
 ///

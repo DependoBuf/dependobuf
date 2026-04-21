@@ -1,9 +1,9 @@
 use tower_lsp::lsp_types::*;
 
-use crate::core::ast_access::{
+use crate::core::ast_visitor::*;
+use crate::core::workspace::{
     ElaboratedAst, ElaboratedHelper, File, Loc, LocNameHelper, LocationHelper, Str,
 };
-use crate::core::ast_visitor::*;
 
 /// Returns all document symbols of file.
 pub fn provide_document_symbols(file: &File) -> Option<Vec<DocumentSymbol>> {

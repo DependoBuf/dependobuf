@@ -27,9 +27,9 @@ use tower_lsp::lsp_types::*;
 
 use crate::handler_box;
 
-use crate::core::ast_access::{Saved, WorkspaceAccess};
 use crate::core::navigator::Navigator;
 use crate::core::pretty_printer::PrettyPrinter;
+use crate::core::workspace::{Saved, WorkspaceAccess};
 
 pub struct Handler {
     rename_cache: RenameCache,

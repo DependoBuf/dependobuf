@@ -1,8 +1,8 @@
 use tower_lsp::lsp_types::*;
 
-use crate::core::ast_access::{File, Loc, LocNameHelper, LocationHelper, Str};
 use crate::core::ast_visitor::*;
 use crate::core::navigator::{Navigator, Symbol};
+use crate::core::workspace::{File, Loc, LocNameHelper, LocationHelper, Str};
 
 /// Returns all code lens of file.
 pub fn provide_code_lens(file: &File) -> Option<Vec<CodeLens>> {

@@ -3,13 +3,13 @@
 
 use tower_lsp::lsp_types::Range;
 
-use crate::core::ast_access::LocNameHelper;
-use crate::core::ast_access::LocationHelper;
-use crate::core::ast_access::Str;
 use crate::core::ast_visitor::VisitResult::*;
 use crate::core::ast_visitor::safe_skip::safe_skip;
 use crate::core::ast_visitor::*;
 use crate::core::dbuf_language::get_builtin_types;
+use crate::core::workspace::LocNameHelper;
+use crate::core::workspace::LocationHelper;
+use crate::core::workspace::Str;
 
 use crate::core::navigator::Navigator;
 use crate::core::navigator::Symbol;
