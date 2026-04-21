@@ -1,91 +1,258 @@
 ---
 source: dbuf-core/tests/parsing/parsing_warnings.rs
 expression: errors
-input_file: dbuf-core/tests/parsing/partially_correct_dbufs/lexer_errors.dbuf
 ---
 [
-    LexingError(
-        Error {
-            data: ErrorData {
-                at: Offset {
+    Error {
+        stage: ParsingStage {
+            found: Some(
+                Err,
+            ),
+            expected: [],
+            at: Location {
+                start: Offset {
                     lines: 1,
                     columns: 16,
                 },
-                current: "100000000000000000000",
+                length: Offset {
+                    lines: 0,
+                    columns: 21,
+                },
             },
-            kind: IntegerOverflow,
+            extra: Some(
+                LexingError(
+                    ParserLexingError(
+                        Error {
+                            stage: LexingStage {
+                                data: LocatedName {
+                                    content: "100000000000000000000",
+                                    start: Offset {
+                                        lines: 1,
+                                        columns: 16,
+                                    },
+                                },
+                                kind: IntegerOverflow,
+                            },
+                        },
+                    ),
+                ),
+            ),
         },
-    ),
-    LexingError(
-        Error {
-            data: ErrorData {
-                at: Offset {
+    },
+    Error {
+        stage: ParsingStage {
+            found: Some(
+                Err,
+            ),
+            expected: [],
+            at: Location {
+                start: Offset {
                     lines: 2,
                     columns: 15,
                 },
-                current: "1000aba0000",
+                length: Offset {
+                    lines: 0,
+                    columns: 11,
+                },
             },
-            kind: InvalidInteger,
+            extra: Some(
+                LexingError(
+                    ParserLexingError(
+                        Error {
+                            stage: LexingStage {
+                                data: LocatedName {
+                                    content: "1000aba0000",
+                                    start: Offset {
+                                        lines: 2,
+                                        columns: 15,
+                                    },
+                                },
+                                kind: InvalidInteger,
+                            },
+                        },
+                    ),
+                ),
+            ),
         },
-    ),
-    LexingError(
-        Error {
-            data: ErrorData {
-                at: Offset {
+    },
+    Error {
+        stage: ParsingStage {
+            found: Some(
+                Err,
+            ),
+            expected: [],
+            at: Location {
+                start: Offset {
                     lines: 3,
                     columns: 17,
                 },
-                current: "1000.000aba0000",
+                length: Offset {
+                    lines: 0,
+                    columns: 15,
+                },
             },
-            kind: InvalidFloat,
+            extra: Some(
+                LexingError(
+                    ParserLexingError(
+                        Error {
+                            stage: LexingStage {
+                                data: LocatedName {
+                                    content: "1000.000aba0000",
+                                    start: Offset {
+                                        lines: 3,
+                                        columns: 17,
+                                    },
+                                },
+                                kind: InvalidFloat,
+                            },
+                        },
+                    ),
+                ),
+            ),
         },
-    ),
-    LexingError(
-        Error {
-            data: ErrorData {
-                at: Offset {
+    },
+    Error {
+        stage: ParsingStage {
+            found: Some(
+                Err,
+            ),
+            expected: [],
+            at: Location {
+                start: Offset {
                     lines: 4,
                     columns: 18,
                 },
-                current: "\"aaa\\aaaa\"",
+                length: Offset {
+                    lines: 0,
+                    columns: 10,
+                },
             },
-            kind: InvalidStringLiteral,
+            extra: Some(
+                LexingError(
+                    ParserLexingError(
+                        Error {
+                            stage: LexingStage {
+                                data: LocatedName {
+                                    content: "\"aaa\\aaaa\"",
+                                    start: Offset {
+                                        lines: 4,
+                                        columns: 18,
+                                    },
+                                },
+                                kind: InvalidStringLiteral,
+                            },
+                        },
+                    ),
+                ),
+            ),
         },
-    ),
-    LexingError(
-        Error {
-            data: ErrorData {
-                at: Offset {
+    },
+    Error {
+        stage: ParsingStage {
+            found: Some(
+                Err,
+            ),
+            expected: [],
+            at: Location {
+                start: Offset {
                     lines: 5,
                     columns: 14,
                 },
-                current: "aba_aba",
+                length: Offset {
+                    lines: 0,
+                    columns: 7,
+                },
             },
-            kind: InvalidLCIdentifier,
+            extra: Some(
+                LexingError(
+                    ParserLexingError(
+                        Error {
+                            stage: LexingStage {
+                                data: LocatedName {
+                                    content: "aba_aba",
+                                    start: Offset {
+                                        lines: 5,
+                                        columns: 14,
+                                    },
+                                },
+                                kind: InvalidLCIdentifier,
+                            },
+                        },
+                    ),
+                ),
+            ),
         },
-    ),
-    LexingError(
-        Error {
-            data: ErrorData {
-                at: Offset {
+    },
+    Error {
+        stage: ParsingStage {
+            found: Some(
+                Err,
+            ),
+            expected: [],
+            at: Location {
+                start: Offset {
                     lines: 6,
                     columns: 14,
                 },
-                current: "Aba_Aba",
+                length: Offset {
+                    lines: 0,
+                    columns: 7,
+                },
             },
-            kind: InvalidUCIdentifier,
+            extra: Some(
+                LexingError(
+                    ParserLexingError(
+                        Error {
+                            stage: LexingStage {
+                                data: LocatedName {
+                                    content: "Aba_Aba",
+                                    start: Offset {
+                                        lines: 6,
+                                        columns: 14,
+                                    },
+                                },
+                                kind: InvalidUCIdentifier,
+                            },
+                        },
+                    ),
+                ),
+            ),
         },
-    ),
-    LexingError(
-        Error {
-            data: ErrorData {
-                at: Offset {
+    },
+    Error {
+        stage: ParsingStage {
+            found: Some(
+                Err,
+            ),
+            expected: [],
+            at: Location {
+                start: Offset {
                     lines: 7,
                     columns: 15,
                 },
-                current: "@",
+                length: Offset {
+                    lines: 0,
+                    columns: 1,
+                },
             },
-            kind: UnknownToken,
+            extra: Some(
+                LexingError(
+                    ParserLexingError(
+                        Error {
+                            stage: LexingStage {
+                                data: LocatedName {
+                                    content: "@",
+                                    start: Offset {
+                                        lines: 7,
+                                        columns: 15,
+                                    },
+                                },
+                                kind: UnknownToken,
+                            },
+                        },
+                    ),
+                ),
+            ),
         },
-    ),
+    },
 ]

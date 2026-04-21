@@ -1,11 +1,10 @@
 ---
 source: dbuf-core/tests/parsing/parsing_warnings.rs
 expression: errors
-input_file: dbuf-core/tests/parsing/partially_correct_dbufs/typed_holde.dbuf
 ---
 [
-    ParsingError(
-        Error {
+    Error {
+        stage: ParsingStage {
             found: Some(
                 Underscore,
             ),
@@ -21,12 +20,14 @@ input_file: dbuf-core/tests/parsing/partially_correct_dbufs/typed_holde.dbuf
                 },
             },
             extra: Some(
-                TypedHole,
+                TypedHole(
+                    TypedHole,
+                ),
             ),
         },
-    ),
-    ParsingError(
-        Error {
+    },
+    Error {
+        stage: ParsingStage {
             found: Some(
                 Underscore,
             ),
@@ -42,12 +43,14 @@ input_file: dbuf-core/tests/parsing/partially_correct_dbufs/typed_holde.dbuf
                 },
             },
             extra: Some(
-                TypedHole,
+                TypedHole(
+                    TypedHole,
+                ),
             ),
         },
-    ),
-    ParsingError(
-        Error {
+    },
+    Error {
+        stage: ParsingStage {
             found: Some(
                 Underscore,
             ),
@@ -63,8 +66,10 @@ input_file: dbuf-core/tests/parsing/partially_correct_dbufs/typed_holde.dbuf
                 },
             },
             extra: Some(
-                TypedHole,
+                TypedHole(
+                    TypedHole,
+                ),
             ),
         },
-    ),
+    },
 ]

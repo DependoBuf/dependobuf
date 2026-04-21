@@ -1,6 +1,8 @@
 //! Module exports struct `File` - representation of one file in workspace.
 //!
 
+use tower_lsp::lsp_types::Url;
+
 use crate::core::errors::Error;
 
 use super::Cst;
@@ -9,6 +11,8 @@ use super::ParsedAst;
 
 /// Represents one file in workspace. Contains its version, and asts.
 pub struct File {
+    /// File location.
+    uri: Url,
     /// File's version.
     version: i32,
     /// Builded `cst::Tree`.
@@ -68,6 +72,7 @@ impl<T> Saved<T> {
 
 impl File {
     pub(super) fn new(
+        uri: Url,
         version: i32,
         cst: Option<Cst>,
         parsed: Option<ParsedAst>,
@@ -75,6 +80,7 @@ impl File {
         errors: Vec<Error>,
     ) -> File {
         File {
+            uri,
             version,
             cst: Saved::new(cst),
             parsed_ast: Saved::new(parsed),
@@ -93,12 +99,17 @@ impl File {
     ) -> File {
         assert!(self.version < new_version);
         File {
+            uri: self.uri,
             version: new_version,
             cst: self.cst.modify(cst, self.version),
             parsed_ast: self.parsed_ast.modify(parsed, self.version),
             elaborated_ast: self.elaborated_ast.modify(elaborated, self.version),
             errors,
         }
+    }
+
+    pub fn get_uri(&self) -> &Url {
+        &self.uri
     }
 
     pub fn get_cst(&self) -> Saved<&Cst> {

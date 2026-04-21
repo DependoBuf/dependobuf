@@ -1,11 +1,10 @@
 ---
 source: dbuf-core/tests/parsing/parsing_warnings.rs
 expression: errors
-input_file: dbuf-core/tests/parsing/partially_correct_dbufs/bad_call_chain.dbuf
 ---
 [
-    ParsingError(
-        Error {
+    Error {
+        stage: ParsingStage {
             found: Some(
                 Dot,
             ),
@@ -22,22 +21,24 @@ input_file: dbuf-core/tests/parsing/partially_correct_dbufs/bad_call_chain.dbuf
             },
             extra: Some(
                 BadCallChain(
-                    Location {
-                        start: Offset {
-                            lines: 1,
-                            columns: 11,
+                    BadCallChain(
+                        Location {
+                            start: Offset {
+                                lines: 1,
+                                columns: 11,
+                            },
+                            length: Offset {
+                                lines: 0,
+                                columns: 2,
+                            },
                         },
-                        length: Offset {
-                            lines: 0,
-                            columns: 2,
-                        },
-                    },
+                    ),
                 ),
             ),
         },
-    ),
-    ParsingError(
-        Error {
+    },
+    Error {
+        stage: ParsingStage {
             found: Some(
                 Dot,
             ),
@@ -54,18 +55,20 @@ input_file: dbuf-core/tests/parsing/partially_correct_dbufs/bad_call_chain.dbuf
             },
             extra: Some(
                 BadCallChain(
-                    Location {
-                        start: Offset {
-                            lines: 2,
-                            columns: 11,
+                    BadCallChain(
+                        Location {
+                            start: Offset {
+                                lines: 2,
+                                columns: 11,
+                            },
+                            length: Offset {
+                                lines: 0,
+                                columns: 6,
+                            },
                         },
-                        length: Offset {
-                            lines: 0,
-                            columns: 6,
-                        },
-                    },
+                    ),
                 ),
             ),
         },
-    ),
+    },
 ]

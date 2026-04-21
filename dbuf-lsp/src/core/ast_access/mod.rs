@@ -83,7 +83,7 @@ impl WorkspaceAccess {
             elaborated
         });
 
-        let file = File::new(version, cst, parsed, elaborated, errors);
+        let file = File::new(url.clone(), version, cst, parsed, elaborated, errors);
 
         self.files.insert(url, file);
     }

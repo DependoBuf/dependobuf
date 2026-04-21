@@ -10,14 +10,20 @@ use chumsky::prelude::*;
 use chumsky::util::Maybe;
 use chumsky::util::MaybeRef;
 
+use super::Label;
 use super::Token;
+
+use crate::error;
+use crate::error::ErrorStage;
+use crate::error::LexingError;
+use crate::error::parsing::*;
 use crate::location::Location;
 use crate::location::Offset;
 
 use crate::error::parsing;
 use crate::error::parsing::{ErrorExtra, ExpectedPattern};
 
-pub(super) type ParsingError = parsing::Error;
+pub(super) type ParsingError = parsing::ParsingStage;
 
 impl<'src> From<DefaultExpected<'src, Token>> for ExpectedPattern {
     fn from(value: DefaultExpected<'src, Token>) -> Self {
@@ -32,8 +38,8 @@ impl<'src> From<DefaultExpected<'src, Token>> for ExpectedPattern {
     }
 }
 
-impl From<&'static str> for ExpectedPattern {
-    fn from(value: &'static str) -> Self {
+impl From<Label> for ExpectedPattern {
+    fn from(value: Label) -> Self {
         Self::Label(value)
     }
 }
@@ -106,19 +112,31 @@ impl ParsingError {
 
     #[must_use]
     pub(super) fn bad_call_chain(mut self, loc: Location<Offset>) -> Self {
-        self.extra = Some(ErrorExtra::BadCallChain(loc));
+        self.extra = Some(ErrorExtra::BadCallChain(BadCallChain(loc)));
         self
     }
 
     #[must_use]
     pub(super) fn typed_hole(mut self) -> Self {
-        self.extra = Some(ErrorExtra::TypedHole);
+        self.extra = Some(ErrorExtra::TypedHole(TypedHole));
         self
     }
 
     #[must_use]
     pub(super) fn missing_comma(mut self, loc: Location<Offset>) -> Self {
-        self.extra = Some(ErrorExtra::MissingComma(loc));
+        self.extra = Some(ErrorExtra::MissingComma(MissingComma(loc)));
         self
+    }
+}
+
+impl From<LexingError> for error::ParsingError {
+    fn from(value: LexingError) -> Self {
+        ParsingError {
+            found: Some(Token::Err),
+            expected: vec![],
+            at: value.location(),
+            extra: Some(ErrorExtra::LexingError(ParserLexingError(value))),
+        }
+        .into()
     }
 }
