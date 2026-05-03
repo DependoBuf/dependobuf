@@ -17,7 +17,10 @@ impl<Str: Ord + Clone> Module<Str> {
         types.extend(b.types);
         let mut constructors = self.constructors.clone();
         constructors.extend(b.constructors);
-        Module { types, constructors }
+        Module {
+            types,
+            constructors,
+        }
     }
 }
 

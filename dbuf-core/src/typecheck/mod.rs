@@ -1,6 +1,6 @@
-pub mod typecheck;
-pub mod context;
-pub mod subst;
-pub mod rename;
-pub mod unify;
 pub mod apply;
+pub mod context;
+pub mod rename;
+pub mod subst;
+pub mod typecheck;
+pub mod unify;

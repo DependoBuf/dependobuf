@@ -1,9 +1,8 @@
+use crate::ast::elaborated::{
+    Constructor, Context, Module, Rec, Type, TypeExpression, ValueExpression, ValueExprs,
+};
 use std::collections::HashSet;
 use std::hash::Hash;
-use crate::ast::elaborated::{
-    Constructor, Context, Module, Rec, TypeExpression, ValueExpression, Type,
-    ValueExprs,
-};
 
 pub trait Rename: Sized {
     fn with_suffix(&self, suffix: &str) -> Self;
@@ -119,15 +118,21 @@ where
             name: f(name),
             ty: map_type_expression(ty, f),
         },
-        ValueExpression::Constructor { name, implicits, arguments, result_type } => {
-            ValueExpression::Constructor {
-                name: f(name),
-                implicits: map_value_exprs(implicits, f),
-                arguments: map_value_exprs(arguments, f),
-                result_type: map_type_expression(result_type, f),
-            }
-        }
-        ValueExpression::OpCall { op_call, result_type } => ValueExpression::OpCall {
+        ValueExpression::Constructor {
+            name,
+            implicits,
+            arguments,
+            result_type,
+        } => ValueExpression::Constructor {
+            name: f(name),
+            implicits: map_value_exprs(implicits, f),
+            arguments: map_value_exprs(arguments, f),
+            result_type: map_type_expression(result_type, f),
+        },
+        ValueExpression::OpCall {
+            op_call,
+            result_type,
+        } => ValueExpression::OpCall {
             op_call: map_op_call(op_call, f),
             result_type: map_type_expression(result_type, f),
         },

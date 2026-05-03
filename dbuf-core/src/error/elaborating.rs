@@ -1,9 +1,9 @@
 //! Module contains `elaborating::Error` - errors that appear
 //! during elaborating phase
 
+use super::ErrorStage;
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
-use super::ErrorStage;
 
 /// TODO: implement
 #[derive(Debug, Error)]
@@ -12,7 +12,7 @@ pub enum Error {
 }
 
 impl Display for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut Formatter<'_>) -> std::fmt::Result {
         todo!("error display not implemented")
     }
 }
@@ -20,7 +20,7 @@ impl Display for Error {
 #[derive(Debug, Error)]
 #[error("Elaborating stage")]
 pub struct ElaboratingStage {
-    error: Error
+    error: Error,
 }
 
 impl ErrorStage for ElaboratingStage {

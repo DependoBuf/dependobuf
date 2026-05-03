@@ -62,11 +62,10 @@ where
     Str: Clone + Eq,
 {
     match (a, b) {
-        (e::ValueExpression::Variable { name: x, .. }, e::ValueExpression::Variable { name: y, .. })
-            if x == y =>
-        {
-            Ok((vec![], vec![]))
-        }
+        (
+            e::ValueExpression::Variable { name: x, .. },
+            e::ValueExpression::Variable { name: y, .. },
+        ) if x == y => Ok((vec![], vec![])),
         //TODO: check types are equal
         (
             e::ValueExpression::Variable { name: x, ty: ty_x },
@@ -403,10 +402,7 @@ mod tests {
 
     #[test]
     fn value_mismatched_variants() {
-        assert_eq!(
-            unify_value(&zero(), &lit_int(0)),
-            Err(CannotUnify)
-        );
+        assert_eq!(unify_value(&zero(), &lit_int(0)), Err(CannotUnify));
     }
 
     #[test]

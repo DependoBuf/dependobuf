@@ -224,30 +224,26 @@ pub fn inventory() -> e::Module<InternedString> {
         types: vec![(
             "Inventory".to_owned().into(),
             e::Type {
-                dependencies: vec![
-                    (
-                        "n".to_owned().into(),
-                        e::TypeExpression::TypeExpression {
-                            name: "Nat".to_owned().into(),
-                            dependencies: e::Rec::new([]),
-                        },
-                    ),
-                ],
+                dependencies: vec![(
+                    "n".to_owned().into(),
+                    e::TypeExpression::TypeExpression {
+                        name: "Nat".to_owned().into(),
+                        dependencies: e::Rec::new([]),
+                    },
+                )],
                 constructor_names: e::ConstructorNames::OfMessage("Inventory".to_owned().into()),
             },
         )],
         constructors: vec![(
             "Inventory".to_owned().into(),
             e::Constructor {
-                implicits: vec![
-                    (
-                        "p".to_owned().into(),
-                        e::TypeExpression::TypeExpression {
-                            name: "Nat".to_owned().into(),
-                            dependencies: e::Rec::new([]),
-                        },
-                    ),
-                ],
+                implicits: vec![(
+                    "p".to_owned().into(),
+                    e::TypeExpression::TypeExpression {
+                        name: "Nat".to_owned().into(),
+                        dependencies: e::Rec::new([]),
+                    },
+                )],
                 fields: vec![
                     (
                         "items".to_owned().into(),
@@ -272,15 +268,13 @@ pub fn inventory() -> e::Module<InternedString> {
                 ],
                 result_type: e::TypeExpression::TypeExpression {
                     name: "Inventory".to_owned().into(),
-                    dependencies: e::Rec::new([
-                        e::ValueExpression::Variable {
-                            name: "p".to_owned().into(),
-                            ty: e::TypeExpression::TypeExpression {
-                                name: "Nat".to_owned().into(),
-                                dependencies: e::Rec::new([]),
-                            },
+                    dependencies: e::Rec::new([e::ValueExpression::Variable {
+                        name: "p".to_owned().into(),
+                        ty: e::TypeExpression::TypeExpression {
+                            name: "Nat".to_owned().into(),
+                            dependencies: e::Rec::new([]),
                         },
-                    ]),
+                    }]),
                 },
             },
         )]
