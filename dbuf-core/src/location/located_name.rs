@@ -45,19 +45,6 @@ where
     }
 }
 
-impl<Str, Pos> From<String> for LocatedName<Str, Pos>
-where
-    Pos: Default,
-    Str: From<String>,
-{
-    fn from(value: String) -> Self {
-        Self {
-            content: Str::from(value),
-            start: Pos::default(),
-        }
-    }
-}
-
 impl<Str: AsRef<str>, Pos: Clone> From<&LocatedName<Str, Pos>> for Location<Pos> {
     fn from(value: &LocatedName<Str, Pos>) -> Self {
         Location {

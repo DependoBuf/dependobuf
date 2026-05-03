@@ -32,7 +32,7 @@ where
     pub fn get(&self, var_name: &Key) -> Option<&Value> {
         self.terms
             .get(var_name)
-            .or(self.parent.and_then(|c| c.get(var_name)))
+            .or_else(|| self.parent.and_then(|p| p.get(var_name)))
     }
 
     pub fn insert(&mut self, var_name: Key, var_type: Value) {

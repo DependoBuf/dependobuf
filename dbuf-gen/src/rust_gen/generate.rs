@@ -467,6 +467,7 @@ mod type_declaration {
                 .get_generated::<objects::Type>(ObjectId::from_name("Dependencies".to_owned()))
                 .expect("couldn't get Dependencies type");
 
+
             let message_struct = alloc
                 .text("#[derive(Clone, Debug, PartialEq, Eq)]")
                 .append(alloc.hardline())
@@ -636,7 +637,7 @@ mod type_declaration {
                                         )
                                     })
                                     .collect::<Vec<_>>(),
-                                alloc.hardline(),
+                                alloc.text(",").append(alloc.hardline()),
                             ),
                         )
                         .nest(NEST_UNIT)
@@ -956,10 +957,14 @@ mod type_inherent_impl {
                                 .text("(")
                                 .append(alloc.intersperse(
                                     dependencies.iter().map(|expr| {
-                                        alloc.text("&").append(expr.generate_as_value(
+                                        let val = expr.generate_as_value(
                                             (ctx, namespace.cursor()),
                                             &ConstructorObjectsLocator {},
-                                        ))
+                                        );
+                                        match expr {
+                                            ValueExpression::Variable(_) => alloc.text("&").append(val),
+                                            _ => alloc.text("&Box::new(").append(val).append(")"),
+                                        }
                                     }),
                                     alloc.text(",").append(alloc.line()),
                                 ))
@@ -1875,6 +1880,14 @@ mod type_inherent_impl {
             // So cleaning this up requires type erased Cursor
             // TODO: cleanup when proper Cursor will be implemented
 
+            // Collect raw pointers of field symbols so we can detect when a type dependency
+            // references a previously-deserialized field value (which is T, not Box<T>).
+            let field_symbol_ptrs: std::collections::HashSet<usize> = self
+                .fields
+                .iter()
+                .map(|f| Rc::as_ptr(f) as usize)
+                .collect();
+
             let fields_deserialization = alloc.concat(self.fields.iter().map(|field| {
                 let field_ty = field.ty.get_type();
 
@@ -1887,17 +1900,25 @@ mod type_inherent_impl {
                 let generate_value_expression: Box<dyn Fn(&ValueExpression) -> BoxDoc<'a>> =
                     if is_enum_constructor {
                         Box::new(|value: &ValueExpression| {
-                            value.generate_as_value(
+                            let val = value.generate_as_value(
                                 (ctx, namespace.cursor()),
                                 &EnumConstructorDeserializationObjectsLocator {},
-                            )
+                            );
+                            match value {
+                                ValueExpression::Variable(_) => val,
+                                _ => ctx.alloc.text("Box::new(").append(val).append(")").into_doc(),
+                            }
                         })
                     } else {
                         Box::new(|value: &ValueExpression| {
-                            value.generate_as_value(
+                            let val = value.generate_as_value(
                                 (ctx, namespace.cursor()),
                                 &MessageConstructorDeserializationObjectsLocator {},
-                            )
+                            );
+                            match value {
+                                ValueExpression::Variable(_) => val,
+                                _ => ctx.alloc.text("Box::new(").append(val).append(")").into_doc(),
+                            }
                         })
                     };
 
@@ -1908,7 +1929,23 @@ mod type_inherent_impl {
                             .ty
                             .get_dependencies()
                             .iter()
-                            .map(&generate_value_expression)
+                            .map(|dep| {
+                                let val = generate_value_expression(dep);
+                                // Field variables are plain T (not Box<T>), so they need wrapping
+                                // when used as type dependencies (which expect Box<T>).
+                                if let ValueExpression::Variable(weak) = dep {
+                                    if field_symbol_ptrs
+                                        .contains(&(std::rc::Weak::as_ptr(weak) as usize))
+                                    {
+                                        return alloc
+                                            .text("Box::new(")
+                                            .append(val)
+                                            .append(")")
+                                            .into_doc();
+                                    }
+                                }
+                                val
+                            })
                             .collect(),
                     ),
                 );
@@ -2097,7 +2134,7 @@ mod value_from_expression {
                     .upgrade()
                     .expect("call to unknown constructor")
                     .generate_call_as_value((ctx, namespace), locator, implicits, arguments),
-                ValueExpression::Variable(weak) => locator.locate_variable((ctx, namespace), weak),
+                ValueExpression::Variable(weak) => locator.locate_variable((ctx, namespace), weak).append(".clone()"),
             }
         }
     }
@@ -2198,11 +2235,21 @@ mod value_from_expression {
                     alloc.intersperse(
                         implicits
                             .iter()
-                            .map(|expr| expr.generate_as_value((ctx, namespace.clone()), locator))
+                            .map(|expr| {
+                                let val = expr.generate_as_value((ctx, namespace.clone()), locator);
+                                match expr {
+                                    ValueExpression::Variable(_) => val,
+                                    _ => alloc.text("Box::new(").append(val).append(")").into_doc(),
+                                }
+                            })
                             .collect::<Vec<_>>()
                             .into_iter()
                             .chain(arguments.iter().map(|expr| {
-                                expr.generate_as_value((ctx, namespace.clone()), locator)
+                                let val = expr.generate_as_value((ctx, namespace.clone()), locator);
+                                match expr {
+                                    ValueExpression::Variable(_) => val,
+                                    _ => alloc.text("Box::new(").append(val).append(")").into_doc(),
+                                }
                             })),
                         alloc.text(",").append(alloc.line()),
                     ),
