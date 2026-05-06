@@ -15,15 +15,15 @@ pub mod nat {
             pred: super::Box<Nat>
         },
         Zero {
-
+        
         }
     }
-
+    
     #[derive(Clone, Debug, PartialEq, Eq)]
     pub struct Dependencies {
-
+    
     }
-
+    
     #[derive(Clone, Debug, PartialEq, Eq)]
     pub struct Nat {
         pub body: Body,
@@ -39,20 +39,20 @@ pub mod nat {
                 Err(super::ConstructorError::MismatchedDependencies)
             }?;
             let dependencies = Dependencies {
-
+            
             };
             Ok(Self { body: body, dependencies: dependencies })
         }
         pub fn zero() -> Result<Self, super::ConstructorError> {
             let body = if () == () {
                 Ok(Body::Zero {
-
+                
                 })
             } else {
                 Err(super::ConstructorError::MismatchedDependencies)
             }?;
             let dependencies = Dependencies {
-
+            
             };
             Ok(Self { body: body, dependencies: dependencies })
         }
@@ -75,7 +75,7 @@ pub mod nat {
                 descriptor::Suc => {
                     if let () = () {
                         let pred = Self::deserialize(Dependencies {
-
+                        
                         }, reader)?;
                         Self::suc(Box::new(pred)).map_err(|e| super::DeserializeError::ConstructorError(e))
                     } else {
@@ -110,15 +110,15 @@ pub mod vec {
             tail: super::Box<Vec>
         },
         Nil {
-
+        
         }
     }
-
+    
     #[derive(Clone, Debug, PartialEq, Eq)]
     pub struct Dependencies {
         pub n: super::Box<deps::nat::Nat>
     }
-
+    
     #[derive(Clone, Debug, PartialEq, Eq)]
     pub struct Vec {
         pub body: Body,
@@ -127,8 +127,8 @@ pub mod vec {
     impl Vec {
         pub fn cons(p: super::Box<deps::nat::Nat>, value: super::Box<deps::nat::Nat>, tail: super::Box<Vec>) -> Result<Self, super::ConstructorError> {
             let body = if ((),
-                           (&p.clone())) == ((),
-                                             (&tail.dependencies.n)) {
+            (&p.clone())) == ((),
+            (&tail.dependencies.n)) {
                 Ok(Body::Cons {
                     value: value,
                     tail: tail
@@ -144,7 +144,7 @@ pub mod vec {
         pub fn nil() -> Result<Self, super::ConstructorError> {
             let body = if () == () {
                 Ok(Body::Nil {
-
+                
                 })
             } else {
                 Err(super::ConstructorError::MismatchedDependencies)
@@ -174,7 +174,7 @@ pub mod vec {
                 descriptor::Cons => {
                     if let (deps::nat::Body::Suc { pred: p }) = (dependencies.n.body) {
                         let value = deps::Nat::deserialize(deps::nat::Dependencies {
-
+                        
                         }, reader)?;
                         let tail = Self::deserialize(Dependencies {
                             n: p.clone().clone()
