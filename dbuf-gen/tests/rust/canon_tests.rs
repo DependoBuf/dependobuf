@@ -1,13 +1,36 @@
 use crate::common;
+use crate::common::{
+    get_basic_module, get_inventory_module, get_nat_vec_module, get_simple_message_module,
+    to_string_module,
+};
 use dbuf_gen::codegen;
 use pretty_assertions::assert_eq;
+
+#[test]
+fn no_error_generation() {
+    let modules = vec![
+        get_basic_module(),
+        get_nat_vec_module(),
+        get_simple_message_module(),
+        get_inventory_module(),
+    ];
+    assert!(
+        modules
+            .into_iter()
+            .find_map(|module| {
+                let mut writer = Vec::new();
+                codegen::generate_module(to_string_module(module), &mut writer).ok()
+            })
+            .is_some()
+    );
+}
 
 #[test]
 fn basic() {
     let module = common::get_basic_module();
     let mut writer = Vec::new();
 
-    assert!(codegen::generate_module(module, &mut writer).is_ok());
+    assert!(codegen::generate_module(to_string_module(module), &mut writer).is_ok());
 
     let code = String::from_utf8(writer).expect("generated code must be correct utf8");
     let expected = include_str!("./canon/basic.rs");
@@ -20,7 +43,7 @@ fn nat_vec() {
     let module = common::get_nat_vec_module();
     let mut writer = Vec::new();
 
-    assert!(codegen::generate_module(module, &mut writer).is_ok());
+    assert!(codegen::generate_module(to_string_module(module), &mut writer).is_ok());
 
     let code = String::from_utf8(writer).expect("generated code must be correct utf8");
     let expected = include_str!("./canon/nat_vec.rs");

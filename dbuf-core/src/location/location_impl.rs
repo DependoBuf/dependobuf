@@ -6,7 +6,7 @@
 use std::ops::{Add, Range, Sub};
 
 /// Offset in a file.
-#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Default)]
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Default, Hash)]
 pub struct Offset {
     /// Number of offset newline symbols.
     pub lines: usize,

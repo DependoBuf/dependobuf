@@ -11,8 +11,22 @@ pub struct Module<Str> {
     pub constructors: BTreeMap<Str, Constructor<Str>>,
 }
 
+impl<Str: Ord + Clone> Module<Str> {
+    #[must_use]
+    pub fn merge(self, b: Self) -> Self {
+        let mut types = self.types.clone();
+        types.extend(b.types);
+        let mut constructors = self.constructors.clone();
+        constructors.extend(b.constructors);
+        Module {
+            types,
+            constructors,
+        }
+    }
+}
+
 /// Elaborated DependoBuf type.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Type<Str> {
     /// List of elaborated dependencies.
     pub dependencies: Context<Str>,
@@ -21,7 +35,7 @@ pub struct Type<Str> {
 }
 
 /// Constructor names of a type.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ConstructorNames<Str> {
     /// Message has a single constructor.
     OfMessage(Str),
@@ -30,7 +44,7 @@ pub enum ConstructorNames<Str> {
 }
 
 /// Elaborated DependoBuf constructor.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Constructor<Str> {
     /// List of elaborated implicit arguments' types.
     pub implicits: Context<Str>,
@@ -44,7 +58,7 @@ pub struct Constructor<Str> {
 pub type Context<Str> = Vec<(Str, TypeExpression<Str>)>;
 
 /// Elaborated DependoBuf expression returning value.
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ValueExpression<Str> {
     /// An operator call.
     OpCall {
@@ -63,7 +77,7 @@ pub enum ValueExpression<Str> {
 }
 
 /// Elaborated DependoBuf expression returning type.
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TypeExpression<Str> {
     /// Call to dependent type.
     TypeExpression {

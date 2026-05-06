@@ -539,7 +539,7 @@ mod type_declaration {
                     let constructor = self.constructors[0].as_ref();
                     alloc.intersperse(
                         generate_fields(&constructor.fields, &mut body_namespace),
-                        alloc.hardline(),
+                        alloc.text(",").append(alloc.hardline()),
                     )
                 }
                 ast::TypeKind::Enum => {
@@ -636,7 +636,7 @@ mod type_declaration {
                                         )
                                     })
                                     .collect::<Vec<_>>(),
-                                alloc.hardline(),
+                                alloc.text(",").append(alloc.hardline()),
                             ),
                         )
                         .nest(NEST_UNIT)
@@ -875,8 +875,14 @@ mod type_inherent_impl {
 
             let dependencies = dependencies
                 .iter()
-                .map(|expr| {
-                    alloc
+                .map(|expr| match expr {
+                    // Variables are already Box<T>, use directly without re-boxing
+                    ValueExpression::Variable(_) => expr.generate_as_value(
+                        (ctx, namespace.cursor()),
+                        &ConstructorObjectsLocator {},
+                    ),
+                    // Constructor calls and op calls return T, must be wrapped
+                    _ => alloc
                         .text("Box")
                         .append("::")
                         .append("new")
@@ -886,7 +892,7 @@ mod type_inherent_impl {
                             &ConstructorObjectsLocator {},
                         ))
                         .append(")")
-                        .into_doc()
+                        .into_doc(),
                 })
                 .collect();
 
@@ -949,10 +955,16 @@ mod type_inherent_impl {
                                 .text("(")
                                 .append(alloc.intersperse(
                                     dependencies.iter().map(|expr| {
-                                        alloc.text("&").append(expr.generate_as_value(
+                                        let val = expr.generate_as_value(
                                             (ctx, namespace.cursor()),
                                             &ConstructorObjectsLocator {},
-                                        ))
+                                        );
+                                        match expr {
+                                            ValueExpression::Variable(_) => {
+                                                alloc.text("&").append(val)
+                                            }
+                                            _ => alloc.text("&Box::new(").append(val).append(")"),
+                                        }
                                     }),
                                     alloc.text(",").append(alloc.line()),
                                 ))
@@ -1331,6 +1343,16 @@ mod type_inherent_impl {
                 .get_generated::<objects::Type>(objects::ObjectId::from_name("Body".to_owned()))
                 .expect("couldn't get generated Body type");
 
+            let (message_type_body_field, _) = namespace
+                .get_generated::<objects::Type>(objects::ObjectId(
+                    ast::NodeId::id(self),
+                    objects::Tag::String("type"),
+                ))
+                .expect("couldn't get generated message type")
+                .1
+                .get_generated::<objects::Variable>(objects::ObjectId::from_name("body".to_owned()))
+                .expect("couldn't get generated message type 'body' field");
+
             alloc
                 .text("let")
                 .append(alloc.space())
@@ -1354,9 +1376,12 @@ mod type_inherent_impl {
                 .append("=")
                 .append(alloc.space())
                 .append(self_parameter.to_doc(ctx))
+                .append(".")
+                .append(message_type_body_field.to_doc(ctx))
                 .append(";")
                 .append(alloc.hardline())
                 .append(constructor.generate_constructor_serialization((ctx, namespace)))
+                .append("Ok(())")
                 .into_doc()
         }
     }
@@ -1435,29 +1460,17 @@ mod type_inherent_impl {
             >,
             symbol: &Weak<Symbol>,
         ) -> BoxDoc<'a> {
-            let (dependencies_param, _) = namespace
-                .clone()
-                .get_generated::<objects::Variable>(ObjectId::from_name("dependencies".to_owned()))
-                .expect("couldn't get generated dependencies parameter");
-
-            let (_, dependencies_type_cursor) = namespace
-                .clone()
-                .get_generated::<objects::Type>(ObjectId::from_name("Dependencies".to_owned()))
-                .expect("couldn't get generated Dependencies type");
-
-            dependencies_param.to_doc(ctx).append(".").append(
-                dependencies_type_cursor
-                    .get_generated::<objects::Variable>(objects::ObjectId(
-                        ast::NodeId::id_weak(symbol),
-                        objects::Tag::None,
-                    ))
-                    .expect("couldn't get generated implicit")
-                    .0
-                    .to_doc(ctx)
-                    .append(".")
-                    .append("clone")
-                    .append("()"),
-            )
+            namespace
+                .get_generated::<objects::Variable>(objects::ObjectId(
+                    ast::NodeId::id_weak(symbol),
+                    objects::Tag::None,
+                ))
+                .expect("couldn't get generated implicit")
+                .0
+                .to_doc(ctx)
+                .append(".")
+                .append("clone")
+                .append("()")
         }
     }
 
@@ -1571,8 +1584,60 @@ mod type_inherent_impl {
             &self,
             (ctx, namespace): MutContext<'a, '_, '_>,
         ) -> BoxDoc<'a> {
+            let alloc = ctx.alloc;
             let constructor = &self.constructors[0];
-            constructor.generate_constructor_deserialization((ctx, namespace), false)
+
+            let bindings: Vec<(objects::GeneratedVariable, Rc<Symbol>)> = {
+                let (_, deps_type_cursor) = namespace
+                    .get_generated::<objects::Type>(ObjectId::from_name("Dependencies".to_owned()))
+                    .expect("couldn't get Dependencies type for implicit pre-binding");
+
+                constructor
+                    .implicits
+                    .iter()
+                    .zip(self.dependencies.iter())
+                    .map(|(implicit, type_dep)| {
+                        let (field, _) = deps_type_cursor
+                            .clone()
+                            .get_generated::<objects::Variable>(ObjectId(
+                                NodeId::id_rc(type_dep),
+                                Tag::None,
+                            ))
+                            .expect("couldn't get type dep field in Dependencies");
+                        (field, Rc::clone(implicit))
+                    })
+                    .collect()
+            };
+
+            let dependencies_param = namespace
+                .get_generated::<objects::Variable>(ObjectId::from_name("dependencies".to_owned()))
+                .expect("couldn't get dependencies parameter")
+                .0;
+
+            let implicit_bindings =
+                alloc.concat(bindings.into_iter().map(|(type_dep_field, implicit)| {
+                    let (implicit_var, _) =
+                        namespace.insert_object_auto_name(objects::Variable::from_object(
+                            ObjectId(NodeId::id_rc(&implicit), Tag::None),
+                            implicit.name.clone(),
+                        ));
+
+                    alloc
+                        .text("let ")
+                        .append(implicit_var.to_doc(ctx))
+                        .append(" = ")
+                        .append(dependencies_param.to_doc(ctx))
+                        .append(".")
+                        .append(type_dep_field.to_doc(ctx))
+                        .append(".clone();")
+                        .append(alloc.hardline())
+                }));
+
+            alloc
+                .nil()
+                .append(implicit_bindings)
+                .append(constructor.generate_constructor_deserialization((ctx, namespace), false))
+                .into_doc()
         }
 
         #[allow(clippy::too_many_lines, reason = "??? (103/100)")]
@@ -1814,6 +1879,11 @@ mod type_inherent_impl {
             // So cleaning this up requires type erased Cursor
             // TODO: cleanup when proper Cursor will be implemented
 
+            // Collect raw pointers of field symbols so we can detect when a type dependency
+            // references a previously-deserialized field value (which is T, not Box<T>).
+            let field_symbol_ptrs: std::collections::HashSet<usize> =
+                self.fields.iter().map(|f| Rc::as_ptr(f) as usize).collect();
+
             let fields_deserialization = alloc.concat(self.fields.iter().map(|field| {
                 let field_ty = field.ty.get_type();
 
@@ -1826,17 +1896,35 @@ mod type_inherent_impl {
                 let generate_value_expression: Box<dyn Fn(&ValueExpression) -> BoxDoc<'a>> =
                     if is_enum_constructor {
                         Box::new(|value: &ValueExpression| {
-                            value.generate_as_value(
+                            let val = value.generate_as_value(
                                 (ctx, namespace.cursor()),
                                 &EnumConstructorDeserializationObjectsLocator {},
-                            )
+                            );
+                            match value {
+                                ValueExpression::Variable(_) => val,
+                                _ => ctx
+                                    .alloc
+                                    .text("Box::new(")
+                                    .append(val)
+                                    .append(")")
+                                    .into_doc(),
+                            }
                         })
                     } else {
                         Box::new(|value: &ValueExpression| {
-                            value.generate_as_value(
+                            let val = value.generate_as_value(
                                 (ctx, namespace.cursor()),
                                 &MessageConstructorDeserializationObjectsLocator {},
-                            )
+                            );
+                            match value {
+                                ValueExpression::Variable(_) => val,
+                                _ => ctx
+                                    .alloc
+                                    .text("Box::new(")
+                                    .append(val)
+                                    .append(")")
+                                    .into_doc(),
+                            }
                         })
                     };
 
@@ -1847,7 +1935,21 @@ mod type_inherent_impl {
                             .ty
                             .get_dependencies()
                             .iter()
-                            .map(&generate_value_expression)
+                            .map(|dep| {
+                                let val = generate_value_expression(dep);
+                                // Field variables are plain T (not Box<T>), so they need wrapping
+                                // when used as type dependencies (which expect Box<T>).
+                                if let ValueExpression::Variable(weak) = dep
+                                    && field_symbol_ptrs.contains(&(Weak::as_ptr(weak) as usize))
+                                {
+                                    return alloc
+                                        .text("Box::new(")
+                                        .append(val)
+                                        .append(")")
+                                        .into_doc();
+                                }
+                                val
+                            })
                             .collect(),
                     ),
                 );
@@ -2036,7 +2138,9 @@ mod value_from_expression {
                     .upgrade()
                     .expect("call to unknown constructor")
                     .generate_call_as_value((ctx, namespace), locator, implicits, arguments),
-                ValueExpression::Variable(weak) => locator.locate_variable((ctx, namespace), weak),
+                ValueExpression::Variable(weak) => locator
+                    .locate_variable((ctx, namespace), weak)
+                    .append(".clone()"),
             }
         }
     }
@@ -2137,11 +2241,21 @@ mod value_from_expression {
                     alloc.intersperse(
                         implicits
                             .iter()
-                            .map(|expr| expr.generate_as_value((ctx, namespace.clone()), locator))
+                            .map(|expr| {
+                                let val = expr.generate_as_value((ctx, namespace.clone()), locator);
+                                match expr {
+                                    ValueExpression::Variable(_) => val,
+                                    _ => alloc.text("Box::new(").append(val).append(")").into_doc(),
+                                }
+                            })
                             .collect::<Vec<_>>()
                             .into_iter()
                             .chain(arguments.iter().map(|expr| {
-                                expr.generate_as_value((ctx, namespace.clone()), locator)
+                                let val = expr.generate_as_value((ctx, namespace.clone()), locator);
+                                match expr {
+                                    ValueExpression::Variable(_) => val,
+                                    _ => alloc.text("Box::new(").append(val).append(")").into_doc(),
+                                }
                             })),
                         alloc.text(",").append(alloc.line()),
                     ),

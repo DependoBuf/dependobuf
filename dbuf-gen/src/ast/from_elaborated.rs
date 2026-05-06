@@ -128,11 +128,30 @@ impl Constructor {
     ) -> Constructor {
         let mut all_params = Scope::nested_in(type_context.variables);
 
-        let implicits = implicits
+        let implicits: Vec<_> = implicits
             .into_iter()
             .map(|(name, expr)| {
-                let symbol = Rc::new(Symbol::from_elaborated(type_context, name.clone(), expr));
+                let partial_context = ASTContext {
+                    known_types: type_context.known_types,
+                    variables: &all_params,
+                    constructors: type_context.constructors,
+                };
+                let symbol = Rc::new(Symbol::from_elaborated(partial_context, name.clone(), expr));
                 assert!(all_params.try_insert(name, symbol.clone()), "codegen expects valid elaborated ast: two constructor constructor params (among dependencies and implicits) can not have same name");
+                symbol
+            })
+            .collect();
+
+        let fields: Vec<_> = fields
+            .into_iter()
+            .map(|(name, expr)| {
+                let field_context = ASTContext {
+                    known_types: type_context.known_types,
+                    variables: &all_params,
+                    constructors: type_context.constructors,
+                };
+                let symbol = Rc::new(Symbol::from_elaborated(field_context, name.clone(), expr));
+                all_params.try_insert(name, symbol.clone());
                 symbol
             })
             .collect();
@@ -142,11 +161,6 @@ impl Constructor {
             variables: &all_params,
             constructors: type_context.constructors,
         };
-
-        let fields = fields
-            .into_iter()
-            .map(|(name, expr)| Rc::new(Symbol::from_elaborated(constructor_context, name, expr)))
-            .collect();
 
         // this is if statement not needed now
         let result_type = match result_type {
