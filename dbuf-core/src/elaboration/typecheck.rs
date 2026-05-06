@@ -16,17 +16,15 @@ type ElaboratedDeclaration<Str> = (Str, e::Type<Str>, Vec<(Str, e::Constructor<S
 
 #[must_use]
 pub fn new_global<Str: Eq + Hash + From<String> + Clone>() -> Vec<(Str, e::Type<Str>)> {
-    let mut ctx = Vec::new();
-    for builtin in ["Bool", "Double", "Int", "UInt", "String", "Type"] {
-        ctx.push((
+    ["Bool", "Double", "Int", "UInt", "String", "Type"].into_iter().map(|builtin| {
+        (
             Str::from(builtin.to_string()),
             e::Type {
                 dependencies: vec![],
                 constructor_names: e::ConstructorNames::OfEnum(BTreeSet::new()),
             },
-        ));
-    }
-    ctx
+        )
+    }).collect()
 }
 
 fn get_builtin<Str: From<String>>(type_name: &str) -> e::TypeExpression<Str> {
