@@ -12,7 +12,8 @@ pub struct Module<Str> {
 }
 
 impl<Str: Ord + Clone> Module<Str> {
-    pub fn merge(self: &Self, b: Self) -> Self {
+    #[must_use]
+    pub fn merge(self, b: Self) -> Self {
         let mut types = self.types.clone();
         types.extend(b.types);
         let mut constructors = self.constructors.clone();

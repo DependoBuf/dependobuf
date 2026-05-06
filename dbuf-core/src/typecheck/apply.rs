@@ -12,9 +12,11 @@ fn type_of<Str: Clone>(expr: &e::ValueExpression<Str>) -> e::TypeExpression<Str>
     }
 }
 
+/// # Panics
+/// # Errors
 pub fn application<Str>(
     constructor: &e::Constructor<Str>,
-    arg: e::ValueExpression<Str>,
+    arg: &e::ValueExpression<Str>,
     module: &e::Module<Str>,
 ) -> Result<(e::Constructor<Str>, Bindings<Str>), Error>
 where
@@ -28,7 +30,7 @@ where
 
     let ((_var_name, field_type), rest_fields) = fields.split_first().ok_or(ElaboratingError)?;
 
-    let arg_type = type_of(&arg);
+    let arg_type = type_of(arg);
     let (arg_bindings, implicit_bindings) =
         unify::unify_type(&arg_type, field_type, module).map_err(|_| ElaboratingError)?;
 
@@ -40,10 +42,7 @@ where
         })
         .collect();
 
-    let new_result_type = {
-        let ty = subst::apply_bindings_to_type(result_type.clone(), &implicit_bindings);
-        ty
-    };
+    let new_result_type = subst::apply_bindings_to_type(result_type.clone(), &implicit_bindings);
 
     Ok((
         e::Constructor {

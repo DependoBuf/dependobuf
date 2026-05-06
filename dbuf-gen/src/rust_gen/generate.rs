@@ -1939,16 +1939,14 @@ mod type_inherent_impl {
                                 let val = generate_value_expression(dep);
                                 // Field variables are plain T (not Box<T>), so they need wrapping
                                 // when used as type dependencies (which expect Box<T>).
-                                if let ValueExpression::Variable(weak) = dep {
-                                    if field_symbol_ptrs
-                                        .contains(&(std::rc::Weak::as_ptr(weak) as usize))
-                                    {
-                                        return alloc
-                                            .text("Box::new(")
-                                            .append(val)
-                                            .append(")")
-                                            .into_doc();
-                                    }
+                                if let ValueExpression::Variable(weak) = dep
+                                    && field_symbol_ptrs.contains(&(Weak::as_ptr(weak) as usize))
+                                {
+                                    return alloc
+                                        .text("Box::new(")
+                                        .append(val)
+                                        .append(")")
+                                        .into_doc();
                                 }
                                 val
                             })

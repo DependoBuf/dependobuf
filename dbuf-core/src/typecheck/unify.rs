@@ -17,6 +17,7 @@ pub enum UnifyError {
     CannotUnify,
 }
 
+/// # Errors
 pub fn unify_type<Str>(
     a: &e::TypeExpression<Str>,
     b: &e::TypeExpression<Str>,
@@ -54,6 +55,7 @@ where
     )
 }
 
+/// # Errors
 pub fn unify_value<Str>(
     a: &e::ValueExpression<Str>,
     b: &e::ValueExpression<Str>,
@@ -130,10 +132,10 @@ where
     for i in 0..left.len() {
         let (bl, br) = unify_value(&left[i], &right[i])?;
 
-        for arg in left[i + 1..].iter_mut() {
+        for arg in &mut left[i + 1..] {
             *arg = subst::apply_bindings(arg.clone(), &bl);
         }
-        for arg in right[i + 1..].iter_mut() {
+        for arg in &mut right[i + 1..] {
             *arg = subst::apply_bindings(arg.clone(), &br);
         }
 

@@ -58,8 +58,8 @@ where
             result_type,
         } => e::ValueExpression::Constructor {
             name,
-            implicits: subst_value_exprs(implicits, var, replacement),
-            arguments: subst_value_exprs(arguments, var, replacement),
+            implicits: subst_value_exprs(&implicits, var, replacement),
+            arguments: subst_value_exprs(&arguments, var, replacement),
             result_type: subst_type(result_type, var, replacement),
         },
     }
@@ -76,12 +76,12 @@ where
     let e::TypeExpression::TypeExpression { name, dependencies } = ty;
     e::TypeExpression::TypeExpression {
         name,
-        dependencies: subst_value_exprs(dependencies, var, replacement),
+        dependencies: subst_value_exprs(&dependencies, var, replacement),
     }
 }
 
 fn subst_value_exprs<Str>(
-    exprs: e::ValueExprs<Str>,
+    exprs: &e::ValueExprs<Str>,
     var: &Str,
     replacement: &e::ValueExpression<Str>,
 ) -> e::ValueExprs<Str>

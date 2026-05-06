@@ -12,6 +12,9 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::iter::zip;
 
+type ElaboratedDeclaration<Str> = (Str, e::Type<Str>, Vec<(Str, e::Constructor<Str>)>);
+
+#[must_use]
 pub fn new_global<Str: Eq + Hash + From<String> + Clone>() -> Vec<(Str, e::Type<Str>)> {
     let mut ctx = Vec::new();
     for builtin in ["Bool", "Double", "Int", "UInt", "String", "Type"] {
@@ -33,6 +36,7 @@ fn get_builtin<Str: From<String>>(type_name: &str) -> e::TypeExpression<Str> {
     }
 }
 
+#[must_use]
 pub fn elaborate<Loc, Str: Debug + From<String> + Clone + Hash + Eq + Ord + Rename>(
     module: &p::Module<Loc, Str>,
 ) -> e::Module<Str> {
@@ -40,9 +44,10 @@ pub fn elaborate<Loc, Str: Debug + From<String> + Clone + Hash + Eq + Ord + Rena
         types: new_global::<Str>(),
         constructors: BTreeMap::new(),
     };
-    elaborate_with_module_ctx(elaborated_module, &module)
+    elaborate_with_module_ctx(elaborated_module, module)
 }
 
+#[must_use]
 pub fn elaborate_with_module_ctx<
     Loc,
     Str: Debug + From<String> + Clone + Hash + Eq + Ord + Rename,
@@ -76,7 +81,7 @@ pub fn elaborate_with_module_ctx<
 fn elaborate_type_decl<Loc, Str: Debug + From<String> + Clone + Hash + Eq + Ord + Rename>(
     module_ctx: &e::Module<Str>,
     type_def: &p::definition::Definition<Loc, Str, p::TypeDeclaration<Loc, Str>>,
-) -> (Str, e::Type<Str>, Vec<(Str, e::Constructor<Str>)>) {
+) -> ElaboratedDeclaration<Str> {
     let local_ctx = Context::new();
 
     let p::definition::Definition {
@@ -93,7 +98,7 @@ fn elaborate_type_decl<Loc, Str: Debug + From<String> + Clone + Hash + Eq + Ord 
     match body {
         p::TypeDefinition::Message(ctor_body) => {
             let (name, fields) =
-                elaborate_message(module_ctx, &local_ctx_with_deps, &name, ctor_body);
+                elaborate_message(module_ctx, &local_ctx_with_deps, name, ctor_body);
 
             (
                 name.clone(),
@@ -124,7 +129,7 @@ fn elaborate_type_decl<Loc, Str: Debug + From<String> + Clone + Hash + Eq + Ord 
         }
         p::TypeDefinition::Enum(branches) => {
             let (constructor_names, constructors) =
-                elaborate_enum(module_ctx, &local_ctx_with_deps, &name, branches);
+                elaborate_enum(module_ctx, &local_ctx_with_deps, name, branches);
             (
                 name.clone(),
                 e::Type {
@@ -175,6 +180,8 @@ fn elaborate_message<'a, Loc, Str: Debug + From<String> + Clone + Hash + Eq + Or
     (name.clone(), fields)
 }
 
+/// # Panics
+/// # Errors
 pub fn elaborate_type<'a, Loc, Str: Debug + From<String> + Clone + Hash + Eq + Ord>(
     module_ctx: &e::Module<Str>,
     local_ctx: &'a Context<'a, Str, e::TypeExpression<Str>>,
@@ -209,7 +216,7 @@ pub fn elaborate_type<'a, Loc, Str: Debug + From<String> + Clone + Hash + Eq + O
                 assert_eq!(bindings.len(), 0);
                 elaborated_args.push(arg_value.clone());
 
-                for (_, remaining_ty) in remaining_deps.iter_mut() {
+                for (_, remaining_ty) in &mut remaining_deps {
                     let after_name = subst::subst_type(remaining_ty.clone(), &dep_name, &arg_value);
                     *remaining_ty = subst::apply_bindings_to_type(after_name, &bindings);
                 }
@@ -220,13 +227,11 @@ pub fn elaborate_type<'a, Loc, Str: Debug + From<String> + Clone + Hash + Eq + O
                 dependencies: e::Rec::from(elaborated_args),
             })
         }
-        p::ExpressionNode::ConstructorCall { .. } => {
-            todo!()
-        }
+        p::ExpressionNode::ConstructorCall { .. } => Err(ElaboratingError),
         p::ExpressionNode::Variable { name } => {
             local_ctx
                 .get(name)
-                .map(e::TypeExpression::clone)
+                .cloned()
                 // Unknown variable
                 .ok_or(ElaboratingError)
         }
@@ -237,6 +242,8 @@ pub fn elaborate_type<'a, Loc, Str: Debug + From<String> + Clone + Hash + Eq + O
     }
 }
 
+/// # Panics
+/// # Errors
 pub fn elaborate_value<'a, Loc, Str: Debug + From<String> + Clone + Hash + Eq + Ord>(
     module_ctx: &e::Module<Str>,
     local_ctx: &'a Context<'a, Str, e::TypeExpression<Str>>,
@@ -321,71 +328,11 @@ pub fn elaborate_value<'a, Loc, Str: Debug + From<String> + Clone + Hash + Eq + 
             name,
             fields: constructor_args,
         } => {
-            let constructor = module_ctx.constructors.get(name).ok_or(ElaboratingError)?;
-
-            let e::Constructor { fields, .. } = constructor;
-
-            match fields.len().cmp(&constructor_args.len()) {
-                // arity < args
-                Ordering::Less => Err(ElaboratingError),
-                // arity > args
-                Ordering::Greater => Err(ElaboratingError),
-                Ordering::Equal => {
-                    let mut applied_constructor = constructor.clone();
-                    let mut arguments_expression = Vec::new();
-                    let mut all_implicit_bindings: Bindings<Str> = Vec::new();
-                    for (p::definition::Definition { data, .. }, (_var_name, ty)) in
-                        zip(constructor_args, fields.iter())
-                    {
-                        let (data_value, check_bindings) = check(module_ctx, local_ctx, data, ty)?;
-
-                        all_implicit_bindings.extend(check_bindings);
-
-                        let (new_ctor, argument_bindings) = apply::application(
-                            &applied_constructor,
-                            data_value.clone(),
-                            module_ctx,
-                        )?;
-
-                        let applied_data_value = apply_bindings(data_value, &argument_bindings);
-                        arguments_expression.push(applied_data_value.clone());
-
-                        applied_constructor = new_ctor;
-                    }
-
-                    let e::Constructor {
-                        implicits,
-                        result_type,
-                        ..
-                    } = applied_constructor;
-
-                    let resolved_implicits = implicits
-                        .into_iter()
-                        .map(|(implicit_name, implicit_ty)| {
-                            all_implicit_bindings
-                                .iter()
-                                .find(|(n, _)| n == &implicit_name)
-                                .map(|(_, v)| v.clone())
-                                .unwrap_or(e::ValueExpression::Variable {
-                                    name: implicit_name,
-                                    ty: implicit_ty,
-                                })
-                        })
-                        .collect::<Vec<_>>();
-
-                    Ok(e::ValueExpression::Constructor {
-                        name: name.clone(),
-                        implicits: e::Rec::from(resolved_implicits),
-                        arguments: e::Rec::from(arguments_expression),
-                        result_type,
-                    })
-                }
-            }
+            elaborate_constructor_call(module_ctx, local_ctx, name, constructor_args)
         }
         p::ExpressionNode::Variable { name } => {
             let ty = local_ctx
-                .get(name)
-                .map(e::TypeExpression::clone)
+                .get(name).cloned()
                 .ok_or(ElaboratingError)?;
             Ok(e::ValueExpression::Variable {
                 name: name.clone(),
@@ -394,6 +341,71 @@ pub fn elaborate_value<'a, Loc, Str: Debug + From<String> + Clone + Hash + Eq + 
         }
         p::ExpressionNode::TypedHole => {
             todo!("elaboration of type hole results in an error")
+        }
+    }
+}
+
+fn elaborate_constructor_call<'a, Loc, Str: Debug + From<String> + Clone + Hash + Eq + Ord>(
+    module_ctx: &e::Module<Str>,
+    local_ctx: &'a Context<'a, Str, e::TypeExpression<Str>>,
+    name: &Str,
+    constructor_args: &p::definition::Definitions<Loc, Str, p::Expression<Loc, Str>>,
+) -> Result<e::ValueExpression<Str>, Error> {
+    let constructor = module_ctx.constructors.get(name).ok_or(ElaboratingError)?;
+
+    let e::Constructor { fields, .. } = constructor;
+
+    match fields.len().cmp(&constructor_args.len()) {
+        // arity < args
+        Ordering::Less => Err(ElaboratingError),
+        // arity > args
+        Ordering::Greater => Err(ElaboratingError),
+        Ordering::Equal => {
+            let mut applied_constructor = constructor.clone();
+            let mut arguments_expression = Vec::new();
+            let mut all_implicit_bindings: Bindings<Str> = Vec::new();
+            for (p::definition::Definition { data, .. }, (_var_name, ty)) in
+                zip(constructor_args, fields.iter())
+            {
+                let (data_value, check_bindings) = check(module_ctx, local_ctx, data, ty)?;
+
+                all_implicit_bindings.extend(check_bindings);
+
+                let (new_ctor, argument_bindings) =
+                    apply::application(&applied_constructor, &data_value, module_ctx)?;
+
+                let applied_data_value = apply_bindings(data_value, &argument_bindings);
+                arguments_expression.push(applied_data_value.clone());
+
+                applied_constructor = new_ctor;
+            }
+
+            let e::Constructor {
+                implicits,
+                result_type,
+                ..
+            } = applied_constructor;
+
+            let resolved_implicits = implicits
+                .into_iter()
+                .map(|(implicit_name, implicit_ty)| {
+                    all_implicit_bindings
+                        .iter()
+                        .find(|(n, _)| n == &implicit_name)
+                        .map(|(_, v)| v.clone())
+                        .unwrap_or(e::ValueExpression::Variable {
+                            name: implicit_name,
+                            ty: implicit_ty,
+                        })
+                })
+                .collect::<Vec<_>>();
+
+            Ok(e::ValueExpression::Constructor {
+                name: name.clone(),
+                implicits: e::Rec::from(resolved_implicits),
+                arguments: e::Rec::from(arguments_expression),
+                result_type,
+            })
         }
     }
 }
@@ -407,6 +419,8 @@ fn elaborate_enum<'a, Loc, Str: Debug + From<String> + Clone + Hash + Eq + Ord>(
     todo!("enum elaboration not implemented")
 }
 
+/// # Panics
+/// # Errors
 pub fn infer<'a, Loc, Str: Debug + From<String> + Clone + Hash + Eq + Ord>(
     module_ctx: &e::Module<Str>,
     local_ctx: &'a Context<'a, Str, e::TypeExpression<Str>>,
@@ -443,8 +457,7 @@ pub fn infer<'a, Loc, Str: Debug + From<String> + Clone + Hash + Eq + Ord>(
         p::ExpressionNode::Variable { name } => {
             // Find in the local context, otherwise error
             local_ctx
-                .get(name)
-                .map(e::TypeExpression::clone)
+                .get(name).cloned()
                 // Unknown variable
                 .ok_or(ElaboratingError)
         }
@@ -457,6 +470,8 @@ pub fn infer<'a, Loc, Str: Debug + From<String> + Clone + Hash + Eq + Ord>(
 
 pub type Bindings<Str> = Vec<(Str, e::ValueExpression<Str>)>;
 
+/// # Panics
+/// # Errors
 pub fn check<'a, Loc, Str: Debug + From<String> + Clone + Hash + Eq + Ord>(
     module_ctx: &e::Module<Str>,
     local_ctx: &'a Context<'a, Str, e::TypeExpression<Str>>,

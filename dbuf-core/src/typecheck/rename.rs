@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 pub trait Rename: Sized {
+    #[must_use]
     fn with_suffix(&self, suffix: &str) -> Self;
 }
 
@@ -89,12 +90,12 @@ where
     match ty {
         TypeExpression::TypeExpression { name, dependencies } => TypeExpression::TypeExpression {
             name: f(name),
-            dependencies: map_value_exprs(dependencies, f),
+            dependencies: map_value_exprs(&dependencies, f),
         },
     }
 }
 
-fn map_value_exprs<A, B, F>(exprs: ValueExprs<A>, f: &F) -> ValueExprs<B>
+fn map_value_exprs<A, B, F>(exprs: &ValueExprs<A>, f: &F) -> ValueExprs<B>
 where
     F: Fn(A) -> B,
     A: Clone,
@@ -125,8 +126,8 @@ where
             result_type,
         } => ValueExpression::Constructor {
             name: f(name),
-            implicits: map_value_exprs(implicits, f),
-            arguments: map_value_exprs(arguments, f),
+            implicits: map_value_exprs(&implicits, f),
+            arguments: map_value_exprs(&arguments, f),
             result_type: map_type_expression(result_type, f),
         },
         ValueExpression::OpCall {
@@ -168,6 +169,7 @@ where
     }
 }
 
+#[must_use]
 pub fn add_suffix_context<Str>(context: Context<Str>, suffix: &str) -> Context<Str>
 where
     Str: Clone + Eq + Hash + Rename,
