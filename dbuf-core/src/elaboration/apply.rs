@@ -1,6 +1,6 @@
 use crate::ast::elaborated as e;
+use crate::elaboration::{subst, unify};
 use crate::error::elaborating::Error::{self, ElaboratingError};
-use crate::typecheck::{subst, unify};
 
 pub type Bindings<Str> = Vec<(Str, e::ValueExpression<Str>)>;
 

@@ -2,7 +2,7 @@ use dbuf_core::arena::InternedString;
 use dbuf_core::ast::elaborated as e;
 
 pub fn to_string_module(module: e::Module<InternedString>) -> e::Module<String> {
-    dbuf_core::typecheck::rename::map_module(module, &|s: InternedString| s.as_ref().to_owned())
+    dbuf_core::elaboration::rename::map_module(module, &|s: InternedString| s.as_ref().to_owned())
 }
 
 pub fn empty() -> e::Module<InternedString> {

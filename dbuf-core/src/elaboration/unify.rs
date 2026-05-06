@@ -1,6 +1,6 @@
 use crate::ast::elaborated as e;
 use crate::ast::operators as o;
-use crate::typecheck::subst;
+use crate::elaboration::subst;
 
 pub type Bindings<Str> = Vec<(Str, e::ValueExpression<Str>)>;
 
@@ -206,7 +206,7 @@ where
 mod tests {
     use super::*;
     use crate::ast::elaborated::{self as e, ConstructorNames};
-    use crate::typecheck::unify::UnifyError::CannotUnify;
+    use crate::elaboration::unify::UnifyError::CannotUnify;
     use std::collections::BTreeMap;
 
     fn nat_ty() -> e::TypeExpression<String> {

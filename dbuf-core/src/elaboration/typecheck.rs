@@ -1,10 +1,10 @@
 use crate::ast::{elaborated as e, operators as o, parsed as p};
+use crate::elaboration::context::Context;
+use crate::elaboration::rename::{Rename, add_suffix_context};
+use crate::elaboration::subst::apply_bindings;
+use crate::elaboration::{apply, subst, unify};
 use crate::error::elaborating::Error;
 use crate::error::elaborating::Error::*;
-use crate::typecheck::context::Context;
-use crate::typecheck::rename::{Rename, add_suffix_context};
-use crate::typecheck::subst::apply_bindings;
-use crate::typecheck::{apply, subst, unify};
 
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
@@ -327,13 +327,9 @@ pub fn elaborate_value<'a, Loc, Str: Debug + From<String> + Clone + Hash + Eq + 
         p::ExpressionNode::ConstructorCall {
             name,
             fields: constructor_args,
-        } => {
-            elaborate_constructor_call(module_ctx, local_ctx, name, constructor_args)
-        }
+        } => elaborate_constructor_call(module_ctx, local_ctx, name, constructor_args),
         p::ExpressionNode::Variable { name } => {
-            let ty = local_ctx
-                .get(name).cloned()
-                .ok_or(ElaboratingError)?;
+            let ty = local_ctx.get(name).cloned().ok_or(ElaboratingError)?;
             Ok(e::ValueExpression::Variable {
                 name: name.clone(),
                 ty,
@@ -457,7 +453,8 @@ pub fn infer<'a, Loc, Str: Debug + From<String> + Clone + Hash + Eq + Ord>(
         p::ExpressionNode::Variable { name } => {
             // Find in the local context, otherwise error
             local_ctx
-                .get(name).cloned()
+                .get(name)
+                .cloned()
                 // Unknown variable
                 .ok_or(ElaboratingError)
         }
