@@ -1979,45 +1979,6 @@ mod type_inherent_impl {
                     .map(|s| s.ty.get_type())
                     .collect();
 
-                let generate_value_expression: Box<dyn Fn(usize, &ValueExpression) -> BoxDoc<'a>> =
-                    if is_enum_constructor {
-                        Box::new(|dep_idx: usize, value: &ValueExpression| {
-                            let val = value.generate_as_value(
-                                (ctx, namespace.cursor()),
-                                &EnumConstructorDeserializationObjectsLocator {},
-                            );
-                            if field_dep_types.get(dep_idx).is_some_and(|t| t.is_builtin)
-                                || matches!(value, ValueExpression::Variable(_))
-                            {
-                                val
-                            } else {
-                                ctx.alloc
-                                    .text("Box::new(")
-                                    .append(val)
-                                    .append(")")
-                                    .into_doc()
-                            }
-                        })
-                    } else {
-                        Box::new(|dep_idx: usize, value: &ValueExpression| {
-                            let val = value.generate_as_value(
-                                (ctx, namespace.cursor()),
-                                &MessageConstructorDeserializationObjectsLocator {},
-                            );
-                            if field_dep_types.get(dep_idx).is_some_and(|t| t.is_builtin)
-                                || matches!(value, ValueExpression::Variable(_))
-                            {
-                                val
-                            } else {
-                                ctx.alloc
-                                    .text("Box::new(")
-                                    .append(val)
-                                    .append(")")
-                                    .into_doc()
-                            }
-                        })
-                    };
-
                 let dependencies_struct = field_type_module_prefix.append(
                     field_ty.generate_type_dependencies_struct(
                         (ctx, field_type_module_cursor),
@@ -2027,7 +1988,39 @@ mod type_inherent_impl {
                             .iter()
                             .enumerate()
                             .map(|(dep_idx, dep)| {
-                                let val = generate_value_expression(dep_idx, dep);
+                                let val = if is_enum_constructor {
+                                    let val = dep.generate_as_value(
+                                        (ctx, namespace.cursor()),
+                                        &EnumConstructorDeserializationObjectsLocator {},
+                                    );
+                                    if field_dep_types.get(dep_idx).is_some_and(|t| t.is_builtin)
+                                        || matches!(dep, ValueExpression::Variable(_))
+                                    {
+                                        val
+                                    } else {
+                                        ctx.alloc
+                                            .text("Box::new(")
+                                            .append(val)
+                                            .append(")")
+                                            .into_doc()
+                                    }
+                                } else {
+                                    let val = dep.generate_as_value(
+                                        (ctx, namespace.cursor()),
+                                        &MessageConstructorDeserializationObjectsLocator {},
+                                    );
+                                    if field_dep_types.get(dep_idx).is_some_and(|t| t.is_builtin)
+                                        || matches!(dep, ValueExpression::Variable(_))
+                                    {
+                                        val
+                                    } else {
+                                        ctx.alloc
+                                            .text("Box::new(")
+                                            .append(val)
+                                            .append(")")
+                                            .into_doc()
+                                    }
+                                };
                                 // Field variables are plain T (not Box<T>), so they need wrapping
                                 // when used as type dependencies (which expect Box<T>).
                                 // Skip wrapping for primitive dep types.
@@ -2048,8 +2041,6 @@ mod type_inherent_impl {
                             .collect(),
                     ),
                 );
-
-                drop(generate_value_expression);
 
                 let (field_type_type_prefix, _) = field_ty
                     .lookup_type_type((ctx, namespace.cursor()))
