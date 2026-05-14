@@ -24,7 +24,7 @@ impl<'a> Module {
         alloc
             .intersperse(
                 [
-                    "use dbuf_rust_runtime::{Box, ConstructorError, DeserializeError};",
+                    "use dbuf_rust_runtime::{Box, ConstructorError, DeserializeError, DbufPrimitive};",
                     "use std::io::{Write, Read, Error};",
                     "use std::slice;",
                 ],
@@ -37,6 +37,19 @@ impl<'a> Module {
 }
 
 impl<'a> Type {
+    pub fn builtin_rust_type(&self) -> Option<&'static str> {
+        if !self.is_builtin {
+            return None;
+        }
+        match self.name.as_str() {
+            "Bool" => Some("bool"),
+            "Double" => Some("f64"),
+            "Int" => Some("i64"),
+            "UInt" => Some("u64"),
+            "String" => Some("String"),
+            _ => None,
+        }
+    }
     pub fn generate(&self, (ctx, namespace): MutContext<'a, '_, '_>) -> BoxDoc<'a> {
         let alloc = ctx.alloc;
 
@@ -873,26 +886,32 @@ mod type_inherent_impl {
                 .append("}")
                 .append("?;");
 
+            let result_type_dep_types: Vec<_> =
+                ty.dependencies.iter().map(|s| s.ty.get_type()).collect();
+
             let dependencies = dependencies
                 .iter()
-                .map(|expr| match expr {
-                    // Variables are already Box<T>, use directly without re-boxing
-                    ValueExpression::Variable(_) => expr.generate_as_value(
+                .enumerate()
+                .map(|(dep_idx, expr)| {
+                    let val = expr.generate_as_value(
                         (ctx, namespace.cursor()),
                         &ConstructorObjectsLocator {},
-                    ),
-                    // Constructor calls and op calls return T, must be wrapped
-                    _ => alloc
-                        .text("Box")
-                        .append("::")
-                        .append("new")
-                        .append("(")
-                        .append(expr.generate_as_value(
-                            (ctx, namespace.cursor()),
-                            &ConstructorObjectsLocator {},
-                        ))
-                        .append(")")
-                        .into_doc(),
+                    );
+                    let dep_is_primitive = result_type_dep_types
+                        .get(dep_idx)
+                        .is_some_and(|t| t.is_builtin);
+                    if dep_is_primitive || matches!(expr, ValueExpression::Variable(_)) {
+                        val
+                    } else {
+                        alloc
+                            .text("Box")
+                            .append("::")
+                            .append("new")
+                            .append("(")
+                            .append(val)
+                            .append(")")
+                            .into_doc()
+                    }
                 })
                 .collect();
 
@@ -946,29 +965,31 @@ mod type_inherent_impl {
             alloc
                 .text("if (")
                 .append(alloc.intersperse(
-                    self.fields.iter().map(|symbol| {
-                        match &symbol.ty {
-                            TypeExpression::Type {
-                                call: _,
-                                dependencies,
-                            } => alloc
+                    self.fields.iter().map(|symbol| match &symbol.ty {
+                        TypeExpression::Type { call, dependencies } => {
+                            let field_type = call.upgrade().expect("call to unknown type");
+                            alloc
                                 .text("(")
                                 .append(alloc.intersperse(
-                                    dependencies.iter().map(|expr| {
-                                        let val = expr.generate_as_value(
-                                            (ctx, namespace.cursor()),
-                                            &ConstructorObjectsLocator {},
-                                        );
-                                        match expr {
-                                            ValueExpression::Variable(_) => {
+                                    dependencies.iter().zip(field_type.dependencies.iter()).map(
+                                        |(expr, dep_sym)| {
+                                            let dep_ty = dep_sym.ty.get_type();
+                                            let val = expr.generate_as_value(
+                                                (ctx, namespace.cursor()),
+                                                &ConstructorObjectsLocator {},
+                                            );
+                                            if dep_ty.is_builtin
+                                                || matches!(expr, ValueExpression::Variable(_))
+                                            {
                                                 alloc.text("&").append(val)
+                                            } else {
+                                                alloc.text("&Box::new(").append(val).append(")")
                                             }
-                                            _ => alloc.text("&Box::new(").append(val).append(")"),
-                                        }
-                                    }),
+                                        },
+                                    ),
                                     alloc.text(",").append(alloc.line()),
                                 ))
-                                .append(")"),
+                                .append(")")
                         }
                     }),
                     alloc.text(",").append(alloc.line()),
@@ -989,6 +1010,10 @@ mod type_inherent_impl {
                                 dependencies: _,
                             } => call.upgrade().expect("call to unknown type"),
                         };
+
+                        if symbol_ty.is_builtin {
+                            return alloc.text("()").into_doc();
+                        }
 
                         let (_, dependencies_struct_namespace) = symbol_ty
                             .lookup_type_module((ctx, namespace.cursor()))
@@ -1024,6 +1049,7 @@ mod type_inherent_impl {
                                 alloc.text(",").append(alloc.line()),
                             ))
                             .append(")")
+                            .into_doc()
                     }),
                     alloc.text(",").append(alloc.line()),
                 ))
@@ -1401,21 +1427,41 @@ mod type_inherent_impl {
 
             alloc
                 .concat(self.fields.iter().map(|field| {
-                    namespace
+                    let field_ty = field.ty.get_type();
+                    let field_var = namespace
                         .get_generated::<objects::Variable>(objects::ObjectId::from_name(
                             field.name.clone(),
                         ))
                         .expect("couldn't get generated constructor field")
                         .0
-                        .to_doc(ctx)
-                        .append(".")
-                        .append("serialize") // TODO
-                        .append("(")
-                        .append(writer_parameter.to_doc(ctx))
-                        .append(")")
-                        .append("?")
-                        .append(";")
-                        .append(alloc.hardline())
+                        .to_doc(ctx);
+
+                    if let Some(rust_ty) = field_ty.builtin_rust_type() {
+                        alloc
+                            .text(format!(
+                                "<{rust_ty} as super::DbufPrimitive>::dbuf_serialize(&"
+                            ))
+                            .append(field_var)
+                            .append(",")
+                            .append(alloc.space())
+                            .append(writer_parameter.to_doc(ctx))
+                            .append(")")
+                            .append("?")
+                            .append(";")
+                            .append(alloc.hardline())
+                    } else {
+                        alloc
+                            .nil()
+                            .append(field_var)
+                            .append(".")
+                            .append("serialize")
+                            .append("(")
+                            .append(writer_parameter.to_doc(ctx))
+                            .append(")")
+                            .append("?")
+                            .append(";")
+                            .append(alloc.hardline())
+                    }
                 }))
                 .into_doc()
         }
@@ -1887,43 +1933,87 @@ mod type_inherent_impl {
             let fields_deserialization = alloc.concat(self.fields.iter().map(|field| {
                 let field_ty = field.ty.get_type();
 
+                if let Some(rust_ty) = field_ty.builtin_rust_type() {
+                    let (reader_parameter, _) = namespace
+                        .get_generated::<objects::Variable>(objects::ObjectId::from_name(
+                            "reader".to_owned(),
+                        ))
+                        .expect("couldn't get generated reader parameter");
+                    return alloc
+                        .text("let")
+                        .append(alloc.space())
+                        .append(
+                            namespace
+                                .insert_object_auto_name(objects::Variable::from_object(
+                                    objects::ObjectId(
+                                        ast::NodeId::id_rc(field),
+                                        objects::Tag::None,
+                                    ),
+                                    field.name.clone(),
+                                ))
+                                .0
+                                .to_doc(ctx),
+                        )
+                        .append(alloc.space())
+                        .append("=")
+                        .append(alloc.space())
+                        .append(format!(
+                            "<{rust_ty} as super::DbufPrimitive>::dbuf_deserialize("
+                        ))
+                        .append(reader_parameter.to_doc(ctx))
+                        .append(")")
+                        .append("?")
+                        .append(";")
+                        .append(alloc.hardline());
+                }
+
                 let (field_type_module_prefix, field_type_module_cursor) = field_ty
                     .lookup_type_module((ctx, namespace.cursor()))
                     .expect("couldn't lookup type module");
 
                 // let namespace_cursor = namespace.cursor();
 
-                let generate_value_expression: Box<dyn Fn(&ValueExpression) -> BoxDoc<'a>> =
+                let field_dep_types: Vec<_> = field_ty
+                    .dependencies
+                    .iter()
+                    .map(|s| s.ty.get_type())
+                    .collect();
+
+                let generate_value_expression: Box<dyn Fn(usize, &ValueExpression) -> BoxDoc<'a>> =
                     if is_enum_constructor {
-                        Box::new(|value: &ValueExpression| {
+                        Box::new(|dep_idx: usize, value: &ValueExpression| {
                             let val = value.generate_as_value(
                                 (ctx, namespace.cursor()),
                                 &EnumConstructorDeserializationObjectsLocator {},
                             );
-                            match value {
-                                ValueExpression::Variable(_) => val,
-                                _ => ctx
-                                    .alloc
+                            if field_dep_types.get(dep_idx).is_some_and(|t| t.is_builtin)
+                                || matches!(value, ValueExpression::Variable(_))
+                            {
+                                val
+                            } else {
+                                ctx.alloc
                                     .text("Box::new(")
                                     .append(val)
                                     .append(")")
-                                    .into_doc(),
+                                    .into_doc()
                             }
                         })
                     } else {
-                        Box::new(|value: &ValueExpression| {
+                        Box::new(|dep_idx: usize, value: &ValueExpression| {
                             let val = value.generate_as_value(
                                 (ctx, namespace.cursor()),
                                 &MessageConstructorDeserializationObjectsLocator {},
                             );
-                            match value {
-                                ValueExpression::Variable(_) => val,
-                                _ => ctx
-                                    .alloc
+                            if field_dep_types.get(dep_idx).is_some_and(|t| t.is_builtin)
+                                || matches!(value, ValueExpression::Variable(_))
+                            {
+                                val
+                            } else {
+                                ctx.alloc
                                     .text("Box::new(")
                                     .append(val)
                                     .append(")")
-                                    .into_doc(),
+                                    .into_doc()
                             }
                         })
                     };
@@ -1935,11 +2025,16 @@ mod type_inherent_impl {
                             .ty
                             .get_dependencies()
                             .iter()
-                            .map(|dep| {
-                                let val = generate_value_expression(dep);
+                            .enumerate()
+                            .map(|(dep_idx, dep)| {
+                                let val = generate_value_expression(dep_idx, dep);
                                 // Field variables are plain T (not Box<T>), so they need wrapping
                                 // when used as type dependencies (which expect Box<T>).
-                                if let ValueExpression::Variable(weak) = dep
+                                // Skip wrapping for primitive dep types.
+                                let dep_ty =
+                                    field_dep_types.get(dep_idx).is_some_and(|t| t.is_builtin);
+                                if !dep_ty
+                                    && let ValueExpression::Variable(weak) = dep
                                     && field_symbol_ptrs.contains(&(Weak::as_ptr(weak) as usize))
                                 {
                                     return alloc
@@ -2006,23 +2101,27 @@ mod type_inherent_impl {
                         }
                     })
                     .chain(self.fields.iter().map(|field| {
-                        alloc
-                            .text("Box")
-                            .append("::")
-                            .append("new")
-                            .append("(")
-                            .append(
-                                namespace
-                                    .get_generated::<objects::Variable>(objects::ObjectId(
-                                        ast::NodeId::id_rc(field),
-                                        objects::Tag::None,
-                                    ))
-                                    .expect("couldn't get generated field variable")
-                                    .0
-                                    .to_doc(ctx),
-                            )
-                            .append(")")
-                            .into_doc()
+                        let field_var = namespace
+                            .get_generated::<objects::Variable>(objects::ObjectId(
+                                ast::NodeId::id_rc(field),
+                                objects::Tag::None,
+                            ))
+                            .expect("couldn't get generated field variable")
+                            .0
+                            .to_doc(ctx);
+
+                        if field.ty.get_type().is_builtin {
+                            field_var
+                        } else {
+                            alloc
+                                .text("Box")
+                                .append("::")
+                                .append("new")
+                                .append("(")
+                                .append(field_var)
+                                .append(")")
+                                .into_doc()
+                        }
                     }))
                     .collect(),
             );
@@ -2162,7 +2261,11 @@ mod value_from_expression {
                     Literal::Double(val) => val.to_string(),
                     Literal::Int(val) => val.to_string(),
                     Literal::UInt(val) => val.to_string(),
-                    Literal::Str(val) => val.clone(),
+                    Literal::Str(val) => {
+                        // Escape backslashes and double-quotes.
+                        let escaped = val.replace('\\', "\\\\").replace('"', "\\\"");
+                        format!("String::from(\"{escaped}\")")
+                    }
                 };
                 alloc.text(string).into_doc()
             }
@@ -2309,26 +2412,30 @@ impl<'a> Symbol {
         self: Rc<Self>,
         (ctx, namespace): MutContext<'a, '_, '_>,
     ) -> BoxDoc<'a> {
-        let ty = ctx
-            .alloc
-            .text("super::Box<")
-            .append({
-                let ty = self.ty.get_type();
-                let (type_module_prefix, type_module) = ty
-                    .lookup_type_module((ctx, namespace.cursor()))
-                    .expect("couldn't lookup type module");
-                type_module_prefix.append(
-                    type_module
-                        .get_generated::<objects::Type>(ObjectId(
-                            NodeId::id_rc(&ty),
-                            Tag::String("type"),
-                        ))
-                        .expect("couldn't get message type")
-                        .0
-                        .to_doc(ctx),
-                )
-            })
-            .append(">");
+        let field_ty = self.ty.get_type();
+        let ty = if let Some(rust_ty) = field_ty.builtin_rust_type() {
+            ctx.alloc.text(rust_ty).into_doc()
+        } else {
+            ctx.alloc
+                .text("super::Box<")
+                .append({
+                    let (type_module_prefix, type_module) = field_ty
+                        .lookup_type_module((ctx, namespace.cursor()))
+                        .expect("couldn't lookup type module");
+                    type_module_prefix.append(
+                        type_module
+                            .get_generated::<objects::Type>(ObjectId(
+                                NodeId::id_rc(&field_ty),
+                                Tag::String("type"),
+                            ))
+                            .expect("couldn't get message type")
+                            .0
+                            .to_doc(ctx),
+                    )
+                })
+                .append(">")
+                .into_doc()
+        };
         let name = namespace
             .insert_object_auto_name(objects::Variable::from_object(
                 ObjectId(NodeId::id_rc(&self), Tag::None),

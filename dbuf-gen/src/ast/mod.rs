@@ -15,6 +15,7 @@ type Str = String; // Temporary
 
 pub struct Module {
     pub types: Vec<Rc<Type>>,
+    pub _builtins: Vec<Rc<Type>>,
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -29,6 +30,7 @@ pub struct Type {
     pub dependencies: Vec<Rc<Symbol>>,
     pub constructors: Vec<Rc<Constructor>>,
     pub kind: TypeKind,
+    pub is_builtin: bool,
 }
 
 #[derive(Clone)]
