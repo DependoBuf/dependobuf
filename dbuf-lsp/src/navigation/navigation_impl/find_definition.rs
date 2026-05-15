@@ -21,7 +21,7 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
                 return None;
             }
             let mut visitor = FindTypeVisitor { type_name };
-            visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
+            visit_ast(navigator.parsed, &mut visitor)
         }
         Symbol::Dependency {
             type_name,
@@ -31,7 +31,7 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
                 type_name,
                 dependency,
             };
-            visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
+            visit_ast(navigator.parsed, &mut visitor)
         }
         Symbol::Field {
             type_name,
@@ -43,7 +43,7 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
                 constructor,
                 field,
             };
-            visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
+            visit_ast(navigator.parsed, &mut visitor)
         }
         Symbol::Alias {
             type_name,
@@ -55,7 +55,7 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
                 branch_id: *branch_id,
                 alias,
             };
-            visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
+            visit_ast(navigator.parsed, &mut visitor)
         }
         Symbol::Constructor {
             type_name,
@@ -65,7 +65,7 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
                 type_name,
                 constructor,
             };
-            visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
+            visit_ast(navigator.parsed, &mut visitor)
         }
         Symbol::None => None,
     }

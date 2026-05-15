@@ -1,18 +1,12 @@
 use tower_lsp::lsp_types::*;
 
 use crate::core::ast_visitor::*;
-use crate::core::workspace::{
-    ElaboratedAst, ElaboratedHelper, File, Loc, LocNameHelper, LocationHelper, Str,
-};
+use crate::core::workspace::{File, Loc, LocNameHelper, LocationHelper, Str};
 
 /// Returns all document symbols of file.
 pub fn provide_document_symbols(file: &File) -> Option<Vec<DocumentSymbol>> {
-    let mut visitor = SymbolVisitor::new(file)?;
-    visit_ast(
-        file.get_parsed().take()?,
-        &mut visitor,
-        file.get_elaborated().take()?,
-    );
+    let mut visitor = SymbolVisitor::new();
+    visit_ast(file.get_parsed().take()?, &mut visitor);
     Some(visitor.collect())
 }
 
@@ -42,6 +36,9 @@ fn get_symbol(
 trait BuilderState {}
 
 struct Empty {}
+struct Struct {
+    type_symbol: DocumentSymbol,
+}
 struct Message {
     type_symbol: DocumentSymbol,
 }
@@ -54,6 +51,7 @@ struct Constructor {
 }
 
 impl BuilderState for Empty {}
+impl BuilderState for Struct {}
 impl BuilderState for Message {}
 impl BuilderState for Enum {}
 impl BuilderState for Constructor {}
@@ -64,36 +62,46 @@ struct Builder<S: BuilderState> {
 }
 
 impl Builder<Empty> {
-    fn push_message(self, type_name: &Str, loc: &Loc) -> Builder<Message> {
+    fn push_struct(self, type_name: &Str, loc: &Loc) -> Builder<Struct> {
         let s = get_symbol(
             type_name.to_string(),
-            SymbolKind::STRUCT,
+            SymbolKind::NULL,
             loc.to_lsp(),
             type_name.get_location().to_lsp(),
             Some(Vec::new()),
         );
         Builder {
             response: self.response,
-            extra: Message { type_symbol: s },
+            extra: Struct { type_symbol: s },
         }
     }
-    fn push_enum(self, type_name: &Str, loc: &Loc) -> Builder<Enum> {
-        let s = get_symbol(
-            type_name.to_string(),
-            SymbolKind::ENUM,
-            loc.to_lsp(),
-            type_name.get_location().to_lsp(),
-            Some(Vec::new()),
-        );
-        Builder {
-            response: self.response,
-            extra: Enum { type_symbol: s },
-        }
-    }
+
     fn collect(self) -> Vec<DocumentSymbol> {
         self.response
     }
 }
+
+impl Builder<Struct> {
+    fn convert_to_message(mut self) -> Builder<Message> {
+        self.extra.type_symbol.kind = SymbolKind::STRUCT;
+        Builder {
+            response: self.response,
+            extra: Message {
+                type_symbol: self.extra.type_symbol,
+            },
+        }
+    }
+    fn convert_enum(mut self) -> Builder<Enum> {
+        self.extra.type_symbol.kind = SymbolKind::ENUM;
+        Builder {
+            response: self.response,
+            extra: Enum {
+                type_symbol: self.extra.type_symbol,
+            },
+        }
+    }
+}
+
 impl Builder<Message> {
     fn push_field(mut self, field_name: &Str, loc: &Loc) -> Builder<Message> {
         let s = get_symbol(
@@ -185,6 +193,7 @@ impl Builder<Constructor> {
 #[derive(Default)]
 enum SymbolBuilder {
     EmptyBuilder(Builder<Empty>),
+    StructBuilder(Builder<Struct>),
     MessageBuilder(Builder<Message>),
     EnumBuilder(Builder<Enum>),
     ConstructorBuilder(Builder<Constructor>),
@@ -195,6 +204,12 @@ enum SymbolBuilder {
 impl From<Builder<Empty>> for SymbolBuilder {
     fn from(value: Builder<Empty>) -> Self {
         SymbolBuilder::EmptyBuilder(value)
+    }
+}
+
+impl From<Builder<Struct>> for SymbolBuilder {
+    fn from(value: Builder<Struct>) -> Self {
+        SymbolBuilder::StructBuilder(value)
     }
 }
 
@@ -226,22 +241,20 @@ impl SymbolBuilder {
     }
 }
 
-struct SymbolVisitor<'a> {
-    elaborated: &'a ElaboratedAst,
-
+struct SymbolVisitor {
     builder: SymbolBuilder,
 }
 
-impl SymbolVisitor<'_> {
-    fn new(file: &File) -> Option<SymbolVisitor<'_>> {
-        Some(SymbolVisitor {
-            elaborated: file.get_elaborated().take()?,
+impl SymbolVisitor {
+    fn new() -> SymbolVisitor {
+        SymbolVisitor {
             builder: SymbolBuilder::new(),
-        })
+        }
     }
     fn collect(self) -> Vec<DocumentSymbol> {
         let empty_builder = match self.builder {
             SymbolBuilder::EmptyBuilder(builder) => builder,
+            SymbolBuilder::StructBuilder(builder) => builder.convert_to_message().stop(),
             SymbolBuilder::MessageBuilder(builder) => builder.stop(),
             SymbolBuilder::EnumBuilder(builder) => builder.stop(),
             SymbolBuilder::ConstructorBuilder(builder) => builder.stop().stop(),
@@ -256,23 +269,24 @@ impl SymbolVisitor<'_> {
 
         let empty_builder = match builder {
             SymbolBuilder::EmptyBuilder(builder) => builder,
+            SymbolBuilder::StructBuilder(builder) => builder.convert_to_message().stop(),
             SymbolBuilder::MessageBuilder(builder) => builder.stop(),
             SymbolBuilder::EnumBuilder(builder) => builder.stop(),
             SymbolBuilder::ConstructorBuilder(builder) => builder.stop().stop(),
             SymbolBuilder::Invalid => panic!("invalid state of Symbol builder"),
         };
 
-        if self.elaborated.is_message(type_name.as_ref()) {
-            self.builder = empty_builder.push_message(type_name, loc).into();
-        } else {
-            self.builder = empty_builder.push_enum(type_name, loc).into();
-        }
+        self.builder = empty_builder.push_struct(type_name, loc).into();
     }
 
     fn push_field(&mut self, field_name: &Str, loc: &Loc) {
         let builder = std::mem::take(&mut self.builder);
 
         self.builder = match builder {
+            SymbolBuilder::StructBuilder(builder) => builder
+                .convert_to_message()
+                .push_field(field_name, loc)
+                .into(),
             SymbolBuilder::MessageBuilder(builder) => builder.push_field(field_name, loc).into(),
             SymbolBuilder::ConstructorBuilder(builder) => {
                 builder.push_field(field_name, loc).into()
@@ -285,6 +299,7 @@ impl SymbolVisitor<'_> {
         let builder = std::mem::take(&mut self.builder);
 
         let enum_builder = match builder {
+            SymbolBuilder::StructBuilder(builder) => builder.convert_enum(),
             SymbolBuilder::EnumBuilder(builder) => builder,
             SymbolBuilder::ConstructorBuilder(builder) => builder.stop(),
             _ => panic!("bad builder state"),
@@ -294,7 +309,7 @@ impl SymbolVisitor<'_> {
     }
 }
 
-impl<'a> Visitor<'a> for SymbolVisitor<'a> {
+impl<'a> Visitor<'a> for SymbolVisitor {
     type StopResult = ();
     fn visit(&mut self, visit: Visit<'a>) -> VisitResult<Self::StopResult> {
         match &visit {

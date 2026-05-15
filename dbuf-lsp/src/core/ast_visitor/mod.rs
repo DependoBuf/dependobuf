@@ -22,8 +22,6 @@ use dbuf_core::ast::parsed::*;
 
 use super::workspace::{Loc, LocationHelper, PositionHelper, Str};
 
-use super::workspace::ElaboratedAst;
-use super::workspace::ElaboratedHelper;
 use super::workspace::LocNameHelper;
 use super::workspace::ParsedAst;
 use super::workspace::Position;
@@ -273,20 +271,9 @@ pub trait Visitor<'a> {
 }
 
 /// Visit whole ast. Skips parts, if visitor tells so.
-///
-/// Currently takes elaborated ast as argument to generate
-/// `message` and `enum` keywords. That's due incomplete
-/// parsed tree.
-///
-/// TODO:
-/// * remove elaborated ast argument.
-pub fn visit_ast<'a, V: Visitor<'a>>(
-    ast: &'a ParsedAst,
-    visitor: &mut V,
-    tempo_elaborated: &'a ElaboratedAst,
-) -> Option<V::StopResult> {
+pub fn visit_ast<'a, V: Visitor<'a>>(ast: &'a ParsedAst, visitor: &mut V) -> Option<V::StopResult> {
     for td in ast {
-        let keyword = if tempo_elaborated.is_message(td.name.as_ref()) {
+        let keyword = if matches!(td.body, TypeDefinition::Message(_)) {
             get_keyword("message", td.name.get_location().get_start().get_line())
         } else {
             get_keyword("enum", td.name.get_location().get_start().get_line())

@@ -19,11 +19,7 @@ pub fn get_inlay_hint(range: Range, file: &File) -> Option<Vec<InlayHint>> {
         ans: vec![],
     };
 
-    visit_ast(
-        file.get_parsed().take()?,
-        &mut visitor,
-        file.get_elaborated().take()?,
-    );
+    visit_ast(file.get_parsed().take()?, &mut visitor);
 
     Some(visitor.collect())
 }
@@ -41,7 +37,7 @@ impl InlayVisitor<'_> {
     }
 
     fn get_type_of_field(&self, name: &Str) -> String {
-        let constructor = self.scope.get_constructor_expr();
+        let constructor = self.scope.get_constructor_expr().expect("setted");
         let type_name = self
             .elaborated
             .get_constructor(constructor)
@@ -63,7 +59,7 @@ impl InlayVisitor<'_> {
     }
 
     fn save_hint(&mut self, name: &Str) {
-        assert!(self.scope.has_constructor_expr());
+        assert!(self.scope.get_constructor_expr().is_some());
 
         let type_name = self.get_type_of_field(name);
 

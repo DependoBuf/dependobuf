@@ -26,11 +26,7 @@ use crate::core::ast_visitor::*;
 /// Returns all semantic tokens of file
 pub fn provide_semantic_tokens(file: &File) -> Option<SemanticTokens> {
     let mut visitor = SemanticTokenVisitor::new(file)?;
-    visit_ast(
-        file.get_parsed().take()?,
-        &mut visitor,
-        file.get_elaborated().take()?,
-    );
+    visit_ast(file.get_parsed().take()?, &mut visitor);
 
     Some(SemanticTokens {
         result_id: None,
@@ -173,8 +169,13 @@ impl SemanticTokenVisitor<'_> {
 
     fn get_type_token(&self, type_name: &Str) -> Token {
         if self.elaborated.is_builtin_type(type_name.as_ref()) {
-            Token::Type
-        } else if self.elaborated.is_message(type_name.as_ref()) {
+            return Token::Type;
+        }
+        let Some(ty) = self.elaborated.get_type(type_name.as_ref()) else {
+            return Token::Type;
+        };
+
+        if self.elaborated.is_message(ty) {
             Token::Message
         } else {
             Token::Enum
@@ -182,7 +183,9 @@ impl SemanticTokenVisitor<'_> {
     }
 
     fn get_constructor_token(&self, constructor_name: &Str) -> Token {
-        if self.elaborated.is_message(constructor_name.as_ref()) {
+        if let Some(ty) = self.elaborated.get_type(constructor_name.as_ref())
+            && self.elaborated.is_message(ty)
+        {
             Token::Message
         } else {
             Token::EnumConstructor
@@ -190,14 +193,19 @@ impl SemanticTokenVisitor<'_> {
     }
 
     fn get_access_token(&self, access_name: &Str) -> Token {
-        let type_name = self.scope.get_type();
+        let Some(type_name) = self.scope.get_type() else {
+            return Token::Property;
+        };
         if self
             .elaborated
             .is_type_dependency(type_name, access_name.as_ref())
         {
             return Token::Parameter;
         }
-        let cons = self.scope.get_constructor();
+
+        let Some(cons) = self.scope.get_constructor() else {
+            return Token::Property;
+        };
         if self
             .elaborated
             .is_constructor_field(cons, access_name.as_ref())

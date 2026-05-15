@@ -30,8 +30,9 @@ impl Write for ChannelWriter {
 
 /// Function that setups tracing for all threads.
 ///
-/// Panics:
-///   Panics if called more than once.
+/// # Panics
+///
+/// Panics if called more than once.
 pub fn setup_tracing(tx: mpsc::UnboundedSender<String>) {
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
 

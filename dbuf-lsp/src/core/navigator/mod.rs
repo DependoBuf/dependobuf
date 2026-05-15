@@ -16,27 +16,25 @@ type Str = String;
 /// Symbol specification in dbuf file.
 #[derive(Debug, Clone)]
 pub enum Symbol {
-    Type {
-        type_name: Str,
-    },
-    Dependency {
-        type_name: Str,
-        dependency: Str,
-    },
+    /// Type declaration
+    Type { type_name: Str },
+    /// Dependency of type
+    Dependency { type_name: Str, dependency: Str },
+    /// Field of constructor of type
     Field {
         type_name: Str,
         constructor: Str,
         field: Str,
     },
+    /// Alias of branch of enum type
     Alias {
         type_name: Str,
         branch_id: usize,
         alias: Str,
     },
-    Constructor {
-        type_name: Str,
-        constructor: Str,
-    },
+    /// Constructor of enum type
+    Constructor { type_name: Str, constructor: Str },
+    /// Undefined symbol
     None,
 }
 

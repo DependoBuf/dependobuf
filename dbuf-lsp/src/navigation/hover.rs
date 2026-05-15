@@ -36,11 +36,15 @@ pub fn get_hover(symbol: Symbol, file: &File) -> Option<Vec<MarkedString>> {
             strings.push(MarkedString::LanguageString(get_type_header(
                 &type_name, file, false,
             )?));
-            if !elaborated.is_message(&type_name) {
+
+            if let Some(ty) = elaborated.get_type(&type_name)
+                && !elaborated.is_message(ty)
+            {
                 strings.push(MarkedString::LanguageString(get_constructor_header(
                     &constructor,
                 )));
             }
+
             strings.push(MarkedString::LanguageString(get_field_declaration(
                 &type_name,
                 &constructor,

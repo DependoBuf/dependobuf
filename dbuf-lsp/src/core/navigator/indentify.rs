@@ -1,6 +1,7 @@
 //! Indetifies symbol at location and returns it type.
 //!
 
+use dbuf_core::ast::elaborated::ConstructorNames;
 use tower_lsp::lsp_types::Position;
 
 use crate::core::workspace::{ElaboratedAst, ElaboratedHelper, LocNameHelper, LocationHelper, Str};
@@ -25,7 +26,7 @@ pub fn get_symbol_impl(navigator: &Navigator, pos: Position) -> Symbol {
         scope: ScopeVisitor::new(navigator.elaborated),
     };
 
-    let res = visit_ast(navigator.parsed, &mut implementation, navigator.elaborated);
+    let res = visit_ast(navigator.parsed, &mut implementation);
 
     res.unwrap_or(Symbol::None)
 }
@@ -42,8 +43,10 @@ impl GetImpl<'_> {
     fn get_dependency(&self, dependency: &Str) -> Symbol {
         assert!(dependency.contains(self.target));
 
+        let ty_name = self.scope.get_type().expect("since should be set");
+
         Symbol::Dependency {
-            type_name: self.scope.get_type().to_owned(),
+            type_name: ty_name.to_owned(),
             dependency: dependency.to_string(),
         }
     }
@@ -51,9 +54,20 @@ impl GetImpl<'_> {
     fn get_field(&self, field: &Str) -> Symbol {
         assert!(field.contains(self.target));
 
+        let type_name = self
+            .scope
+            .get_type()
+            .expect("since should be set")
+            .to_owned();
+        let constructor = self
+            .scope
+            .get_constructor()
+            .expect("since should be set")
+            .to_owned();
+
         Symbol::Field {
-            type_name: self.scope.get_type().to_owned(),
-            constructor: self.scope.get_constructor().to_owned(),
+            type_name,
+            constructor,
             field: field.to_string(),
         }
     }
@@ -61,19 +75,30 @@ impl GetImpl<'_> {
     fn get_alias(&self, alias: &Str) -> Symbol {
         assert!(alias.contains(self.target));
 
+        let type_name = self
+            .scope
+            .get_type()
+            .expect("since should be set")
+            .to_owned();
+        let branch_id = self.scope.get_branch_id().expect("since should be set");
+
         Symbol::Alias {
-            type_name: self.scope.get_type().to_owned(),
-            branch_id: self.scope.get_branch_id(),
+            type_name,
+            branch_id,
             alias: alias.to_string(),
         }
     }
 
     fn get_argument(&self, argument: &Str) -> Symbol {
-        let constructor = self.scope.get_constructor_expr();
-        let type_name = self
-            .elaborated
-            .get_constructor_type(constructor)
-            .expect("correctly builded AST");
+        assert!(argument.contains(self.target));
+
+        let constructor = self
+            .scope
+            .get_constructor_expr()
+            .expect("since should be set");
+        let Some(type_name) = self.elaborated.get_constructor_type(constructor) else {
+            return Symbol::None;
+        };
 
         Symbol::Field {
             type_name: type_name.to_owned(),
@@ -82,16 +107,21 @@ impl GetImpl<'_> {
         }
     }
 
-    fn get_constructor(&self, constructor: &Str) -> Symbol {
+    fn get_constructor(&self, constructor: &Str, of_message: bool) -> Symbol {
         assert!(constructor.contains(self.target));
 
-        if self.elaborated.is_message(constructor.as_ref()) {
+        if of_message {
             Symbol::Type {
                 type_name: constructor.to_string(),
             }
         } else {
+            let type_name = self
+                .scope
+                .get_type()
+                .expect("since should be set")
+                .to_owned();
             Symbol::Constructor {
-                type_name: self.scope.get_type().to_owned(),
+                type_name,
                 constructor: constructor.to_string(),
             }
         }
@@ -100,19 +130,22 @@ impl GetImpl<'_> {
     fn get_constructor_call(&self, constructor: &Str) -> Symbol {
         assert!(constructor.contains(self.target));
 
-        if self.elaborated.is_message(constructor.as_ref()) {
-            Symbol::Type {
+        let Some(type_name) = self.elaborated.get_constructor_type(constructor.as_ref()) else {
+            return Symbol::None;
+        };
+
+        let Some(ty) = self.elaborated.get_type(type_name) else {
+            return Symbol::None;
+        };
+
+        match ty.constructor_names {
+            ConstructorNames::OfMessage(_) => Symbol::Type {
                 type_name: constructor.to_string(),
-            }
-        } else {
-            Symbol::Constructor {
-                type_name: self
-                    .elaborated
-                    .get_constructor_type(constructor.as_ref())
-                    .expect("correct constructor")
-                    .to_string(),
+            },
+            ConstructorNames::OfEnum(_) => Symbol::Constructor {
+                type_name: type_name.to_owned(),
                 constructor: constructor.to_string(),
-            }
+            },
         }
     }
 
@@ -120,23 +153,33 @@ impl GetImpl<'_> {
         assert!(access.contains(self.target));
 
         // Variable should be one of: dependency, field, alias
+        let Some(ty_name) = self.scope.get_type() else {
+            return Symbol::None;
+        };
+
+        if self.elaborated.is_type_dependency(ty_name, access.as_ref()) {
+            return self.get_dependency(access);
+        }
+
+        let Some(ctr_name) = self.scope.get_constructor() else {
+            return Symbol::None;
+        };
+
         if self
             .elaborated
-            .is_type_dependency(self.scope.get_type(), access.as_ref())
+            .is_constructor_field(ctr_name, access.as_ref())
         {
-            self.get_dependency(access)
-        } else if self
+            return self.get_field(access);
+        }
+
+        if self
             .elaborated
-            .is_constructor_field(self.scope.get_constructor(), access.as_ref())
-        {
-            self.get_field(access)
-        } else if self
-            .elaborated
-            .is_constructor_implicit(self.scope.get_constructor(), access.as_ref())
+            .is_constructor_implicit(ctr_name, access.as_ref())
         {
             self.get_alias(access)
         } else {
-            panic!("bad variable expr")
+            // Not enough information in EAST to deduce type
+            Symbol::None
         }
     }
 }
@@ -166,7 +209,7 @@ impl<'a> Visitor<'a> for GetImpl<'a> {
             }
             Visit::Constructor(constructor) if !constructor.loc.contains(self.target) => Skip,
             Visit::Constructor(constructor) if constructor.name.contains(self.target) => {
-                Stop(self.get_constructor(constructor.name))
+                Stop(self.get_constructor(constructor.name, constructor.of_message))
             }
             Visit::Filed(_, loc) if !loc.contains(self.target) => Skip,
             Visit::Filed(field, _) if field.contains(self.target) => Stop(self.get_field(field)),
@@ -191,7 +234,9 @@ impl<'a> Visitor<'a> for GetImpl<'a> {
                 Stop(self.get_access(access))
             }
             _ => {
-                assert!(matches!(self.scope.visit(visit), VisitResult::Continue));
+                let res = self.scope.visit(visit);
+
+                assert!(matches!(res, VisitResult::Continue));
                 Continue
             }
         }
