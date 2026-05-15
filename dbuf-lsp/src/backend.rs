@@ -3,8 +3,12 @@ use tower_lsp::lsp_types::request::*;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
-use crate::WorkspaceAccess;
+use tokio::sync::Mutex;
+use tokio::sync::mpsc;
+use tokio::task;
+use tracing::{error, info, instrument};
 
+use crate::WorkspaceAccess;
 use crate::handler_box::HandlerBox;
 
 use crate::action;
@@ -12,25 +16,41 @@ use crate::completion;
 use crate::diagnostic;
 use crate::navigation;
 
+use super::trace::*;
+
 struct Backend {
-    client: Client,
+    _client: Client,
     workspace: WorkspaceAccess,
     action_handler: HandlerBox<action::Handler>,
     completion_handler: HandlerBox<completion::Handler>,
     diagnostic_handler: HandlerBox<diagnostic::Handler>,
     navigation_handler: HandlerBox<navigation::Handler>,
+    notifier_task: Mutex<Option<task::JoinHandle<()>>>,
 }
 
 impl Backend {
     #[must_use]
     fn new(client: Client) -> Self {
+        let (tx, rx) = mpsc::unbounded_channel();
+
+        setup_tracing(tx);
+
+        let notifier = LoggerNotifier {
+            client: client.clone(),
+            rx,
+        };
+
+        let task = notifier.run_task();
+        let option_task = Some(task);
+
         Self {
-            client,
+            _client: client,
             workspace: WorkspaceAccess::new(),
             action_handler: HandlerBox::default(),
             completion_handler: HandlerBox::default(),
             diagnostic_handler: HandlerBox::default(),
             navigation_handler: HandlerBox::default(),
+            notifier_task: option_task.into(),
         }
     }
 }
@@ -43,9 +63,7 @@ impl LanguageServer for Backend {
                 TextDocumentSyncOptions {
                     open_close: Some(true),
                     change: Some(TextDocumentSyncKind::FULL),
-                    will_save: Some(false),
-                    will_save_wait_until: Some(false),
-                    save: Some(TextDocumentSyncSaveOptions::Supported(false)),
+                    ..Default::default()
                 },
             )),
             ..Default::default()
@@ -72,6 +90,8 @@ impl LanguageServer for Backend {
         capabilities.hover_provider = current_capabilities.hover_provider;
         capabilities.inlay_hint_provider = current_capabilities.inlay_hint_provider;
 
+        info!("initialize done");
+
         Ok(InitializeResult {
             capabilities,
             ..Default::default()
@@ -79,30 +99,29 @@ impl LanguageServer for Backend {
     }
 
     async fn initialized(&self, _: InitializedParams) {
-        self.client
-            .log_message(MessageType::INFO, "server initialized!")
-            .await;
+        info!("server initialized");
     }
 
     async fn shutdown(&self) -> Result<()> {
+        if let Some(task) = self.notifier_task.lock().await.take() {
+            task.await.expect("Notifier not finished");
+        }
         Ok(())
     }
 
+    #[instrument(skip_all, fields(file=params.text_document.uri.to_string()))]
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let doc = params.text_document;
         self.workspace.open(doc.uri, doc.version, &doc.text);
 
-        self.client
-            .log_message(MessageType::INFO, "file opened")
-            .await;
+        info!("file opened");
     }
 
+    #[instrument(skip_all, fields(file=params.text_document.uri.to_string()))]
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         if params.content_changes.len() != 1 {
-            self.client
-                .log_message(MessageType::ERROR, "file change is not full")
-                .await;
-            panic!("bad param for did change");
+            error!("bad param for did change (content_changes.len() != 1). Ignoring.");
+            return;
         }
 
         let doc = params.text_document;
@@ -110,45 +129,58 @@ impl LanguageServer for Backend {
 
         self.workspace.change(&doc.uri, doc.version, new_text);
 
-        self.client
-            .log_message(MessageType::INFO, "file changed")
-            .await;
+        info!("file changed");
     }
+
+    #[instrument(skip_all, fields(file=params.text_document.uri.to_string()))]
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
         let doc = params.text_document;
         self.workspace.close(&doc.uri);
 
-        self.client
-            .log_message(MessageType::INFO, "file closed")
-            .await;
+        info!("file closed");
     }
 
+    #[instrument(skip_all, fields(changes_count=_params.changes.len()))]
+    async fn did_change_watched_files(&self, _params: DidChangeWatchedFilesParams) {
+        info!("ignoring did changed watched files");
+    }
+
+    #[instrument(skip_all, fields(file=params.text_document.uri.to_string()))]
     async fn document_symbol(
         &self,
         params: DocumentSymbolParams,
     ) -> Result<Option<DocumentSymbolResponse>> {
         let doc = params.text_document.uri;
 
+        info!("document symbol request");
+
         self.diagnostic_handler
             .document_symbol(&self.workspace, &doc)
     }
 
+    #[instrument(skip_all, fields(file=params.text_document.uri.to_string()))]
     async fn semantic_tokens_full(
         &self,
         params: SemanticTokensParams,
     ) -> Result<Option<SemanticTokensResult>> {
         let doc = params.text_document.uri;
 
+        info!("semantic tokens full request");
+
         self.diagnostic_handler
             .semantic_tokens_full(&self.workspace, &doc)
     }
 
+    #[instrument(skip_all, fields(file=params.text_document.uri.to_string()))]
     async fn code_lens(&self, params: CodeLensParams) -> Result<Option<Vec<CodeLens>>> {
         let doc = params.text_document.uri;
+
+        info!("code lens request");
 
         self.diagnostic_handler.code_lens(&self.workspace, &doc)
     }
 
+    #[instrument(skip_all, fields(file, pos.line, pos.character))]
     async fn goto_definition(
         &self,
         params: GotoDefinitionParams,
@@ -157,10 +189,17 @@ impl LanguageServer for Backend {
         let pos = doc_pos.position;
         let uri = doc_pos.text_document.uri;
 
+        tracing::Span::current().record("file", uri.to_string());
+        tracing::Span::current().record("pos.line", pos.line);
+        tracing::Span::current().record("pos.character", pos.character);
+
+        info!("goto definition request");
+
         self.navigation_handler
             .goto_definition(&self.workspace, pos, &uri)
     }
 
+    #[instrument(skip_all, fields(file, pos.line, pos.character))]
     async fn goto_type_definition(
         &self,
         params: GotoTypeDefinitionParams,
@@ -169,35 +208,59 @@ impl LanguageServer for Backend {
         let pos = doc_pos.position;
         let uri = doc_pos.text_document.uri;
 
+        tracing::Span::current().record("file", uri.to_string());
+        tracing::Span::current().record("pos.line", pos.line);
+        tracing::Span::current().record("pos.character", pos.character);
+
+        info!("goto type definition request");
+
         self.navigation_handler
             .goto_type_definition(&self.workspace, pos, &uri)
     }
 
+    #[instrument(skip_all, fields(file, pos.line, pos.character))]
     async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
         let doc_pos = params.text_document_position;
         let pos = doc_pos.position;
         let uri = doc_pos.text_document.uri;
 
+        tracing::Span::current().record("file", uri.to_string());
+        tracing::Span::current().record("pos.line", pos.line);
+        tracing::Span::current().record("pos.character", pos.character);
+
+        info!("references request");
+
         self.diagnostic_handler
             .references(&self.workspace, pos, &uri)
     }
 
+    #[instrument(skip_all, fields(file, pos.line, pos.character))]
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
         let doc_pos = params.text_document_position_params;
         let pos = doc_pos.position;
         let uri = doc_pos.text_document.uri;
 
+        tracing::Span::current().record("file", uri.to_string());
+        tracing::Span::current().record("pos.line", pos.line);
+        tracing::Span::current().record("pos.character", pos.character);
+
+        info!("hover request");
+
         self.navigation_handler.hover(&self.workspace, pos, &uri)
     }
 
+    #[instrument(skip_all, fields(file=params.text_document.uri.to_string()))]
     async fn inlay_hint(&self, params: InlayHintParams) -> Result<Option<Vec<InlayHint>>> {
         let range = params.range;
         let uri = params.text_document.uri;
+
+        info!("inlay hint request");
 
         self.navigation_handler
             .inlay_hint(&self.workspace, range, &uri)
     }
 
+    #[instrument(skip_all, fields(file, pos.line, pos.character))]
     async fn document_highlight(
         &self,
         params: DocumentHighlightParams,
@@ -206,25 +269,39 @@ impl LanguageServer for Backend {
         let pos = doc_pos.position;
         let uri = doc_pos.text_document.uri;
 
+        tracing::Span::current().record("file", uri.to_string());
+        tracing::Span::current().record("pos.line", pos.line);
+        tracing::Span::current().record("pos.character", pos.character);
+
+        info!("document highlight request");
+
         self.diagnostic_handler
             .document_highlight(&self.workspace, pos, &uri)
     }
 
+    #[instrument(skip_all, fields(file=params.text_document.uri.to_string()))]
     async fn diagnostic(
         &self,
         params: DocumentDiagnosticParams,
     ) -> Result<DocumentDiagnosticReportResult> {
         let uri = params.text_document.uri;
 
+        info!("diagnostic request");
+
         self.diagnostic_handler.diagnostic(&self.workspace, &uri)
     }
 
+    #[instrument(skip_all, fields(file=params.text_document.uri.to_string()))]
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
         let uri = params.text_document.uri;
+
+        info!("formatting request");
+
         self.action_handler
             .formatting(&self.workspace, &params.options, &uri)
     }
 
+    #[instrument(skip_all, fields(file, pos.line, pos.character))]
     async fn prepare_rename(
         &self,
         params: TextDocumentPositionParams,
@@ -232,14 +309,27 @@ impl LanguageServer for Backend {
         let pos = params.position;
         let uri = params.text_document.uri;
 
+        tracing::Span::current().record("file", uri.to_string());
+        tracing::Span::current().record("pos.line", pos.line);
+        tracing::Span::current().record("pos.character", pos.character);
+
+        info!("prepare rename request");
+
         self.action_handler
             .prepare_rename(&self.workspace, pos, &uri)
     }
 
+    #[instrument(skip_all, fields(file, pos.line, pos.character))]
     async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>> {
         let doc_pos = params.text_document_position;
         let pos = doc_pos.position;
         let uri = doc_pos.text_document.uri;
+
+        tracing::Span::current().record("file", uri.to_string());
+        tracing::Span::current().record("pos.line", pos.line);
+        tracing::Span::current().record("pos.character", pos.character);
+
+        info!("rename request");
 
         self.action_handler
             .rename(&self.workspace, &params.new_name, pos, &uri)

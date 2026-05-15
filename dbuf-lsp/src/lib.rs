@@ -15,3 +15,5 @@ pub mod diagnostic;
 pub mod navigation;
 
 pub mod backend;
+
+mod trace;
