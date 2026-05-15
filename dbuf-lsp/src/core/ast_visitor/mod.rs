@@ -20,6 +20,8 @@ use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::definition::Definitions;
 use dbuf_core::ast::parsed::*;
 
+use tracing::warn;
+
 use super::workspace::{Loc, LocationHelper, PositionHelper, Str};
 
 use super::workspace::LocNameHelper;
@@ -580,7 +582,7 @@ fn visit_expression<'a, V: Visitor<'a>>(
         ExpressionNode::FunCall { fun: _, args: _ } => {
             panic!("fun call is not supported in expressions");
         }
-        ExpressionNode::TypedHole => panic!("bad expression: type hole"),
+        ExpressionNode::TypedHole => warn!("bad expression: type hole"),
     }
 
     next()
