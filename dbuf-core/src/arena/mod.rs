@@ -5,7 +5,7 @@ use internment::ArcIntern;
 
 /// Interned String struct stores Arc pointer to string.
 /// Allows fast comparison and cloning.
-#[derive(PartialEq, Eq, Clone, Debug, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, Clone, Debug, PartialOrd, Ord, Hash)]
 pub struct InternedString {
     inner: ArcIntern<String>,
 }

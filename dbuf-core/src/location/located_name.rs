@@ -6,7 +6,7 @@ use std::{fmt, ops::Add};
 use crate::location::{Location, Offset};
 
 /// Single line name with location.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub struct LocatedName<Str, Pos> {
     /// Name content.
     pub content: Str,

@@ -127,7 +127,7 @@ pub mod vec {
     impl Vec {
         pub fn cons(p: super::Box<deps::nat::Nat>, value: super::Box<deps::nat::Nat>, tail: super::Box<Vec>) -> Result<Self, super::ConstructorError> {
             let body = if ((),
-            (&p)) == ((),
+            (&p.clone())) == ((),
             (&tail.dependencies.n)) {
                 Ok(Body::Cons {
                     value: value,
@@ -137,7 +137,7 @@ pub mod vec {
                 Err(super::ConstructorError::MismatchedDependencies)
             }?;
             let dependencies = Dependencies {
-                n: Box::new(deps::nat::Nat::suc(p).expect("constructor 'Nat::Suc' failed"))
+                n: Box::new(deps::nat::Nat::suc(p.clone()).expect("constructor 'Nat::Suc' failed"))
             };
             Ok(Self { body: body, dependencies: dependencies })
         }
@@ -177,7 +177,7 @@ pub mod vec {
                         
                         }, reader)?;
                         let tail = Self::deserialize(Dependencies {
-                            n: p.clone()
+                            n: p.clone().clone()
                         }, reader)?;
                         Self::cons(p.clone(), Box::new(value), Box::new(tail)).map_err(|e| super::DeserializeError::ConstructorError(e))
                     } else {
