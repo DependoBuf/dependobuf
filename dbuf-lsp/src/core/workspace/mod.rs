@@ -43,7 +43,6 @@ pub use elaborated_ast::ElaboratedAst;
 pub use parsed_ast::ParsedAst;
 
 /// Guards multicore access to files in workspace.
-/// Also has a logger for server information.
 pub struct WorkspaceAccess {
     files: DashMap<Url, File>,
 }
