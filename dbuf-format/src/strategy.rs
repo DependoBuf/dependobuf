@@ -141,7 +141,7 @@ pub struct Strategy<'a> {
     /// represent if user had new line before token
     user_newline: bool,
     /// scopes for current tree node.
-    scopes: Vec<TreeKind>,
+    scope: TreeKind,
 }
 
 impl<'a> Strategy<'a> {
@@ -158,7 +158,7 @@ impl<'a> Strategy<'a> {
                 line: LinePolicy::NoLine,
             },
             user_newline: false,
-            scopes,
+            scope: TreeKind::File,
         }
     }
 
@@ -178,9 +178,8 @@ impl<'a> Strategy<'a> {
 
     /// changes tab size before applying token.
     fn change_tab_size_before(&mut self, t: &Token) {
-        let scope = self.get_scope();
         if matches!(
-            scope,
+            self.scope,
             TreeKind::ConstructedPattern | TreeKind::ConstructedValue
         ) {
             return;
@@ -193,9 +192,8 @@ impl<'a> Strategy<'a> {
 
     /// changes tab size after applying token.
     fn change_tab_size_after(&mut self, t: &Token) {
-        let scope = self.get_scope();
         if matches!(
-            scope,
+            self.scope,
             TreeKind::ConstructedPattern | TreeKind::ConstructedValue
         ) {
             return;
@@ -217,9 +215,8 @@ impl<'a> Strategy<'a> {
 
     /// returns token policy that should be applied after token.
     fn after_token_policy(&self, t: &Token) -> TokenPolicy {
-        let scope = self.get_scope();
         let ctr_scope = matches!(
-            scope,
+            self.scope,
             TreeKind::ConstructedPattern | TreeKind::ConstructedValue
         );
         let line = match t {
@@ -262,16 +259,6 @@ impl<'a> Strategy<'a> {
             allocator.nil()
         }
     }
-
-    /// returns current scope.
-    fn get_scope(&self) -> TreeKind {
-        self.scopes.last().cloned().unwrap_or(TreeKind::File)
-    }
-
-    /// pops last scope.
-    fn exit_scope(&mut self) {
-        self.scopes.pop();
-    }
 }
 
 impl<'a, D> PrettyStrategy<'a, D> for Strategy<'a> {
@@ -307,11 +294,11 @@ impl<'a, D> PrettyStrategy<'a, D> for Strategy<'a> {
                 doc
             }
             Event::NewScope(tree_kind) => {
-                self.scopes.push(tree_kind.clone());
+                self.scope = tree_kind.clone();
                 allocator.nil()
             }
-            Event::ExitScope => {
-                self.exit_scope();
+            Event::ExitScope(tree_kind) => {
+                self.scope = tree_kind.clone();
                 allocator.nil()
             }
         }

@@ -8,10 +8,14 @@ use dbuf_core::location::Offset;
 
 use pretty::{DocAllocator, DocBuilder};
 
+/// Events during Tree visiting.
 pub enum Event<'a> {
+    /// Next token in stream.
     NextToken(&'a Token, &'a Location<Offset>),
+    /// Entering new scope.
     NewScope(&'a TreeKind),
-    ExitScope,
+    /// Exiting scope to.
+    ExitScope(&'a TreeKind),
 }
 
 pub trait PrettyStrategy<'a, D>: Sized {
@@ -34,15 +38,15 @@ where
                 let new_d = s.next(Event::NextToken(token, location), allocator);
                 doc = doc.append(new_d);
             }
-            Child::Tree(tree) => {
-                let new_d = s.next(Event::NewScope(&tree.kind), allocator);
+            Child::Tree(ch_tree) => {
+                let new_d = s.next(Event::NewScope(&ch_tree.kind), allocator);
                 doc = doc.append(new_d);
 
-                let (new_s, new_d) = run(tree, s, allocator);
+                let (new_s, new_d) = run(ch_tree, s, allocator);
                 s = new_s;
                 doc = doc.append(new_d);
 
-                let new_d = s.next(Event::ExitScope, allocator);
+                let new_d = s.next(Event::ExitScope(&t.kind), allocator);
                 doc = doc.append(new_d);
             }
         }
