@@ -254,9 +254,7 @@ pub fn elaborate_value<'a>(
                 ty,
             })
         }
-        p::ExpressionNode::TypedHole => {
-            Err(ElaboratingError)
-        }
+        p::ExpressionNode::TypedHole => Err(ElaboratingError),
     }
 }
 
