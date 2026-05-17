@@ -1,0 +1,319 @@
+//! Module contains strategy for pretty-printing different parts of CST
+//!
+
+use std::borrow::Cow;
+use std::ops::BitAnd;
+
+use super::utils::{Event, PrettyStrategy};
+
+use dbuf_core::cst::{Token, TreeKind};
+use dbuf_core::location::{Location, Offset};
+
+use pretty::{DocAllocator, DocBuilder};
+
+/// Returns correspond token representation.
+/// Requires Location since spaces are not gathered.
+fn token_to_string<'a>(t: &'a Token, l: &'a Location<Offset>) -> Cow<'a, str> {
+    match t {
+        Token::Message => "message".into(),
+        Token::Enum => "enum".into(),
+        Token::BoolLiteral(l) => l.to_string().into(),
+        Token::IntLiteral(l) => l.to_string().into(),
+        Token::UintLiteral(l) => format!("{l}u").into(),
+        Token::FloatLiteral(l) => l.to_string().into(),
+        Token::StringLiteral(l) => format!("\"{l}\"").into(),
+        Token::UCIdentifier(l) => l.into(),
+        Token::LCIdentifier(l) => l.into(),
+        Token::Arrow => "->".into(),
+        Token::Colon => ":".into(),
+        Token::Semicolon => ";".into(),
+        Token::Comma => ",".into(),
+        Token::Dot => ".".into(),
+        Token::LParen => "(".into(),
+        Token::RParen => ")".into(),
+        Token::LBrace => "{".into(),
+        Token::RBrace => "}".into(),
+        Token::Plus => "+".into(),
+        Token::Minus => "-".into(),
+        Token::Star => "*".into(),
+        Token::Slash => "/".into(),
+        Token::Amp => "&".into(),
+        Token::Pipe => "|".into(),
+        Token::Bang => "!".into(),
+        Token::Underscore => "_".into(),
+        Token::NewLine => "\n".into(),
+        Token::Space => " ".repeat(l.length.columns).into(),
+        Token::LineComment(c) => c.into(),
+        Token::BlockComment(c) => c.into(),
+        Token::Err(c) => c.into(),
+    }
+}
+
+/// Policy for printing spaces.
+#[derive(Clone, Copy)]
+enum SpacePolicy {
+    /// Forces to not print space.
+    NoSpace,
+    /// Print space if next token agree.
+    MaybeSpace,
+}
+
+impl BitAnd for SpacePolicy {
+    type Output = SpacePolicy;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (SpacePolicy::NoSpace, SpacePolicy::NoSpace) => SpacePolicy::NoSpace,
+            (SpacePolicy::NoSpace, SpacePolicy::MaybeSpace) => SpacePolicy::NoSpace,
+            (SpacePolicy::MaybeSpace, SpacePolicy::NoSpace) => SpacePolicy::NoSpace,
+            (SpacePolicy::MaybeSpace, SpacePolicy::MaybeSpace) => SpacePolicy::MaybeSpace,
+        }
+    }
+}
+
+/// Policy for printing new lines.
+#[derive(Clone, Copy)]
+enum LinePolicy {
+    /// Forces to not print new line.
+    NoLine,
+    /// Print new line if next token agree.
+    MaybeLine,
+    /// If user had new line between tokens then
+    /// forces new line. If no, then no new line.
+    UserBased,
+}
+
+impl BitAnd for LinePolicy {
+    type Output = LinePolicy;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (LinePolicy::NoLine, LinePolicy::NoLine) => LinePolicy::NoLine,
+            (LinePolicy::NoLine, LinePolicy::MaybeLine) => LinePolicy::NoLine,
+            (LinePolicy::NoLine, LinePolicy::UserBased) => LinePolicy::NoLine,
+            (LinePolicy::MaybeLine, LinePolicy::NoLine) => LinePolicy::NoLine,
+            (LinePolicy::MaybeLine, LinePolicy::MaybeLine) => LinePolicy::MaybeLine,
+            (LinePolicy::MaybeLine, LinePolicy::UserBased) => LinePolicy::UserBased,
+            (LinePolicy::UserBased, LinePolicy::NoLine) => LinePolicy::NoLine,
+            (LinePolicy::UserBased, LinePolicy::MaybeLine) => LinePolicy::UserBased,
+            (LinePolicy::UserBased, LinePolicy::UserBased) => LinePolicy::UserBased,
+        }
+    }
+}
+
+/// Policy for before/after token spaces.
+#[derive(Clone, Copy)]
+struct TokenPolicy {
+    /// space policy.
+    space: SpacePolicy,
+    /// line policy.
+    line: LinePolicy,
+}
+
+impl BitAnd for TokenPolicy {
+    type Output = TokenPolicy;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        TokenPolicy {
+            space: self.space & rhs.space,
+            line: self.line & rhs.line,
+        }
+    }
+}
+
+/// Configuration for pretty printing strategy.
+#[derive(Clone, Copy)]
+pub struct StrategyConfig {
+    /// size of tab in spaces.
+    pub tab_size: usize,
+}
+
+/// Strategy for pretty printing code.
+pub struct Strategy<'a> {
+    /// increase in indent on new tab.
+    tab_size: usize,
+    /// current indent.
+    indent: usize,
+    /// last token
+    last_token: Option<&'a Token>,
+    /// token policy for last token.
+    last_policy: TokenPolicy,
+    /// represent if user had new line before token
+    user_newline: bool,
+    /// scopes for current tree node.
+    scopes: Vec<TreeKind>,
+}
+
+impl<'a> Strategy<'a> {
+    /// create new strategy based on config.
+    pub fn new(conf: StrategyConfig) -> Strategy<'a> {
+        let mut scopes = Vec::with_capacity(10);
+        scopes.push(TreeKind::File);
+        Strategy {
+            tab_size: conf.tab_size,
+            indent: 0,
+            last_token: None,
+            last_policy: TokenPolicy {
+                space: SpacePolicy::NoSpace,
+                line: LinePolicy::NoLine,
+            },
+            user_newline: false,
+            scopes,
+        }
+    }
+
+    /// increase indent by one tab.
+    fn plus_tab(&mut self) {
+        self.indent += self.tab_size;
+    }
+
+    /// decrease indent by one tab.
+    fn minus_tab(&mut self) {
+        if self.indent < self.tab_size {
+            self.indent = 0;
+        } else {
+            self.indent -= self.tab_size;
+        }
+    }
+
+    /// changes tab size before applying token.
+    fn change_tab_size_before(&mut self, t: &Token) {
+        let scope = self.get_scope();
+        if matches!(
+            scope,
+            TreeKind::ConstructedPattern | TreeKind::ConstructedValue
+        ) {
+            return;
+        }
+
+        if matches!(t, Token::RBrace) {
+            self.minus_tab();
+        }
+    }
+
+    /// changes tab size after applying token.
+    fn change_tab_size_after(&mut self, t: &Token) {
+        let scope = self.get_scope();
+        if matches!(
+            scope,
+            TreeKind::ConstructedPattern | TreeKind::ConstructedValue
+        ) {
+            return;
+        }
+
+        if matches!(t, Token::LBrace) {
+            self.plus_tab();
+        }
+    }
+
+    /// returns token policy that should be applied before token.
+    fn before_token_policy(&self, _t: &Token) -> TokenPolicy {
+        let _ = self;
+        TokenPolicy {
+            space: SpacePolicy::MaybeSpace,
+            line: LinePolicy::MaybeLine,
+        }
+    }
+
+    /// returns token policy that should be applied after token.
+    fn after_token_policy(&self, t: &Token) -> TokenPolicy {
+        let scope = self.get_scope();
+        let ctr_scope = matches!(
+            scope,
+            TreeKind::ConstructedPattern | TreeKind::ConstructedValue
+        );
+        let line = match t {
+            Token::LineComment(_) => LinePolicy::MaybeLine,
+            Token::Semicolon => LinePolicy::MaybeLine,
+            Token::LBrace if !ctr_scope => LinePolicy::MaybeLine,
+            Token::RBrace if !ctr_scope => LinePolicy::MaybeLine,
+            _ => LinePolicy::UserBased,
+        };
+
+        TokenPolicy {
+            space: SpacePolicy::MaybeSpace,
+            line,
+        }
+    }
+
+    /// returns `DocBuilder`, representing new line + tab.
+    fn alloc_line<D>(&self, allocator: &'a D) -> DocBuilder<'a, D>
+    where
+        D: DocAllocator<'a>,
+        D::Doc: Clone,
+    {
+        let spaces = " ".repeat(self.indent);
+        allocator.hardline().append(allocator.text(spaces))
+    }
+
+    /// applies ws policy and returns result in `DocBuilder`.
+    fn apply_policy<D>(&self, policy: TokenPolicy, allocator: &'a D) -> DocBuilder<'a, D>
+    where
+        D: DocAllocator<'a>,
+        D::Doc: Clone,
+    {
+        if matches!(policy.line, LinePolicy::MaybeLine)
+            || (matches!(policy.line, LinePolicy::UserBased) && self.user_newline)
+        {
+            self.alloc_line(allocator)
+        } else if matches!(policy.space, SpacePolicy::MaybeSpace) {
+            allocator.text(" ")
+        } else {
+            allocator.nil()
+        }
+    }
+
+    /// returns current scope.
+    fn get_scope(&self) -> TreeKind {
+        self.scopes.last().cloned().unwrap_or(TreeKind::File)
+    }
+
+    /// pops last scope.
+    fn exit_scope(&mut self) {
+        self.scopes.pop();
+    }
+}
+
+impl<'a, D> PrettyStrategy<'a, D> for Strategy<'a> {
+    fn next(&mut self, event: Event<'a>, allocator: &'a D) -> DocBuilder<'a, D>
+    where
+        D: DocAllocator<'a>,
+        D::Doc: Clone,
+    {
+        match event {
+            Event::NextToken(token, location) => {
+                if matches!(token, Token::NewLine) {
+                    self.user_newline = true;
+                    return allocator.nil();
+                }
+                if matches!(token, Token::Space) {
+                    return allocator.nil();
+                }
+
+                self.change_tab_size_before(token);
+
+                let before = self.before_token_policy(token);
+                let cur = self.last_policy & before;
+                let doc = self.apply_policy(cur, allocator);
+
+                let doc = doc.append(allocator.text(token_to_string(token, location)));
+
+                self.change_tab_size_after(token);
+
+                self.last_policy = self.after_token_policy(token);
+                self.last_token = token.into();
+                self.user_newline = false;
+
+                doc
+            }
+            Event::NewScope(tree_kind) => {
+                self.scopes.push(tree_kind.clone());
+                allocator.nil()
+            }
+            Event::ExitScope => {
+                self.exit_scope();
+                allocator.nil()
+            }
+        }
+    }
+}

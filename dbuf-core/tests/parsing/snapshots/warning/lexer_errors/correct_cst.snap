@@ -207,7 +207,9 @@ Tree {
                                                 },
                                             ),
                                             Token(
-                                                Err,
+                                                Err(
+                                                    "100000000000000000000",
+                                                ),
                                                 Location {
                                                     start: Offset {
                                                         lines: 1,
@@ -332,7 +334,9 @@ Tree {
                                                 },
                                             ),
                                             Token(
-                                                Err,
+                                                Err(
+                                                    "1000aba0000",
+                                                ),
                                                 Location {
                                                     start: Offset {
                                                         lines: 2,
@@ -457,7 +461,9 @@ Tree {
                                                 },
                                             ),
                                             Token(
-                                                Err,
+                                                Err(
+                                                    "1000.000aba0000",
+                                                ),
                                                 Location {
                                                     start: Offset {
                                                         lines: 3,
@@ -582,7 +588,9 @@ Tree {
                                                 },
                                             ),
                                             Token(
-                                                Err,
+                                                Err(
+                                                    "\"aaa\\aaaa\"",
+                                                ),
                                                 Location {
                                                     start: Offset {
                                                         lines: 4,
@@ -707,7 +715,9 @@ Tree {
                                                 },
                                             ),
                                             Token(
-                                                Err,
+                                                Err(
+                                                    "aba_aba",
+                                                ),
                                                 Location {
                                                     start: Offset {
                                                         lines: 5,
@@ -832,7 +842,9 @@ Tree {
                                                 },
                                             ),
                                             Token(
-                                                Err,
+                                                Err(
+                                                    "Aba_Aba",
+                                                ),
                                                 Location {
                                                     start: Offset {
                                                         lines: 6,
@@ -957,7 +969,9 @@ Tree {
                                                 },
                                             ),
                                             Token(
-                                                Err,
+                                                Err(
+                                                    "@",
+                                                ),
                                                 Location {
                                                     start: Offset {
                                                         lines: 7,

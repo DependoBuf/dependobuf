@@ -1,0 +1,12 @@
+[package]
+name = "dbuf-format"
+edition.workspace = true
+version.workspace = true
+
+[dependencies]
+dbuf-core.workspace = true
+
+pretty.workspace = true
+
+[lints]
+workspace = true

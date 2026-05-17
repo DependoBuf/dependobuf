@@ -194,7 +194,7 @@ impl Reportable<ParsingError> for ParserLexingError {
         extra: &ParsingError,
     ) -> Report<'a, (&'a str, Range<usize>)> {
         assert!(matches!(extra.extra, Some(ErrorExtra::LexingError(_))));
-        assert!(extra.found == Some(Token::Err));
+        assert!(matches!(extra.found, Some(Token::Err(_))));
 
         self.0.report(meta, &())
     }
