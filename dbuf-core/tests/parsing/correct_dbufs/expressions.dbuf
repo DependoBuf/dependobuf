@@ -1,15 +1,14 @@
 message ToCtr {
     x Int;
-    y Unsigned;
-    z Float;
+    y UInt;
     b Bool;
     s String;
 }
 
 message MessageExpressionBasic {
-    lit Dep 1 1.0 1u true false "text";
-    math Dep (a + b) (a - b) (a * b) (a / b) (- a) (a & b) (a | b) (! a);
-    ctrs Dep ToCtr{x: 0, y: 0u, z: 0.0, b: true, s: "str"};
+    lit Dep 1 1u true false "text";
+    math Dep (a + b) (a - b) (a * b) (- a) (a & b) (a | b) (! a);
+    ctrs Dep ToCtr{x: 0, y: 0u, b: true, s: "str"};
 }
 
 message MessageExpressionMathOrder {

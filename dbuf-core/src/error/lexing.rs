@@ -43,8 +43,6 @@ pub enum ErrorKind {
     IntegerOverflow,
     /// Integer is incorrect.
     InvalidInteger,
-    /// Float is incorrect.
-    InvalidFloat,
     /// String literal is incorrect.
     InvalidStringLiteral,
     /// `LCIdentifier` is incorrect. May contain only [a-zA-Z0-9].

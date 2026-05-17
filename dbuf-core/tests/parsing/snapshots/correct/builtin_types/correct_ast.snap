@@ -10,7 +10,7 @@ expression: ast
                 columns: 0,
             },
             length: Offset {
-                lines: 6,
+                lines: 5,
                 columns: 1,
             },
         },
@@ -170,7 +170,7 @@ expression: ast
                             },
                             length: Offset {
                                 lines: 0,
-                                columns: 12,
+                                columns: 8,
                             },
                         },
                         name: LocatedName {
@@ -190,61 +190,16 @@ expression: ast
                                 },
                                 length: Offset {
                                     lines: 0,
-                                    columns: 8,
+                                    columns: 4,
                                 },
                             },
                             node: FunCall {
                                 fun: LocatedName {
                                     content: InternedString {
-                                        inner: "Unsigned",
+                                        inner: "UInt",
                                     },
                                     start: Offset {
                                         lines: 4,
-                                        columns: 7,
-                                    },
-                                },
-                                args: [],
-                            },
-                        },
-                    },
-                    Definition {
-                        loc: Location {
-                            start: Offset {
-                                lines: 5,
-                                columns: 4,
-                            },
-                            length: Offset {
-                                lines: 0,
-                                columns: 9,
-                            },
-                        },
-                        name: LocatedName {
-                            content: InternedString {
-                                inner: "f5",
-                            },
-                            start: Offset {
-                                lines: 5,
-                                columns: 4,
-                            },
-                        },
-                        data: Expression {
-                            loc: Location {
-                                start: Offset {
-                                    lines: 5,
-                                    columns: 7,
-                                },
-                                length: Offset {
-                                    lines: 0,
-                                    columns: 5,
-                                },
-                            },
-                            node: FunCall {
-                                fun: LocatedName {
-                                    content: InternedString {
-                                        inner: "Float",
-                                    },
-                                    start: Offset {
-                                        lines: 5,
                                         columns: 7,
                                     },
                                 },
@@ -259,7 +214,7 @@ expression: ast
     Definition {
         loc: Location {
             start: Offset {
-                lines: 8,
+                lines: 7,
                 columns: 0,
             },
             length: Offset {
@@ -272,7 +227,7 @@ expression: ast
                 inner: "MessageDependenciesTypes",
             },
             start: Offset {
-                lines: 8,
+                lines: 7,
                 columns: 8,
             },
         },
@@ -281,7 +236,7 @@ expression: ast
                 Definition {
                     loc: Location {
                         start: Offset {
-                            lines: 8,
+                            lines: 7,
                             columns: 33,
                         },
                         length: Offset {
@@ -294,14 +249,14 @@ expression: ast
                             inner: "d1",
                         },
                         start: Offset {
-                            lines: 8,
+                            lines: 7,
                             columns: 34,
                         },
                     },
                     data: Expression {
                         loc: Location {
                             start: Offset {
-                                lines: 8,
+                                lines: 7,
                                 columns: 37,
                             },
                             length: Offset {
@@ -315,7 +270,7 @@ expression: ast
                                     inner: "Int",
                                 },
                                 start: Offset {
-                                    lines: 8,
+                                    lines: 7,
                                     columns: 37,
                                 },
                             },
@@ -326,7 +281,7 @@ expression: ast
                 Definition {
                     loc: Location {
                         start: Offset {
-                            lines: 8,
+                            lines: 7,
                             columns: 42,
                         },
                         length: Offset {
@@ -339,14 +294,14 @@ expression: ast
                             inner: "d2",
                         },
                         start: Offset {
-                            lines: 8,
+                            lines: 7,
                             columns: 43,
                         },
                     },
                     data: Expression {
                         loc: Location {
                             start: Offset {
-                                lines: 8,
+                                lines: 7,
                                 columns: 46,
                             },
                             length: Offset {
@@ -360,7 +315,7 @@ expression: ast
                                     inner: "String",
                                 },
                                 start: Offset {
-                                    lines: 8,
+                                    lines: 7,
                                     columns: 46,
                                 },
                             },
@@ -371,7 +326,7 @@ expression: ast
                 Definition {
                     loc: Location {
                         start: Offset {
-                            lines: 8,
+                            lines: 7,
                             columns: 54,
                         },
                         length: Offset {
@@ -384,14 +339,14 @@ expression: ast
                             inner: "d3",
                         },
                         start: Offset {
-                            lines: 8,
+                            lines: 7,
                             columns: 55,
                         },
                     },
                     data: Expression {
                         loc: Location {
                             start: Offset {
-                                lines: 8,
+                                lines: 7,
                                 columns: 58,
                             },
                             length: Offset {
@@ -405,7 +360,7 @@ expression: ast
                                     inner: "Bool",
                                 },
                                 start: Offset {
-                                    lines: 8,
+                                    lines: 7,
                                     columns: 58,
                                 },
                             },
@@ -416,12 +371,12 @@ expression: ast
                 Definition {
                     loc: Location {
                         start: Offset {
-                            lines: 8,
+                            lines: 7,
                             columns: 64,
                         },
                         length: Offset {
                             lines: 0,
-                            columns: 13,
+                            columns: 9,
                         },
                     },
                     name: LocatedName {
@@ -429,74 +384,29 @@ expression: ast
                             inner: "d4",
                         },
                         start: Offset {
-                            lines: 8,
+                            lines: 7,
                             columns: 65,
                         },
                     },
                     data: Expression {
                         loc: Location {
                             start: Offset {
-                                lines: 8,
+                                lines: 7,
                                 columns: 68,
                             },
                             length: Offset {
                                 lines: 0,
-                                columns: 8,
+                                columns: 4,
                             },
                         },
                         node: FunCall {
                             fun: LocatedName {
                                 content: InternedString {
-                                    inner: "Unsigned",
+                                    inner: "UInt",
                                 },
                                 start: Offset {
-                                    lines: 8,
+                                    lines: 7,
                                     columns: 68,
-                                },
-                            },
-                            args: [],
-                        },
-                    },
-                },
-                Definition {
-                    loc: Location {
-                        start: Offset {
-                            lines: 8,
-                            columns: 78,
-                        },
-                        length: Offset {
-                            lines: 0,
-                            columns: 10,
-                        },
-                    },
-                    name: LocatedName {
-                        content: InternedString {
-                            inner: "d5",
-                        },
-                        start: Offset {
-                            lines: 8,
-                            columns: 79,
-                        },
-                    },
-                    data: Expression {
-                        loc: Location {
-                            start: Offset {
-                                lines: 8,
-                                columns: 82,
-                            },
-                            length: Offset {
-                                lines: 0,
-                                columns: 5,
-                            },
-                        },
-                        node: FunCall {
-                            fun: LocatedName {
-                                content: InternedString {
-                                    inner: "Float",
-                                },
-                                start: Offset {
-                                    lines: 8,
-                                    columns: 82,
                                 },
                             },
                             args: [],
@@ -512,11 +422,11 @@ expression: ast
     Definition {
         loc: Location {
             start: Offset {
-                lines: 11,
+                lines: 10,
                 columns: 0,
             },
             length: Offset {
-                lines: 8,
+                lines: 7,
                 columns: 1,
             },
         },
@@ -525,7 +435,7 @@ expression: ast
                 inner: "EnumConstructorTypes",
             },
             start: Offset {
-                lines: 11,
+                lines: 10,
                 columns: 5,
             },
         },
@@ -539,11 +449,11 @@ expression: ast
                             Definition {
                                 loc: Location {
                                     start: Offset {
-                                        lines: 12,
+                                        lines: 11,
                                         columns: 4,
                                     },
                                     length: Offset {
-                                        lines: 6,
+                                        lines: 5,
                                         columns: 5,
                                     },
                                 },
@@ -552,7 +462,7 @@ expression: ast
                                         inner: "Ctr",
                                     },
                                     start: Offset {
-                                        lines: 12,
+                                        lines: 11,
                                         columns: 4,
                                     },
                                 },
@@ -560,7 +470,7 @@ expression: ast
                                     Definition {
                                         loc: Location {
                                             start: Offset {
-                                                lines: 13,
+                                                lines: 12,
                                                 columns: 8,
                                             },
                                             length: Offset {
@@ -571,6 +481,51 @@ expression: ast
                                         name: LocatedName {
                                             content: InternedString {
                                                 inner: "f1",
+                                            },
+                                            start: Offset {
+                                                lines: 12,
+                                                columns: 8,
+                                            },
+                                        },
+                                        data: Expression {
+                                            loc: Location {
+                                                start: Offset {
+                                                    lines: 12,
+                                                    columns: 11,
+                                                },
+                                                length: Offset {
+                                                    lines: 0,
+                                                    columns: 3,
+                                                },
+                                            },
+                                            node: FunCall {
+                                                fun: LocatedName {
+                                                    content: InternedString {
+                                                        inner: "Int",
+                                                    },
+                                                    start: Offset {
+                                                        lines: 12,
+                                                        columns: 11,
+                                                    },
+                                                },
+                                                args: [],
+                                            },
+                                        },
+                                    },
+                                    Definition {
+                                        loc: Location {
+                                            start: Offset {
+                                                lines: 13,
+                                                columns: 8,
+                                            },
+                                            length: Offset {
+                                                lines: 0,
+                                                columns: 10,
+                                            },
+                                        },
+                                        name: LocatedName {
+                                            content: InternedString {
+                                                inner: "f2",
                                             },
                                             start: Offset {
                                                 lines: 13,
@@ -585,13 +540,13 @@ expression: ast
                                                 },
                                                 length: Offset {
                                                     lines: 0,
-                                                    columns: 3,
+                                                    columns: 6,
                                                 },
                                             },
                                             node: FunCall {
                                                 fun: LocatedName {
                                                     content: InternedString {
-                                                        inner: "Int",
+                                                        inner: "String",
                                                     },
                                                     start: Offset {
                                                         lines: 13,
@@ -610,12 +565,12 @@ expression: ast
                                             },
                                             length: Offset {
                                                 lines: 0,
-                                                columns: 10,
+                                                columns: 8,
                                             },
                                         },
                                         name: LocatedName {
                                             content: InternedString {
-                                                inner: "f2",
+                                                inner: "f3",
                                             },
                                             start: Offset {
                                                 lines: 14,
@@ -630,13 +585,13 @@ expression: ast
                                                 },
                                                 length: Offset {
                                                     lines: 0,
-                                                    columns: 6,
+                                                    columns: 4,
                                                 },
                                             },
                                             node: FunCall {
                                                 fun: LocatedName {
                                                     content: InternedString {
-                                                        inner: "String",
+                                                        inner: "Bool",
                                                     },
                                                     start: Offset {
                                                         lines: 14,
@@ -660,7 +615,7 @@ expression: ast
                                         },
                                         name: LocatedName {
                                             content: InternedString {
-                                                inner: "f3",
+                                                inner: "f4",
                                             },
                                             start: Offset {
                                                 lines: 15,
@@ -681,100 +636,10 @@ expression: ast
                                             node: FunCall {
                                                 fun: LocatedName {
                                                     content: InternedString {
-                                                        inner: "Bool",
+                                                        inner: "UInt",
                                                     },
                                                     start: Offset {
                                                         lines: 15,
-                                                        columns: 11,
-                                                    },
-                                                },
-                                                args: [],
-                                            },
-                                        },
-                                    },
-                                    Definition {
-                                        loc: Location {
-                                            start: Offset {
-                                                lines: 16,
-                                                columns: 8,
-                                            },
-                                            length: Offset {
-                                                lines: 0,
-                                                columns: 12,
-                                            },
-                                        },
-                                        name: LocatedName {
-                                            content: InternedString {
-                                                inner: "f4",
-                                            },
-                                            start: Offset {
-                                                lines: 16,
-                                                columns: 8,
-                                            },
-                                        },
-                                        data: Expression {
-                                            loc: Location {
-                                                start: Offset {
-                                                    lines: 16,
-                                                    columns: 11,
-                                                },
-                                                length: Offset {
-                                                    lines: 0,
-                                                    columns: 8,
-                                                },
-                                            },
-                                            node: FunCall {
-                                                fun: LocatedName {
-                                                    content: InternedString {
-                                                        inner: "Unsigned",
-                                                    },
-                                                    start: Offset {
-                                                        lines: 16,
-                                                        columns: 11,
-                                                    },
-                                                },
-                                                args: [],
-                                            },
-                                        },
-                                    },
-                                    Definition {
-                                        loc: Location {
-                                            start: Offset {
-                                                lines: 17,
-                                                columns: 8,
-                                            },
-                                            length: Offset {
-                                                lines: 0,
-                                                columns: 9,
-                                            },
-                                        },
-                                        name: LocatedName {
-                                            content: InternedString {
-                                                inner: "f5",
-                                            },
-                                            start: Offset {
-                                                lines: 17,
-                                                columns: 8,
-                                            },
-                                        },
-                                        data: Expression {
-                                            loc: Location {
-                                                start: Offset {
-                                                    lines: 17,
-                                                    columns: 11,
-                                                },
-                                                length: Offset {
-                                                    lines: 0,
-                                                    columns: 5,
-                                                },
-                                            },
-                                            node: FunCall {
-                                                fun: LocatedName {
-                                                    content: InternedString {
-                                                        inner: "Float",
-                                                    },
-                                                    start: Offset {
-                                                        lines: 17,
                                                         columns: 11,
                                                     },
                                                 },
@@ -793,7 +658,7 @@ expression: ast
     Definition {
         loc: Location {
             start: Offset {
-                lines: 21,
+                lines: 19,
                 columns: 0,
             },
             length: Offset {
@@ -806,7 +671,7 @@ expression: ast
                 inner: "EnumDependenciesTypes",
             },
             start: Offset {
-                lines: 21,
+                lines: 19,
                 columns: 5,
             },
         },
@@ -815,7 +680,7 @@ expression: ast
                 Definition {
                     loc: Location {
                         start: Offset {
-                            lines: 21,
+                            lines: 19,
                             columns: 27,
                         },
                         length: Offset {
@@ -828,14 +693,14 @@ expression: ast
                             inner: "d1",
                         },
                         start: Offset {
-                            lines: 21,
+                            lines: 19,
                             columns: 28,
                         },
                     },
                     data: Expression {
                         loc: Location {
                             start: Offset {
-                                lines: 21,
+                                lines: 19,
                                 columns: 31,
                             },
                             length: Offset {
@@ -849,7 +714,7 @@ expression: ast
                                     inner: "Int",
                                 },
                                 start: Offset {
-                                    lines: 21,
+                                    lines: 19,
                                     columns: 31,
                                 },
                             },
@@ -860,7 +725,7 @@ expression: ast
                 Definition {
                     loc: Location {
                         start: Offset {
-                            lines: 21,
+                            lines: 19,
                             columns: 36,
                         },
                         length: Offset {
@@ -873,14 +738,14 @@ expression: ast
                             inner: "d2",
                         },
                         start: Offset {
-                            lines: 21,
+                            lines: 19,
                             columns: 37,
                         },
                     },
                     data: Expression {
                         loc: Location {
                             start: Offset {
-                                lines: 21,
+                                lines: 19,
                                 columns: 40,
                             },
                             length: Offset {
@@ -894,7 +759,7 @@ expression: ast
                                     inner: "String",
                                 },
                                 start: Offset {
-                                    lines: 21,
+                                    lines: 19,
                                     columns: 40,
                                 },
                             },
@@ -905,7 +770,7 @@ expression: ast
                 Definition {
                     loc: Location {
                         start: Offset {
-                            lines: 21,
+                            lines: 19,
                             columns: 48,
                         },
                         length: Offset {
@@ -918,14 +783,14 @@ expression: ast
                             inner: "d3",
                         },
                         start: Offset {
-                            lines: 21,
+                            lines: 19,
                             columns: 49,
                         },
                     },
                     data: Expression {
                         loc: Location {
                             start: Offset {
-                                lines: 21,
+                                lines: 19,
                                 columns: 52,
                             },
                             length: Offset {
@@ -939,7 +804,7 @@ expression: ast
                                     inner: "Bool",
                                 },
                                 start: Offset {
-                                    lines: 21,
+                                    lines: 19,
                                     columns: 52,
                                 },
                             },
@@ -950,12 +815,12 @@ expression: ast
                 Definition {
                     loc: Location {
                         start: Offset {
-                            lines: 21,
+                            lines: 19,
                             columns: 58,
                         },
                         length: Offset {
                             lines: 0,
-                            columns: 13,
+                            columns: 9,
                         },
                     },
                     name: LocatedName {
@@ -963,74 +828,29 @@ expression: ast
                             inner: "d4",
                         },
                         start: Offset {
-                            lines: 21,
+                            lines: 19,
                             columns: 59,
                         },
                     },
                     data: Expression {
                         loc: Location {
                             start: Offset {
-                                lines: 21,
+                                lines: 19,
                                 columns: 62,
                             },
                             length: Offset {
                                 lines: 0,
-                                columns: 8,
+                                columns: 4,
                             },
                         },
                         node: FunCall {
                             fun: LocatedName {
                                 content: InternedString {
-                                    inner: "Unsigned",
+                                    inner: "UInt",
                                 },
                                 start: Offset {
-                                    lines: 21,
+                                    lines: 19,
                                     columns: 62,
-                                },
-                            },
-                            args: [],
-                        },
-                    },
-                },
-                Definition {
-                    loc: Location {
-                        start: Offset {
-                            lines: 21,
-                            columns: 72,
-                        },
-                        length: Offset {
-                            lines: 0,
-                            columns: 10,
-                        },
-                    },
-                    name: LocatedName {
-                        content: InternedString {
-                            inner: "d5",
-                        },
-                        start: Offset {
-                            lines: 21,
-                            columns: 73,
-                        },
-                    },
-                    data: Expression {
-                        loc: Location {
-                            start: Offset {
-                                lines: 21,
-                                columns: 76,
-                            },
-                            length: Offset {
-                                lines: 0,
-                                columns: 5,
-                            },
-                        },
-                        node: FunCall {
-                            fun: LocatedName {
-                                content: InternedString {
-                                    inner: "Float",
-                                },
-                                start: Offset {
-                                    lines: 21,
-                                    columns: 76,
                                 },
                             },
                             args: [],

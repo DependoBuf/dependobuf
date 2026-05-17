@@ -662,13 +662,6 @@ fn get_operator(e: &Expression<Loc, Str>) -> (&'static str, Loc) {
             let loc = Loc::new(start, end);
             ("*", loc)
         }
-        ExpressionNode::OpCall(OpCall::Binary(BinaryOp::Slash, lhs, _)) => {
-            let start = lhs.loc.get_end();
-            let mut end = start;
-            *end.get_column_mut() += 1;
-            let loc = Loc::new(start, end);
-            ("/", loc)
-        }
         ExpressionNode::OpCall(OpCall::Binary(BinaryOp::BinaryAnd, lhs, _)) => {
             let start = lhs.loc.get_end();
             let mut end = start;

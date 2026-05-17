@@ -1,8 +1,4 @@
-use crate::common;
-use crate::common::{
-    get_basic_module, get_inventory_module, get_nat_vec_module, get_simple_message_module,
-    to_string_module,
-};
+use crate::common::*;
 use dbuf_gen::codegen;
 use pretty_assertions::assert_eq;
 
@@ -13,6 +9,7 @@ fn no_error_generation() {
         get_nat_vec_module(),
         get_simple_message_module(),
         get_inventory_module(),
+        builtin_message(),
     ];
     assert!(
         modules
@@ -27,7 +24,7 @@ fn no_error_generation() {
 
 #[test]
 fn basic() {
-    let module = common::get_basic_module();
+    let module = get_basic_module();
     let mut writer = Vec::new();
 
     assert!(codegen::generate_module(to_string_module(module), &mut writer).is_ok());
@@ -40,7 +37,7 @@ fn basic() {
 
 #[test]
 fn nat_vec() {
-    let module = common::get_nat_vec_module();
+    let module = get_nat_vec_module();
     let mut writer = Vec::new();
 
     assert!(codegen::generate_module(to_string_module(module), &mut writer).is_ok());

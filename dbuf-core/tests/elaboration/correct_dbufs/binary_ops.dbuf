@@ -1,0 +1,25 @@
+message IntDep (n Int) {}
+message UIntDep (n UInt) {}
+message StringDep (s String) {}
+message BoolDep (b Bool) {}
+
+message IntArithmetic (a Int) (b Int) {
+    sum IntDep (a + b);
+    diff IntDep (a - b);
+    prod IntDep (a * b);
+}
+
+message UIntArithmetic (a UInt) (b UInt) {
+    sum UIntDep (a + b);
+    prod UIntDep (a * b);
+}
+
+message StringConcat (s1 String) (s2 String) {
+    cat StringDep (s1 + s2);
+    chain StringDep (s1 + s2 + "!");
+}
+
+message BoolLogic (a Bool) (b Bool) {
+    and BoolDep (a & b);
+    or BoolDep (a | b);
+}

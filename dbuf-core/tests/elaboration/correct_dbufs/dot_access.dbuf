@@ -1,0 +1,12 @@
+message IntDep (n Int) {}
+message StringDep (s String) {}
+
+message Record {
+    x Int;
+    s String;
+}
+
+message UseRecord (r Record) {
+    xi IntDep r.x;
+    si StringDep r.s;
+}

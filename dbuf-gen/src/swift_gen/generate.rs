@@ -250,7 +250,6 @@ fn value_expr_to_swift(expr: &ast::ValueExpression) -> String {
                 ast::Literal::Int(i) => i.to_string(),
                 ast::Literal::Str(s) => format!("\"{s}\""),
                 ast::Literal::Bool(b) => b.to_string(),
-                ast::Literal::Double(d) => d.to_string(),
                 ast::Literal::UInt(u) => u.to_string(),
             },
             ast::OpCall::Unary(_, expr) => format!("-{}", value_expr_to_swift(expr)),

@@ -1,0 +1,5 @@
+message StringDep (s String) {}
+
+message Broken (a String) (b String) {
+    d StringDep (a - b);
+}

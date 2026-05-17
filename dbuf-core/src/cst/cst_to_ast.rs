@@ -230,7 +230,6 @@ fn convert_expression(expression: &Tree) -> Expression<LocationAST, NameAST> {
                         Child::Token(Token::Plus, _) => BinaryOp::Plus,
                         Child::Token(Token::Minus, _) => BinaryOp::Minus,
                         Child::Token(Token::Star, _) => BinaryOp::Star,
-                        Child::Token(Token::Slash, _) => BinaryOp::Slash,
                         Child::Token(Token::Amp, _) => BinaryOp::BinaryAnd,
                         Child::Token(Token::Pipe, _) => BinaryOp::BinaryOr,
                         _ => continue,
@@ -346,7 +345,6 @@ fn convert_literal(e: &Tree) -> Option<Literal> {
             Token::BoolLiteral(b) => Literal::Bool(*b),
             Token::IntLiteral(i) => Literal::Int(*i),
             Token::UintLiteral(ui) => Literal::UInt(*ui),
-            Token::FloatLiteral(f) => Literal::Double(*f),
             Token::StringLiteral(s) => Literal::Str(s.clone()),
             _ => continue,
         }
