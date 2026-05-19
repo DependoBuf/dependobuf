@@ -314,8 +314,10 @@ dependencies = [
  "ariadne",
  "clap",
  "dbuf-core",
+ "dbuf-format",
  "dbuf-gen",
  "dbuf-lsp",
+ "thiserror",
 ]
 
 [[package]]

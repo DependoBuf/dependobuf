@@ -1,3 +1,4 @@
+//! Module exports Reported struct, that reports errors during asts building.
 use std::ops::Range;
 
 use ariadne::{Color, Fmt, Label, Report, ReportKind, Source};
@@ -9,28 +10,42 @@ use dbuf_core::location::Offset;
 use dbuf_core::error::parsing::*;
 use dbuf_core::error::*;
 
-use super::file::File;
+use crate::file_content::FileContent;
 
+/// Reporter is a error reporter for errors during asts building.
 pub struct Reporter<'a> {
+    /// File metadata.
     meta: Metadata<'a>,
+    /// Current reported errors/warnings.
     reports: Vec<Report<'a, (&'a str, Range<usize>)>>,
 }
 
+/// Metadata contains metadata of file.
 struct Metadata<'a> {
-    file: &'a File,
+    /// File content and name.
+    content: &'a FileContent,
+    /// Position of \n characters to convert asts location to usize
+    /// character position.s
     newlines: Vec<usize>,
 }
 
+/// Trait for errors that can be reported.
+///
+/// `Extra` - extra metadata passed to report function. Should be
+/// built in other reportable instance.
+///
+/// (See `Reportable<()> for ParsingError`).
 trait Reportable<Extra> {
+    /// Make a report for current error.
     fn report<'a>(&self, meta: &Metadata<'a>, extra: &Extra)
     -> Report<'a, (&'a str, Range<usize>)>;
 }
 
 impl<'a> Reporter<'a> {
     /// Create new reporter for file.
-    pub fn new(file: &'a File) -> Self {
+    pub fn new(content: &'a FileContent) -> Self {
         Self {
-            meta: Metadata::new(file),
+            meta: Metadata::new(content),
             reports: vec![],
         }
     }
@@ -40,8 +55,8 @@ impl<'a> Reporter<'a> {
         for report in self.reports {
             report
                 .eprint((
-                    self.meta.file.name.as_ref(),
-                    Source::from(&self.meta.file.content),
+                    self.meta.content.get_name(),
+                    Source::from(self.meta.content.get_content()),
                 ))
                 .unwrap();
         }
@@ -59,20 +74,20 @@ impl<'a> Reporter<'a> {
 }
 
 impl<'a> Metadata<'a> {
-    pub fn new(file: &'a File) -> Self {
+    pub fn new(content: &'a FileContent) -> Self {
         let mut newlines = vec![0];
-        for (i, ch) in file.content.chars().enumerate() {
+        for (i, ch) in content.get_content().chars().enumerate() {
             if ch == '\n' {
                 newlines.push(i + 1);
             }
         }
 
-        Self { file, newlines }
+        Self { content, newlines }
     }
 
     fn convert_offset(&self, off: Offset) -> usize {
         if off.lines >= self.newlines.len() {
-            self.file.content.len()
+            self.content.get_content().len()
         } else {
             self.newlines[off.lines] + off.columns
         }
@@ -95,7 +110,7 @@ impl Reportable<()> for LexingError {
 
         let at = self.location();
         let span = meta.convert_location(&at);
-        let loc = (meta.file.name.as_ref(), span);
+        let loc = (meta.content.get_name(), span);
 
         Report::build(kind, loc.clone())
             .with_message(self.kind.to_string())
@@ -116,13 +131,13 @@ impl Reportable<ParsingError> for BadCallChain {
         let kind = ReportKind::Warning;
 
         let span = meta.convert_location(&extra.at);
-        let loc1 = (meta.file.name.as_ref(), span);
+        let loc1 = (meta.content.get_name(), span);
         let label1 = Label::new(loc1.clone())
             .with_color(Color::Yellow)
             .with_message(format!("Found {}", (Token::Dot).fg(Color::Yellow)));
 
         let span = meta.convert_location(&self.0);
-        let loc2 = (meta.file.name.as_ref(), span);
+        let loc2 = (meta.content.get_name(), span);
         let label2 = Label::new(loc2)
             .with_color(Color::Cyan)
             .with_message("Unfinished call chain");
@@ -147,7 +162,7 @@ impl Reportable<ParsingError> for MissingComma {
         let kind = ReportKind::Warning;
 
         let span = meta.convert_location(&self.0);
-        let loc = (meta.file.name.as_ref(), span);
+        let loc = (meta.content.get_name(), span);
         let label = Label::new(loc.clone())
             .with_color(Color::Cyan)
             .with_message("Line has no ending with comma".to_string());
@@ -175,7 +190,7 @@ impl Reportable<ParsingError> for TypedHole {
         let kind = ReportKind::Warning;
 
         let span = meta.convert_location(&extra.at);
-        let loc = (meta.file.name.as_ref(), span);
+        let loc = (meta.content.get_name(), span);
         let label = Label::new(loc.clone())
             .with_color(Color::Cyan)
             .with_message(format!("Found {}", (Token::Underscore).fg(Color::Cyan)));
@@ -211,7 +226,7 @@ impl Reportable<ParsingError> for () {
         let kind = ReportKind::Error;
 
         let span = meta.convert_location(&extra.at);
-        let loc = (meta.file.name.as_ref(), span);
+        let loc = (meta.content.get_name(), span);
 
         let (label, eof) = if let Some(t) = &extra.found {
             (

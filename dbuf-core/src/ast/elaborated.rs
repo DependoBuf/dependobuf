@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use super::operators::OpCall;
 
 /// An elaborated DependoBuf module.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Module<Str> {
     /// List of elaborated types in topologically sorted order.
     pub types: Vec<(Str, Type<Str>)>,

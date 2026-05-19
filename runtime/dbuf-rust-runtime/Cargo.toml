@@ -1,6 +1,6 @@
 [package]
-name = "dbuf-rust-runtime"
 edition.workspace = true
+name = "dbuf-rust-runtime"
 version.workspace = true
 
 [dependencies]

@@ -1,6 +1,6 @@
 [package]
-name = "dbuf-format"
 edition.workspace = true
+name = "dbuf-format"
 version.workspace = true
 
 [dependencies]
