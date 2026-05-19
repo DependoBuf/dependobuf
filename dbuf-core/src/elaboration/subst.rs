@@ -1,6 +1,7 @@
 use crate::ast::elaborated as e;
 use crate::ast::operators as o;
 
+/// Apply bindings to value expression. Returns new value expression
 pub fn apply_bindings<Str>(
     mut expr: e::ValueExpression<Str>,
     bindings: &[(Str, e::ValueExpression<Str>)],
@@ -14,6 +15,7 @@ where
     expr
 }
 
+/// Apply bindings to type expression. Returns new type expression
 pub fn apply_bindings_to_type<Str>(
     mut ty: e::TypeExpression<Str>,
     bindings: &[(Str, e::ValueExpression<Str>)],
@@ -27,6 +29,8 @@ where
     ty
 }
 
+/// Replace variable in value expression with replacement expression.
+/// Returns new expression with substitution
 pub fn subst_value<Str>(
     expr: e::ValueExpression<Str>,
     var: &Str,
@@ -65,6 +69,8 @@ where
     }
 }
 
+/// Replace variable in type expression with replacement expression.
+/// Returns new expression with substitution
 pub fn subst_type<Str>(
     ty: e::TypeExpression<Str>,
     var: &Str,
@@ -80,6 +86,8 @@ where
     }
 }
 
+/// Replace variable in many value expressions with replacement expression.
+/// Returns new expression with substitution
 fn subst_value_exprs<Str>(
     exprs: &e::ValueExprs<Str>,
     var: &Str,
@@ -96,6 +104,8 @@ where
     e::Rec::from(substituted.as_slice())
 }
 
+/// Replace variable in operator expression with replacement expression.
+/// Returns new expression with substitution
 fn subst_op_call<Str>(
     op: o::OpCall<Str, e::Rec<e::ValueExpression<Str>>>,
     var: &Str,

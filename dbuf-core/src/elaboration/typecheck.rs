@@ -1,41 +1,23 @@
 use crate::ast::{elaborated as e, operators as o, parsed as p};
-use crate::elaboration::{apply, builtins, context, operators, rename, subst, unify};
+use crate::elaboration::*;
 use crate::error::elaborating::Error;
 use crate::error::elaborating::Error::*;
 
-use crate::arena::InternedString;
-use crate::location::{LocatedName, Location, Offset};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::iter::zip;
 
-type Str = InternedString;
-type Loc = Location<Offset>;
-type Name = LocatedName<Str, Offset>;
-type TypeExpr = e::TypeExpression<Str>;
-type Value = e::ValueExpression<Str>;
-type ElaboratedCtx = e::Context<Str>;
-type Mod = e::Module<Str>;
-type Ctx<'a> = context::Context<'a, Str, TypeExpr, Value>;
-type ElaboratedDeclaration = (Str, e::Type<Str>, Vec<(Str, e::Constructor<Str>)>);
-type Bindings = Vec<(Str, Value)>;
-
-impl From<&o::UnaryOp<Name>> for o::UnaryOp<Str> {
-    fn from(value: &o::UnaryOp<Name>) -> Self {
-        match value {
-            o::UnaryOp::Access(s) => o::UnaryOp::Access(s.content.clone()),
-            o::UnaryOp::Minus => o::UnaryOp::Minus,
-            o::UnaryOp::Bang => o::UnaryOp::Bang,
-        }
-    }
-}
-
+/// Elaborate parsed module
+/// # Errors
+/// If the parsed module elaboration failed
 #[must_use]
 pub fn elaborate(module: &p::Module<Loc, Name>) -> Mod {
     elaborate_with_module_ctx(builtins::builtins_module::<Str>(), module)
 }
 
-#[must_use]
+/// Elaborate parsed module with module context
+/// # Errors
+/// If the parsed module elaboration in the context failed
 fn elaborate_with_module_ctx(mut module_ctx: Mod, module: &p::Module<Loc, Name>) -> Mod {
     let mut elaborated_module = e::Module {
         types: vec![],
@@ -59,14 +41,10 @@ fn elaborate_with_module_ctx(mut module_ctx: Mod, module: &p::Module<Loc, Name>)
     }
     elaborated_module
 }
-fn ctx_to_deps(elaborated_ctx: &ElaboratedCtx) -> Vec<Value> {
-    elaborated_ctx
-        .iter()
-        .cloned()
-        .map(|(name, ty)| Value::Variable { name, ty })
-        .collect::<Vec<_>>()
-}
 
+/// Elaborate type definition
+/// # Errors
+/// If the type definition elaboration failed
 fn elaborate_type_decl(
     module_ctx: &Mod,
     type_def: &p::definition::Definition<Loc, Name, p::TypeDeclaration<Loc, Name>>,
@@ -81,13 +59,13 @@ fn elaborate_type_decl(
 
     let mut binding = local_ctx.new_layer();
     let (local_ctx_with_deps, elaborated_dependencies) =
-        check_dependencies(module_ctx, &mut binding, dependencies);
+        elaborate_deps(module_ctx, &mut binding, dependencies);
     let deps = rename::add_suffix_context(elaborated_dependencies.clone(), "_dep");
 
     match body {
         p::TypeDefinition::Message(ctor_body) => {
             let name_str = name.content.clone();
-            let fields = elaborate_message(module_ctx, &local_ctx_with_deps, ctor_body);
+            let fields = elaborate_constructor_body(module_ctx, &local_ctx_with_deps, ctor_body);
 
             (
                 name_str.clone(),
@@ -139,7 +117,10 @@ fn elaborate_type_decl(
     }
 }
 
-fn check_dependencies<'a>(
+/// Elaborate type dependencies
+/// # Errors
+/// If elaboration any of the type dependencies failed
+fn elaborate_deps<'a>(
     module_ctx: &Mod,
     local_ctx: &'a mut Ctx<'a>,
     deps: &p::definition::Definitions<Loc, Name, p::TypeExpression<Loc, Name>>,
@@ -160,7 +141,10 @@ fn check_dependencies<'a>(
     (local_ctx.new_layer(), dependencies)
 }
 
-fn elaborate_message<'a>(
+/// Elaborate constructor body
+/// # Errors
+/// If the fields elaboration failed
+fn elaborate_constructor_body<'a>(
     module_ctx: &Mod,
     local_ctx: &'a Ctx<'a>,
     ctor_body: &p::ConstructorBody<Loc, Name>,
@@ -177,8 +161,9 @@ fn elaborate_message<'a>(
     fields
 }
 
-/// # Panics
+/// Elaborate type expression
 /// # Errors
+/// If the type expression elaboration failed
 fn elaborate_type<'a>(
     module_ctx: &Mod,
     local_ctx: &'a Ctx<'a>,
@@ -239,200 +224,9 @@ fn elaborate_type<'a>(
     }
 }
 
-/// Elaborate parsed expression into value
-/// # Panics
+/// Elaborate enum body
 /// # Errors
-fn elaborate_value<'a>(
-    module_ctx: &Mod,
-    local_ctx: &'a Ctx<'a>,
-    expr: &p::Expression<Loc, Name>,
-) -> Result<Value, Error> {
-    match &expr.node {
-        p::ExpressionNode::OpCall(op_call) => {
-            elaborate_operator_value(module_ctx, local_ctx, op_call)
-        }
-        p::ExpressionNode::FunCall { .. } => {
-            // No generics
-            Err(ElaboratingError)
-        }
-        p::ExpressionNode::ConstructorCall {
-            name,
-            fields: constructor_args,
-        } => elaborate_constructor_call(module_ctx, local_ctx, name, constructor_args),
-        p::ExpressionNode::Variable { name } => {
-            // Pattern-match aliases take priority over plain variable references.
-            if let Some(alias) = local_ctx.get_alias(&name.content) {
-                return Ok(alias.clone());
-            }
-            let ty = local_ctx
-                .get(&name.content)
-                .cloned()
-                .ok_or(ElaboratingError)?;
-            Ok(Value::Variable {
-                name: name.content.clone(),
-                ty,
-            })
-        }
-        p::ExpressionNode::TypedHole => Err(ElaboratingError),
-    }
-}
-
-/// Elaborate parsed operator expression into operator value
-/// # Panics
-/// # Errors
-fn elaborate_operator_value<'a>(
-    module_ctx: &Mod,
-    local_ctx: &'a Ctx<'a>,
-    op_expr: &o::OpCall<Name, e::Rec<p::Expression<Loc, Name>>>,
-) -> Result<Value, Error> {
-    match op_expr {
-        o::OpCall::Literal(literal) => Ok(Value::OpCall {
-            op_call: o::OpCall::Literal(literal.clone()),
-            result_type: operators::literal_to_type(literal),
-        }),
-        o::OpCall::Unary(o::UnaryOp::Access(field), value) => {
-            if let p::ExpressionNode::ConstructorCall {
-                name: ctor_name,
-                fields: ctor_args,
-            } = &value.node
-            {
-                let ctor = module_ctx
-                    .constructors
-                    .get(&ctor_name.content)
-                    .ok_or(ElaboratingError)?;
-                let field_idx = ctor
-                    .fields
-                    .iter()
-                    .position(|(n, _)| *n == field.content)
-                    .ok_or(ElaboratingError)?;
-                let field_arg = ctor_args.get(field_idx).ok_or(ElaboratingError)?;
-                return elaborate_value(module_ctx, local_ctx, &field_arg.data);
-            }
-
-            let elaborated_expr = elaborate_value(module_ctx, local_ctx, value)?;
-            let operand_type = value_result_type(&elaborated_expr);
-            let (_, _, concrete_field_type) =
-                operators::resolve_field_access(module_ctx, &operand_type, &field.content)?;
-
-            Ok(Value::OpCall {
-                op_call: o::OpCall::Unary(
-                    o::UnaryOp::Access(field.content.clone()),
-                    e::Rec::new(elaborated_expr),
-                ),
-                result_type: concrete_field_type,
-            })
-        }
-        o::OpCall::Unary(op @ (o::UnaryOp::Minus | o::UnaryOp::Bang), value) => {
-            let accepted_types = operators::unary_accepted_types(op);
-            let Some((elaborated_val, ty)) = accepted_types.iter().find_map(|x| {
-                let builtin = builtins::get_builtin(x);
-                let (v, bindings) = check(module_ctx, local_ctx, value, &builtin).ok()?;
-                assert_eq!(bindings.len(), 0);
-                Some((v, builtin))
-            }) else {
-                return Err(ElaboratingError);
-            };
-            Ok(Value::OpCall {
-                op_call: o::OpCall::Unary(op.into(), e::Rec::from(elaborated_val)),
-                result_type: ty,
-            })
-        }
-        o::OpCall::Binary(op, l, r) => {
-            let binary_op = |accepted_types: &[&str]| -> Result<Value, Error> {
-                let Some((builtin, left, right)) = accepted_types.iter().find_map(|x| {
-                    let builtin = builtins::get_builtin(x);
-                    let (left, bindings) = check(module_ctx, local_ctx, l, &builtin).ok()?;
-                    assert_eq!(bindings.len(), 0);
-
-                    let (right, bindings) = check(module_ctx, local_ctx, r, &builtin).ok()?;
-                    assert_eq!(bindings.len(), 0);
-                    Some((builtin, left, right))
-                }) else {
-                    return Err(ElaboratingError);
-                };
-                Ok(Value::OpCall {
-                    op_call: o::OpCall::Binary(*op, e::Rec::from(left), e::Rec::from(right)),
-                    result_type: builtin,
-                })
-            };
-            binary_op(operators::binary_accepted_types(op))
-        }
-    }
-}
-
-fn value_result_type(value: &Value) -> TypeExpr {
-    match value {
-        Value::OpCall { result_type, .. } => result_type.clone(),
-        Value::Constructor { result_type, .. } => result_type.clone(),
-        Value::Variable { ty, .. } => ty.clone(),
-    }
-}
-
-fn elaborate_constructor_call<'a>(
-    module_ctx: &Mod,
-    local_ctx: &'a Ctx<'a>,
-    name: &Name,
-    constructor_args: &p::definition::Definitions<Loc, Name, p::Expression<Loc, Name>>,
-) -> Result<Value, Error> {
-    let constructor = module_ctx
-        .constructors
-        .get(&name.content)
-        .ok_or(ElaboratingError)?;
-
-    let e::Constructor { fields, .. } = constructor;
-
-    match fields.len().cmp(&constructor_args.len()) {
-        Ordering::Less | Ordering::Greater => Err(ElaboratingError),
-        Ordering::Equal => {
-            let mut applied_constructor = constructor.clone();
-            let mut arguments_expression = Vec::new();
-            let mut all_implicit_bindings: Bindings = Vec::new();
-            for (p::definition::Definition { data, .. }, (_var_name, ty)) in
-                zip(constructor_args, fields.iter())
-            {
-                let (data_value, check_bindings) = check(module_ctx, local_ctx, data, ty)?;
-
-                all_implicit_bindings.extend(check_bindings);
-
-                let (new_ctor, argument_bindings) =
-                    apply::application(&applied_constructor, &data_value, module_ctx)?;
-
-                let applied_data_value = subst::apply_bindings(data_value, &argument_bindings);
-                arguments_expression.push(applied_data_value.clone());
-
-                applied_constructor = new_ctor;
-            }
-
-            let e::Constructor {
-                implicits,
-                result_type,
-                ..
-            } = applied_constructor;
-
-            let resolved_implicits = implicits
-                .into_iter()
-                .map(|(implicit_name, implicit_ty)| {
-                    all_implicit_bindings
-                        .iter()
-                        .find(|(n, _)| n == &implicit_name)
-                        .map(|(_, v)| v.clone())
-                        .unwrap_or(Value::Variable {
-                            name: implicit_name,
-                            ty: implicit_ty,
-                        })
-                })
-                .collect::<Vec<_>>();
-
-            Ok(Value::Constructor {
-                name: name.content.clone(),
-                implicits: e::Rec::from(resolved_implicits),
-                arguments: e::Rec::from(arguments_expression),
-                result_type,
-            })
-        }
-    }
-}
-
+/// If the enum elaboration failed
 fn elaborate_enum<'a>(
     module_ctx: &Mod,
     local_ctx: &'a Ctx<'a>,
@@ -461,14 +255,10 @@ fn elaborate_enum<'a>(
     (constructor_names.into_iter().collect(), constructors)
 }
 
-/// Processes one branch of an enum pattern match.
-///
-/// Returns the elaborated constructors for this branch with their concrete implicits and
-/// result type. The result type is computed from `draft_result_type` by substituting each
-/// dep variable with the value established by its pattern.
+/// Elaborate one branch of enum pattern match
 ///
 /// # Errors
-/// Returns `Err` when pattern count mismatches or any pattern is invalid.
+/// If pattern count mismatches or any pattern elaboration failed
 fn elaborate_branch<'a>(
     module_ctx: &Mod,
     local_ctx: &'a Ctx<'a>,
@@ -517,7 +307,7 @@ fn elaborate_branch<'a>(
         ..
     } in &branch.constructors
     {
-        let fields = elaborate_message(module_ctx, &branch_ctx, ctor_body);
+        let fields = elaborate_constructor_body(module_ctx, &branch_ctx, ctor_body);
         ctors.push((
             ctor_name.content.clone(),
             e::Constructor {
@@ -530,136 +320,9 @@ fn elaborate_branch<'a>(
     Ok(ctors)
 }
 
-/// # Panics
+/// Elaborate pattern in pattern-matching branch
 /// # Errors
-fn check<'a>(
-    module_ctx: &Mod,
-    local_ctx: &'a Ctx<'a>,
-    expression: &p::Expression<Loc, Name>,
-    expected_type: &TypeExpr,
-) -> Result<(Value, Bindings), Error> {
-    match &expression.node {
-        p::ExpressionNode::OpCall(op) => match op {
-            o::OpCall::Literal(literal) => {
-                operators::check_literal(literal, expected_type)?;
-                return Ok((
-                    Value::OpCall {
-                        op_call: o::OpCall::Literal(literal.clone()),
-                        result_type: expected_type.clone(),
-                    },
-                    vec![],
-                ));
-            }
-            o::OpCall::Unary(op @ (o::UnaryOp::Minus | o::UnaryOp::Bang), arg) => {
-                let accepted = operators::unary_accepted_types(op);
-                if !accepted
-                    .iter()
-                    .any(|t| *expected_type == builtins::get_builtin(t))
-                {
-                    return Err(ElaboratingError);
-                }
-                let (checked_arg, bindings) = check(module_ctx, local_ctx, arg, expected_type)?;
-                assert_eq!(bindings.len(), 0);
-                return Ok((
-                    Value::OpCall {
-                        op_call: o::OpCall::Unary(op.into(), e::Rec::from(checked_arg)),
-                        result_type: expected_type.clone(),
-                    },
-                    vec![],
-                ));
-            }
-            o::OpCall::Binary(op, l, r) => {
-                let accepted = operators::binary_accepted_types(op);
-                if !accepted
-                    .iter()
-                    .any(|t| *expected_type == builtins::get_builtin(t))
-                {
-                    return Err(ElaboratingError);
-                }
-                let (checked_l, bindings_l) = check(module_ctx, local_ctx, l, expected_type)?;
-                assert_eq!(bindings_l.len(), 0);
-                let (checked_r, bindings_r) = check(module_ctx, local_ctx, r, expected_type)?;
-                assert_eq!(bindings_r.len(), 0);
-                return Ok((
-                    Value::OpCall {
-                        op_call: o::OpCall::Binary(
-                            *op,
-                            e::Rec::from(checked_l),
-                            e::Rec::from(checked_r),
-                        ),
-                        result_type: expected_type.clone(),
-                    },
-                    vec![],
-                ));
-            }
-            o::OpCall::Unary(..) => {}
-        },
-
-        p::ExpressionNode::ConstructorCall { name, fields } => {
-            return check_constructor_call(module_ctx, local_ctx, name, fields, expected_type);
-        }
-        _ => {}
-    }
-    let elaborated = elaborate_value(module_ctx, local_ctx, expression)?;
-    let inferred_type = value_result_type(&elaborated);
-
-    let (left_bindings, right_bindings) =
-        unify::unify_type(&inferred_type, expected_type, module_ctx)
-            .map_err(|_| ElaboratingError)?;
-    assert_eq!(left_bindings.len(), 0);
-    if !left_bindings.is_empty() && !right_bindings.is_empty() {
-        let elaborated_with_binds = subst::apply_bindings(elaborated, &left_bindings);
-        return Ok((elaborated_with_binds, right_bindings));
-    }
-    Ok((elaborated, right_bindings))
-}
-
-fn check_constructor_call<'a>(
-    module_ctx: &Mod,
-    local_ctx: &'a Ctx<'a>,
-    name: &Name,
-    constructor_args: &p::definition::Definitions<Loc, Name, p::Expression<Loc, Name>>,
-    expected_type: &TypeExpr,
-) -> Result<(Value, Bindings), Error> {
-    let elaborated = elaborate_constructor_call(module_ctx, local_ctx, name, constructor_args)?;
-
-    let TypeExpr::TypeExpression {
-        name: inferred_name,
-        dependencies: inferred_deps,
-    } = &value_result_type(&elaborated);
-
-    let TypeExpr::TypeExpression {
-        name: expected_name,
-        dependencies: expected_deps,
-    } = expected_type;
-
-    if inferred_name != expected_name || inferred_deps.len() != expected_deps.len() {
-        return Err(ElaboratingError);
-    }
-
-    let mut left_bindings: Bindings = vec![];
-    let mut right_bindings: Bindings = vec![];
-
-    for (inferred_dep, expected_dep) in zip(inferred_deps.iter(), expected_deps.iter()) {
-        match inferred_dep {
-            Value::Variable { name, .. } => {
-                left_bindings.push((name.clone(), expected_dep.clone()));
-            }
-            concrete => {
-                let (lb, rb) =
-                    unify::unify_value(concrete, expected_dep).map_err(|_| ElaboratingError)?;
-                left_bindings.extend(lb);
-                right_bindings.extend(rb);
-            }
-        }
-    }
-
-    Ok((
-        subst::apply_bindings(elaborated, &left_bindings),
-        right_bindings,
-    ))
-}
-
+/// If the pattern elaboration failed
 fn elaborate_pattern(
     module_ctx: &Mod,
     pattern: &p::Pattern<Loc, Name>,
@@ -720,6 +383,9 @@ fn elaborate_pattern(
     }
 }
 
+/// Elaborate constructor pattern in pattern-matching branch
+/// # Errors
+/// If the constructor pattern elaboration failed
 fn elaborate_pattern_constructor(
     module_ctx: &Mod,
     ctor: &e::Constructor<Str>,
@@ -794,4 +460,351 @@ fn elaborate_pattern_constructor(
         })
         .collect();
     Ok((implicit_values, argument_values))
+}
+
+/*
+ * ==========================================================
+ * Infer functions
+ * ==========================================================
+ */
+
+/// Elaborate parsed expression into typed value
+/// # Errors
+/// If the expression elaboration failed
+fn infer<'a>(
+    module_ctx: &Mod,
+    local_ctx: &'a Ctx<'a>,
+    expr: &p::Expression<Loc, Name>,
+) -> Result<Value, Error> {
+    match &expr.node {
+        p::ExpressionNode::OpCall(op_call) => infer_operator(module_ctx, local_ctx, op_call),
+        p::ExpressionNode::FunCall { .. } => {
+            // No generics
+            Err(ElaboratingError)
+        }
+        p::ExpressionNode::ConstructorCall {
+            name,
+            fields: constructor_args,
+        } => infer_constructor_call(module_ctx, local_ctx, name, constructor_args),
+        p::ExpressionNode::Variable { name } => {
+            if let Some(alias) = local_ctx.get_alias(&name.content) {
+                return Ok(alias.clone());
+            }
+            let ty = local_ctx
+                .get(&name.content)
+                .cloned()
+                .ok_or(ElaboratingError)?;
+            Ok(Value::Variable {
+                name: name.content.clone(),
+                ty,
+            })
+        }
+        p::ExpressionNode::TypedHole => Err(ElaboratingError),
+    }
+}
+
+/// Elaborate parsed operator expression into typed operator value
+/// # Errors
+/// If the operator expression elaboration failed
+fn infer_operator<'a>(
+    module_ctx: &Mod,
+    local_ctx: &'a Ctx<'a>,
+    op_expr: &o::OpCall<Name, e::Rec<p::Expression<Loc, Name>>>,
+) -> Result<Value, Error> {
+    match op_expr {
+        o::OpCall::Literal(literal) => Ok(Value::OpCall {
+            op_call: o::OpCall::Literal(literal.clone()),
+            result_type: operators::literal_to_type(literal),
+        }),
+        o::OpCall::Unary(o::UnaryOp::Access(field), value) => {
+            if let p::ExpressionNode::ConstructorCall {
+                name: ctor_name,
+                fields: ctor_args,
+            } = &value.node
+            {
+                let ctor = module_ctx
+                    .constructors
+                    .get(&ctor_name.content)
+                    .ok_or(ElaboratingError)?;
+                let field_idx = ctor
+                    .fields
+                    .iter()
+                    .position(|(n, _)| *n == field.content)
+                    .ok_or(ElaboratingError)?;
+                let field_arg = ctor_args.get(field_idx).ok_or(ElaboratingError)?;
+                return infer(module_ctx, local_ctx, &field_arg.data);
+            }
+
+            let elaborated_expr = infer(module_ctx, local_ctx, value)?;
+            let operand_type = type_of(&elaborated_expr);
+            let (_, _, concrete_field_type) =
+                operators::resolve_field_access(module_ctx, &operand_type, &field.content)?;
+
+            Ok(Value::OpCall {
+                op_call: o::OpCall::Unary(
+                    o::UnaryOp::Access(field.content.clone()),
+                    e::Rec::new(elaborated_expr),
+                ),
+                result_type: concrete_field_type,
+            })
+        }
+        o::OpCall::Unary(op @ (o::UnaryOp::Minus | o::UnaryOp::Bang), value) => {
+            let accepted_types = operators::unary_accepted_types(op);
+            let Some((elaborated_val, ty)) = accepted_types.iter().find_map(|x| {
+                let builtin = builtins::get_builtin(x);
+                let (v, bindings) = check(module_ctx, local_ctx, value, &builtin).ok()?;
+                assert_eq!(bindings.len(), 0);
+                Some((v, builtin))
+            }) else {
+                return Err(ElaboratingError);
+            };
+            Ok(Value::OpCall {
+                op_call: o::OpCall::Unary(op.into(), e::Rec::from(elaborated_val)),
+                result_type: ty,
+            })
+        }
+        o::OpCall::Binary(op, l, r) => {
+            let binary_op = |accepted_types: &[&str]| -> Result<Value, Error> {
+                let Some((builtin, left, right)) = accepted_types.iter().find_map(|x| {
+                    let builtin = builtins::get_builtin(x);
+                    let (left, bindings) = check(module_ctx, local_ctx, l, &builtin).ok()?;
+                    assert_eq!(bindings.len(), 0);
+
+                    let (right, bindings) = check(module_ctx, local_ctx, r, &builtin).ok()?;
+                    assert_eq!(bindings.len(), 0);
+                    Some((builtin, left, right))
+                }) else {
+                    return Err(ElaboratingError);
+                };
+                Ok(Value::OpCall {
+                    op_call: o::OpCall::Binary(*op, e::Rec::from(left), e::Rec::from(right)),
+                    result_type: builtin,
+                })
+            };
+            binary_op(operators::binary_accepted_types(op))
+        }
+    }
+}
+
+/// Elaborate parsed constructor call expression into typed value
+/// # Errors
+/// If the expression elaboration failed
+fn infer_constructor_call<'a>(
+    module_ctx: &Mod,
+    local_ctx: &'a Ctx<'a>,
+    name: &Name,
+    constructor_args: &p::definition::Definitions<Loc, Name, p::Expression<Loc, Name>>,
+) -> Result<Value, Error> {
+    let constructor = module_ctx
+        .constructors
+        .get(&name.content)
+        .ok_or(ElaboratingError)?;
+
+    let e::Constructor { fields, .. } = constructor;
+
+    match fields.len().cmp(&constructor_args.len()) {
+        Ordering::Less | Ordering::Greater => Err(ElaboratingError),
+        Ordering::Equal => {
+            let mut applied_constructor = constructor.clone();
+            let mut arguments_expression = Vec::new();
+            let mut all_implicit_bindings: Bindings = Vec::new();
+            for (p::definition::Definition { data, .. }, (_var_name, ty)) in
+                zip(constructor_args, fields.iter())
+            {
+                let (data_value, check_bindings) = check(module_ctx, local_ctx, data, ty)?;
+
+                all_implicit_bindings.extend(check_bindings);
+
+                let (new_ctor, argument_bindings) =
+                    apply::application(&applied_constructor, &data_value, module_ctx)?;
+
+                let applied_data_value = subst::apply_bindings(data_value, &argument_bindings);
+                arguments_expression.push(applied_data_value.clone());
+
+                applied_constructor = new_ctor;
+            }
+
+            let e::Constructor {
+                implicits,
+                result_type,
+                ..
+            } = applied_constructor;
+
+            let resolved_implicits = implicits
+                .into_iter()
+                .map(|(implicit_name, implicit_ty)| {
+                    all_implicit_bindings
+                        .iter()
+                        .find(|(n, _)| n == &implicit_name)
+                        .map(|(_, v)| v.clone())
+                        .unwrap_or(Value::Variable {
+                            name: implicit_name,
+                            ty: implicit_ty,
+                        })
+                })
+                .collect::<Vec<_>>();
+
+            Ok(Value::Constructor {
+                name: name.content.clone(),
+                implicits: e::Rec::from(resolved_implicits),
+                arguments: e::Rec::from(arguments_expression),
+                result_type,
+            })
+        }
+    }
+}
+
+/*
+ * ==========================================================
+ * Check functions
+ * ==========================================================
+ */
+
+/// Checks that parsed expression is of the expected type
+/// # Errors
+/// If the expression elaboration failed or type mismatched
+fn check<'a>(
+    module_ctx: &Mod,
+    local_ctx: &'a Ctx<'a>,
+    expression: &p::Expression<Loc, Name>,
+    expected_type: &TypeExpr,
+) -> Result<(Value, Bindings), Error> {
+    match &expression.node {
+        p::ExpressionNode::OpCall(op) => match op {
+            o::OpCall::Literal(literal) => {
+                operators::check_literal(literal, expected_type)?;
+                return Ok((
+                    Value::OpCall {
+                        op_call: o::OpCall::Literal(literal.clone()),
+                        result_type: expected_type.clone(),
+                    },
+                    vec![],
+                ));
+            }
+            o::OpCall::Unary(op @ (o::UnaryOp::Minus | o::UnaryOp::Bang), arg) => {
+                let accepted = operators::unary_accepted_types(op);
+                if !accepted
+                    .iter()
+                    .any(|t| *expected_type == builtins::get_builtin(t))
+                {
+                    return Err(ElaboratingError);
+                }
+                let (checked_arg, bindings) = check(module_ctx, local_ctx, arg, expected_type)?;
+                assert_eq!(bindings.len(), 0);
+                return Ok((
+                    Value::OpCall {
+                        op_call: o::OpCall::Unary(op.into(), e::Rec::from(checked_arg)),
+                        result_type: expected_type.clone(),
+                    },
+                    vec![],
+                ));
+            }
+            o::OpCall::Binary(op, l, r) => {
+                let accepted = operators::binary_accepted_types(op);
+                if !accepted
+                    .iter()
+                    .any(|t| *expected_type == builtins::get_builtin(t))
+                {
+                    return Err(ElaboratingError);
+                }
+                let (checked_l, bindings_l) = check(module_ctx, local_ctx, l, expected_type)?;
+                assert_eq!(bindings_l.len(), 0);
+                let (checked_r, bindings_r) = check(module_ctx, local_ctx, r, expected_type)?;
+                assert_eq!(bindings_r.len(), 0);
+                return Ok((
+                    Value::OpCall {
+                        op_call: o::OpCall::Binary(
+                            *op,
+                            e::Rec::from(checked_l),
+                            e::Rec::from(checked_r),
+                        ),
+                        result_type: expected_type.clone(),
+                    },
+                    vec![],
+                ));
+            }
+            o::OpCall::Unary(..) => {}
+        },
+
+        p::ExpressionNode::ConstructorCall { name, fields } => {
+            return check_constructor_call(module_ctx, local_ctx, name, fields, expected_type);
+        }
+        _ => {}
+    }
+    let elaborated = infer(module_ctx, local_ctx, expression)?;
+    let inferred_type = type_of(&elaborated);
+
+    let (left_bindings, right_bindings) =
+        unify::unify_type(&inferred_type, expected_type, module_ctx)
+            .map_err(|_| ElaboratingError)?;
+    assert_eq!(left_bindings.len(), 0);
+    if !left_bindings.is_empty() && !right_bindings.is_empty() {
+        let elaborated_with_binds = subst::apply_bindings(elaborated, &left_bindings);
+        return Ok((elaborated_with_binds, right_bindings));
+    }
+    Ok((elaborated, right_bindings))
+}
+
+/// Checks that constructor expression is of the expected type
+/// # Errors
+/// If the constructor expression elaboration failed or type mismatched
+fn check_constructor_call<'a>(
+    module_ctx: &Mod,
+    local_ctx: &'a Ctx<'a>,
+    name: &Name,
+    constructor_args: &p::definition::Definitions<Loc, Name, p::Expression<Loc, Name>>,
+    expected_type: &TypeExpr,
+) -> Result<(Value, Bindings), Error> {
+    let elaborated = infer_constructor_call(module_ctx, local_ctx, name, constructor_args)?;
+
+    let TypeExpr::TypeExpression {
+        name: inferred_name,
+        dependencies: inferred_deps,
+    } = &type_of(&elaborated);
+
+    let TypeExpr::TypeExpression {
+        name: expected_name,
+        dependencies: expected_deps,
+    } = expected_type;
+
+    if inferred_name != expected_name || inferred_deps.len() != expected_deps.len() {
+        return Err(ElaboratingError);
+    }
+
+    let mut left_bindings: Bindings = vec![];
+    let mut right_bindings: Bindings = vec![];
+
+    for (inferred_dep, expected_dep) in zip(inferred_deps.iter(), expected_deps.iter()) {
+        match inferred_dep {
+            Value::Variable { name, .. } => {
+                left_bindings.push((name.clone(), expected_dep.clone()));
+            }
+            concrete => {
+                let (lb, rb) =
+                    unify::unify_value(concrete, expected_dep).map_err(|_| ElaboratingError)?;
+                left_bindings.extend(lb);
+                right_bindings.extend(rb);
+            }
+        }
+    }
+
+    Ok((
+        subst::apply_bindings(elaborated, &left_bindings),
+        right_bindings,
+    ))
+}
+
+/*
+ * ==========================================================
+ * Helper functions
+ * ==========================================================
+ */
+
+/// Convert elaborated context to typed variables vector
+fn ctx_to_deps(elaborated_ctx: &ElaboratedCtx) -> Vec<Value> {
+    elaborated_ctx
+        .iter()
+        .cloned()
+        .map(|(name, ty)| Value::Variable { name, ty })
+        .collect::<Vec<_>>()
 }

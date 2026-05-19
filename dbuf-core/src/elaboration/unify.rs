@@ -17,7 +17,9 @@ pub enum UnifyError {
     CannotUnify,
 }
 
+/// Unifies type expressions. Returns bindings that unify types
 /// # Errors
+/// If the types can't be unified.
 pub fn unify_type<Str>(
     a: &e::TypeExpression<Str>,
     b: &e::TypeExpression<Str>,
@@ -55,7 +57,9 @@ where
     )
 }
 
+/// Unifies value expressions. Returns bindings that unify values
 /// # Errors
+/// If the values can't be unified.
 pub fn unify_value<Str>(
     a: &e::ValueExpression<Str>,
     b: &e::ValueExpression<Str>,
@@ -68,7 +72,6 @@ where
             e::ValueExpression::Variable { name: x, .. },
             e::ValueExpression::Variable { name: y, .. },
         ) if x == y => Ok((vec![], vec![])),
-        //TODO: check types are equal
         (
             e::ValueExpression::Variable { name: x, ty: ty_x },
             e::ValueExpression::Variable { name: y, ty: _ty_y },
@@ -119,6 +122,9 @@ where
     }
 }
 
+/// Sequentially unifies value expressions. Returns bindings that unify types
+/// # Errors
+/// If the types can't be unified.
 fn unify_args<Str>(
     mut left: Vec<e::ValueExpression<Str>>,
     mut right: Vec<e::ValueExpression<Str>>,
@@ -146,6 +152,9 @@ where
     Ok((acc_left, acc_right))
 }
 
+/// Unifies operator expressions. Returns bindings that unify it
+/// # Errors
+/// If the operator expressions can't be unified.
 fn unify_op_call<Str>(
     a: &o::OpCall<Str, e::Rec<e::ValueExpression<Str>>>,
     b: &o::OpCall<Str, e::Rec<e::ValueExpression<Str>>>,
@@ -162,7 +171,7 @@ where
             }
         }
         (o::OpCall::Unary(op_a, expr_a), o::OpCall::Unary(op_b, expr_b)) => {
-            if !unary_ops_match(op_a, op_b) {
+            if op_a != op_b {
                 return Err(UnifyError::OperatorMismatch);
             }
             unify_value(expr_a, expr_b)
@@ -180,14 +189,9 @@ where
     }
 }
 
-fn unary_ops_match<Str: Eq>(a: &o::UnaryOp<Str>, b: &o::UnaryOp<Str>) -> bool {
-    match (a, b) {
-        (o::UnaryOp::Access(fa), o::UnaryOp::Access(fb)) => fa == fb,
-        (o::UnaryOp::Minus, o::UnaryOp::Minus) | (o::UnaryOp::Bang, o::UnaryOp::Bang) => true,
-        _ => false,
-    }
-}
-
+/// Join two binding list
+/// # Errors
+/// If it has conflicting bindings
 fn extend_bindings<Str>(acc: &mut Bindings<Str>, new: Bindings<Str>) -> Result<(), UnifyError>
 where
     Str: Clone + Eq,

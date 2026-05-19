@@ -6,7 +6,7 @@ use crate::error::elaborating::Error::ElaboratingError;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-/// Returns the builtin type names that a unary operator accepts.
+/// Returns the builtin type names that unary operator accepts.
 #[must_use]
 pub fn unary_accepted_types<S>(op: &o::UnaryOp<S>) -> &'static [&'static str] {
     match op {
@@ -16,7 +16,7 @@ pub fn unary_accepted_types<S>(op: &o::UnaryOp<S>) -> &'static [&'static str] {
     }
 }
 
-/// Returns the builtin type names that a binary operator accepts.
+/// Returns the builtin type names that binary operator accepts.
 #[must_use]
 pub fn binary_accepted_types(op: &o::BinaryOp) -> &'static [&'static str] {
     match op {
@@ -27,6 +27,7 @@ pub fn binary_accepted_types(op: &o::BinaryOp) -> &'static [&'static str] {
     }
 }
 
+/// Map the builtin type names that binary operator accepts.
 #[must_use]
 pub fn literal_to_type<Str: From<String>>(literal: &o::Literal) -> e::TypeExpression<Str> {
     builtins::get_builtin(match literal {
@@ -38,16 +39,8 @@ pub fn literal_to_type<Str: From<String>>(literal: &o::Literal) -> e::TypeExpres
 }
 
 /// Checks that a literal is of the expected type
-///
-/// # Arguments
-///
-/// * `literal`: literal to be checked
-/// * `expected_type`: `TypeExpression` that the `literal` must satisfy
-///
-/// returns: Result<(), Error>
-///
 /// # Errors
-/// * `ElaborationError`: when literal didn't match expected type
+/// If literal didn't match expected type
 pub fn check_literal<Str: Eq + From<String>>(
     literal: &o::Literal,
     expected_type: &e::TypeExpression<Str>,
@@ -66,13 +59,9 @@ pub fn check_literal<Str: Eq + From<String>>(
 }
 
 /// Gets the operand type and the name of the field being accessed.
-/// Returns the constructor, the field's position within it, and the field's
-/// *concrete* type — that is, the declared field type with the message's dependency
-/// variables replaced by the concrete values carried in `operand_type`.
-///
+/// Returns the constructor, the field's position, and the field's type.
 /// # Errors
-/// Returns `Err` if the type is not a message, or if
-/// no field with the given name exists.
+/// If the type is not a message, or if no field with the given name exists.
 pub fn resolve_field_access<Str: Debug + Clone + Hash + Eq + Ord>(
     module_ctx: &e::Module<Str>,
     operand_type: &e::TypeExpression<Str>,
