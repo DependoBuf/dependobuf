@@ -2,6 +2,7 @@
 //!
 
 use std::borrow::Cow;
+use std::cmp::max;
 use std::ops::BitAnd;
 
 use super::utils::{Event, PrettyStrategy};
@@ -24,7 +25,7 @@ fn token_to_string<'a>(t: &'a Token, l: &'a Location<Offset>) -> Cow<'a, str> {
         Token::StringLiteral(l) => format!("\"{l}\"").into(),
         Token::UCIdentifier(l) => l.into(),
         Token::LCIdentifier(l) => l.into(),
-        Token::Arrow => "->".into(),
+        Token::Arrow => "=>".into(),
         Token::Colon => ":".into(),
         Token::Semicolon => ";".into(),
         Token::Comma => ",".into(),
@@ -72,32 +73,25 @@ impl BitAnd for SpacePolicy {
 }
 
 /// Policy for printing new lines.
-#[derive(Clone, Copy)]
+/// Order by priority from least to most.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum LinePolicy {
-    /// Forces to not print new line.
-    NoLine,
     /// Print new line if next token agree.
     MaybeLine,
     /// If user had new line between tokens then
     /// forces new line. If no, then no new line.
     UserBased,
+    /// Two new lines.
+    TwoLine,
+    /// Forces to not print new line.
+    NoLine,
 }
 
 impl BitAnd for LinePolicy {
     type Output = LinePolicy;
 
     fn bitand(self, rhs: Self) -> Self::Output {
-        match (self, rhs) {
-            (LinePolicy::NoLine, LinePolicy::NoLine) => LinePolicy::NoLine,
-            (LinePolicy::NoLine, LinePolicy::MaybeLine) => LinePolicy::NoLine,
-            (LinePolicy::NoLine, LinePolicy::UserBased) => LinePolicy::NoLine,
-            (LinePolicy::MaybeLine, LinePolicy::NoLine) => LinePolicy::NoLine,
-            (LinePolicy::MaybeLine, LinePolicy::MaybeLine) => LinePolicy::MaybeLine,
-            (LinePolicy::MaybeLine, LinePolicy::UserBased) => LinePolicy::UserBased,
-            (LinePolicy::UserBased, LinePolicy::NoLine) => LinePolicy::NoLine,
-            (LinePolicy::UserBased, LinePolicy::MaybeLine) => LinePolicy::UserBased,
-            (LinePolicy::UserBased, LinePolicy::UserBased) => LinePolicy::UserBased,
-        }
+        max(self, rhs)
     }
 }
 
@@ -205,10 +199,32 @@ impl<'a> Strategy<'a> {
     }
 
     /// returns token policy that should be applied before token.
-    fn before_token_policy(&self, _t: &Token) -> TokenPolicy {
-        let _ = self;
+    fn before_token_policy(&self, t: &Token) -> TokenPolicy {
+        if matches!((self.last_token, t), (Some(Token::LBrace), Token::RBrace)) {
+            return TokenPolicy {
+                space: SpacePolicy::NoSpace,
+                line: LinePolicy::NoLine,
+            };
+        }
+
+        let ctr_scope = matches!(
+            self.scope,
+            TreeKind::ConstructedPattern | TreeKind::ConstructedValue
+        );
+
+        let space = match t {
+            Token::LBrace if ctr_scope => SpacePolicy::NoSpace,
+            Token::RBrace if ctr_scope => SpacePolicy::NoSpace,
+            Token::RParen => SpacePolicy::NoSpace,
+            Token::Semicolon => SpacePolicy::NoSpace,
+            Token::Colon => SpacePolicy::NoSpace,
+            Token::Comma => SpacePolicy::NoSpace,
+            Token::Dot => SpacePolicy::NoSpace,
+            _ => SpacePolicy::MaybeSpace,
+        };
+
         TokenPolicy {
-            space: SpacePolicy::MaybeSpace,
+            space,
             line: LinePolicy::MaybeLine,
         }
     }
@@ -219,6 +235,14 @@ impl<'a> Strategy<'a> {
             self.scope,
             TreeKind::ConstructedPattern | TreeKind::ConstructedValue
         );
+
+        let space = match t {
+            Token::LBrace if ctr_scope => SpacePolicy::NoSpace,
+            Token::LParen => SpacePolicy::NoSpace,
+            Token::Dot => SpacePolicy::NoSpace,
+            _ => SpacePolicy::MaybeSpace,
+        };
+
         let line = match t {
             Token::LineComment(_) => LinePolicy::MaybeLine,
             Token::Semicolon => LinePolicy::MaybeLine,
@@ -227,10 +251,7 @@ impl<'a> Strategy<'a> {
             _ => LinePolicy::UserBased,
         };
 
-        TokenPolicy {
-            space: SpacePolicy::MaybeSpace,
-            line,
-        }
+        TokenPolicy { space, line }
     }
 
     /// returns `DocBuilder`, representing new line + tab.
@@ -249,14 +270,21 @@ impl<'a> Strategy<'a> {
         D: DocAllocator<'a>,
         D::Doc: Clone,
     {
-        if matches!(policy.line, LinePolicy::MaybeLine)
-            || (matches!(policy.line, LinePolicy::UserBased) && self.user_newline)
-        {
-            self.alloc_line(allocator)
-        } else if matches!(policy.space, SpacePolicy::MaybeSpace) {
-            allocator.text(" ")
-        } else {
-            allocator.nil()
+        match policy.line {
+            LinePolicy::MaybeLine => return self.alloc_line(allocator),
+            LinePolicy::UserBased if self.user_newline => return self.alloc_line(allocator),
+            LinePolicy::UserBased => (),
+            LinePolicy::TwoLine => {
+                return self
+                    .alloc_line(allocator)
+                    .append(self.alloc_line(allocator));
+            }
+            LinePolicy::NoLine => (),
+        }
+
+        match policy.space {
+            SpacePolicy::NoSpace => allocator.nil(),
+            SpacePolicy::MaybeSpace => allocator.text(" "),
         }
     }
 }
@@ -299,6 +327,11 @@ impl<'a, D> PrettyStrategy<'a, D> for Strategy<'a> {
             }
             Event::ExitScope(tree_kind) => {
                 self.scope = tree_kind.clone();
+
+                if matches!(tree_kind, TreeKind::File) {
+                    self.last_policy.line = LinePolicy::TwoLine;
+                }
+
                 allocator.nil()
             }
         }

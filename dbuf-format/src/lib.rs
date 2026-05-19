@@ -5,7 +5,7 @@ mod utils;
 
 use dbuf_core::cst::*;
 
-use pretty::BoxAllocator;
+use pretty::{BoxAllocator, DocAllocator};
 
 /// Converts CST Tree to pretty printed String
 ///
@@ -22,7 +22,9 @@ pub fn pretty_print(t: &Tree) -> String {
 
     let (_, doc) = utils::run(t, strategy, alloc);
 
-    doc.render(80, &mut write).expect("ok");
+    doc.append(alloc.hardline())
+        .render(80, &mut write)
+        .expect("ok");
 
     String::from_utf8(write).expect("printed code is utf8")
 }
