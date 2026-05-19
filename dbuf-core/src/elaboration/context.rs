@@ -1,33 +1,50 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
-#[derive(Default, Debug, Clone)]
-pub struct Context<'a, Key, Value>
+#[derive(Debug, Clone)]
+pub struct Context<'a, Key, Value, Alias>
 where
     Key: Hash + Eq + 'a,
     Value: 'a,
+    Alias: 'a,
 {
-    pub parent: Option<&'a Context<'a, Key, Value>>,
+    pub parent: Option<&'a Context<'a, Key, Value, Alias>>,
     pub terms: HashMap<Key, Value>,
+    pub aliases: HashMap<Key, Alias>,
 }
 
-impl<'a, Key, Value> Context<'a, Key, Value>
+impl<'a, Key, Value, Alias> Default for Context<'a, Key, Value, Alias>
 where
     Key: Hash + Eq + 'a,
+    Value: 'a,
+    Alias: 'a,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<'a, Key, Value, Alias> Context<'a, Key, Value, Alias>
+where
+    Key: Hash + Eq + 'a,
+    Value: 'a,
+    Alias: 'a,
 {
     #[must_use]
     pub fn new() -> Self {
         Self {
             parent: None,
             terms: HashMap::new(),
+            aliases: HashMap::new(),
         }
     }
 
     #[must_use]
     pub fn new_layer(&'a self) -> Self {
-        Context::<'a, Key, Value> {
+        Context {
             parent: Some(self),
             terms: HashMap::new(),
+            aliases: HashMap::new(),
         }
     }
 
@@ -40,11 +57,21 @@ where
     pub fn insert(&mut self, var_name: Key, var_type: Value) {
         self.terms.insert(var_name, var_type);
     }
+
+    pub fn get_alias(&self, name: &Key) -> Option<&Alias> {
+        self.aliases
+            .get(name)
+            .or_else(|| self.parent.and_then(|p| p.get_alias(name)))
+    }
+
+    pub fn insert_alias(&mut self, name: Key, alias: Alias) {
+        self.aliases.insert(name, alias);
+    }
 }
 
 #[test]
 fn test_context_find_type() {
-    let mut context = Context::new();
+    let mut context: Context<String, &str, ()> = Context::new();
     context.insert(String::from("a"), "A");
     context.insert(String::from("b"), "B");
 

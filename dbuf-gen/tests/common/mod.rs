@@ -358,6 +358,7 @@ pub fn get_inventory_module() -> e::Module<InternedString> {
 }
 
 fn create_module(list: Vec<e::Module<InternedString>>) -> e::Module<InternedString> {
-    list.into_iter()
-        .fold(empty(), dbuf_core::ast::elaborated::Module::merge)
+    list.into_iter().fold(empty(), |acc, item| {
+        dbuf_core::ast::elaborated::Module::merge(&acc, item)
+    })
 }
