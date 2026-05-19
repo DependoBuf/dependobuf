@@ -12,11 +12,11 @@ use crate::reporter::Reporter;
 use dbuf_format::pretty_print;
 
 /// Main for formatter.
-pub fn run(params: FormatParams) -> ! {
+pub fn run(params: &FormatParams) -> ! {
     let mut ok = true;
 
-    for file in params.target {
-        let res = match format_file(&file) {
+    for file in &params.target {
+        let res = match format_file(file) {
             Ok(res) => res,
             Err(err) => {
                 eprintln!("{err}");
@@ -38,7 +38,7 @@ pub fn run(params: FormatParams) -> ! {
                 eprintln!("Cannot format '{}'", file.to_string_lossy());
                 continue;
             };
-            if let Err(e) = fs::write(&file, new) {
+            if let Err(e) = fs::write(file, new) {
                 eprintln!(
                     "Error while modifying file '{}': {e}",
                     file.to_string_lossy()
