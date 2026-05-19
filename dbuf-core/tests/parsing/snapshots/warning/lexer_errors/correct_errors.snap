@@ -84,7 +84,7 @@ expression: errors
             at: Location {
                 start: Offset {
                     lines: 3,
-                    columns: 22,
+                    columns: 18,
                 },
                 length: Offset {
                     lines: 0,
@@ -97,13 +97,13 @@ expression: errors
                         Error {
                             stage: LexingStage {
                                 data: LocatedName {
-                                    content: "000aba0000",
+                                    content: "\"aaa\\aaaa\"",
                                     start: Offset {
                                         lines: 3,
-                                        columns: 22,
+                                        columns: 18,
                                     },
                                 },
-                                kind: InvalidInteger,
+                                kind: InvalidStringLiteral,
                             },
                         },
                     ),
@@ -120,11 +120,11 @@ expression: errors
             at: Location {
                 start: Offset {
                     lines: 4,
-                    columns: 18,
+                    columns: 14,
                 },
                 length: Offset {
                     lines: 0,
-                    columns: 10,
+                    columns: 7,
                 },
             },
             extra: Some(
@@ -133,13 +133,13 @@ expression: errors
                         Error {
                             stage: LexingStage {
                                 data: LocatedName {
-                                    content: "\"aaa\\aaaa\"",
+                                    content: "aba_aba",
                                     start: Offset {
                                         lines: 4,
-                                        columns: 18,
+                                        columns: 14,
                                     },
                                 },
-                                kind: InvalidStringLiteral,
+                                kind: InvalidLCIdentifier,
                             },
                         },
                     ),
@@ -169,45 +169,9 @@ expression: errors
                         Error {
                             stage: LexingStage {
                                 data: LocatedName {
-                                    content: "aba_aba",
-                                    start: Offset {
-                                        lines: 5,
-                                        columns: 14,
-                                    },
-                                },
-                                kind: InvalidLCIdentifier,
-                            },
-                        },
-                    ),
-                ),
-            ),
-        },
-    },
-    Error {
-        stage: ParsingStage {
-            found: Some(
-                Err,
-            ),
-            expected: [],
-            at: Location {
-                start: Offset {
-                    lines: 6,
-                    columns: 14,
-                },
-                length: Offset {
-                    lines: 0,
-                    columns: 7,
-                },
-            },
-            extra: Some(
-                LexingError(
-                    ParserLexingError(
-                        Error {
-                            stage: LexingStage {
-                                data: LocatedName {
                                     content: "Aba_Aba",
                                     start: Offset {
-                                        lines: 6,
+                                        lines: 5,
                                         columns: 14,
                                     },
                                 },
@@ -227,7 +191,7 @@ expression: errors
             expected: [],
             at: Location {
                 start: Offset {
-                    lines: 7,
+                    lines: 6,
                     columns: 15,
                 },
                 length: Offset {
@@ -243,7 +207,7 @@ expression: errors
                                 data: LocatedName {
                                     content: "@",
                                     start: Offset {
-                                        lines: 7,
+                                        lines: 6,
                                         columns: 15,
                                     },
                                 },
@@ -253,60 +217,6 @@ expression: errors
                     ),
                 ),
             ),
-        },
-    },
-    Error {
-        stage: ParsingStage {
-            found: Some(
-                Dot,
-            ),
-            expected: [
-                Label(
-                    Comment,
-                ),
-                SomethingElse,
-                Label(
-                    Error,
-                ),
-                Label(
-                    Space,
-                ),
-                Label(
-                    ParenedExpression,
-                ),
-                Label(
-                    VariableIdentifier,
-                ),
-                Label(
-                    Literal,
-                ),
-                Label(
-                    TypeIndentifier,
-                ),
-                Label(
-                    TypedHole,
-                ),
-                Token(
-                    Semicolon,
-                ),
-                Label(
-                    Field,
-                ),
-                Token(
-                    RBrace,
-                ),
-            ],
-            at: Location {
-                start: Offset {
-                    lines: 3,
-                    columns: 21,
-                },
-                length: Offset {
-                    lines: 0,
-                    columns: 1,
-                },
-            },
-            extra: None,
         },
     },
 ]
