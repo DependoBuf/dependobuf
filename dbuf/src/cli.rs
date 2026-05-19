@@ -39,7 +39,11 @@ pub struct CompileParams {
 #[derive(Args, Debug)]
 pub struct FormatParams {
     /// Files to format.
-    pub target: Vec<PathBuf>,
+    pub files: Vec<PathBuf>,
+
+    /// Sizes of tabs in spaces.
+    #[arg(short, long, default_value = "4")]
+    pub tab_size: usize,
 
     /// Check if files are formatted instead of formatting them.
     #[arg(long, default_value = "false")]

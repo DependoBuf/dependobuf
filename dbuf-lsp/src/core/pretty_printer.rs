@@ -55,12 +55,6 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         }
     }
 
-    /// Sets tab size for printer.
-    pub fn with_tab_size(mut self, tab_size: usize) -> Self {
-        self.tab_size = tab_size;
-        self
-    }
-
     /// Sets flag to print only header
     pub fn header_only(mut self) -> Self {
         self.header_only = true;
@@ -102,23 +96,6 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         self.cursor.column += spaces;
         let to_write = " ".repeat(spaces);
         write!(self.writer, "{to_write}").expect("write! considered to be infallible");
-    }
-
-    /// Prints whole ast.
-    pub fn print_ast(&mut self, ast: &ParsedAst) {
-        let mut first = true;
-
-        for definition in ast {
-            if !first {
-                self.new_line();
-                self.new_line();
-            }
-            self.print_type_definition(definition);
-            first = false;
-        }
-        if !first {
-            self.new_line();
-        }
     }
 
     /// Prints type of ast.

@@ -25,11 +25,12 @@ use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::OneOf::*;
 use tower_lsp::lsp_types::*;
 
+use dbuf_format::PrettyPrinter;
+
 use crate::handler_box;
 
 use crate::core::ast_access::{Saved, WorkspaceAccess};
 use crate::core::navigator::Navigator;
-use crate::core::pretty_printer::PrettyPrinter;
 
 pub struct Handler {
     rename_cache: RenameCache,
@@ -80,19 +81,19 @@ impl Handler {
     ) -> Result<Option<Vec<TextEdit>>> {
         format::valid_options(options)?;
 
-        let mut edit = TextEdit {
-            range: Range::new(Position::new(0, 0), Position::new(2_000_000_000, 0)),
-            new_text: String::new(),
-        };
-
         let file = access.read(document);
-        let Saved::Current(ast) = file.get_parsed() else {
+        let Saved::Current(cst) = file.get_cst() else {
             return Ok(None);
         };
 
-        let mut writer =
-            PrettyPrinter::new(&mut edit.new_text).with_tab_size(options.tab_size as usize);
-        writer.print_ast(ast);
+        let new_text = PrettyPrinter::default()
+            .with_tab_size(options.tab_size as usize)
+            .pretty_print(cst);
+
+        let edit = TextEdit {
+            range: Range::new(Position::new(0, 0), Position::new(2_000_000_000, 0)),
+            new_text,
+        };
 
         Ok(Some(vec![edit]))
     }

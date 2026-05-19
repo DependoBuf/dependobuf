@@ -19,10 +19,10 @@ const CODE_LENS: &[ExpectCodeLens] = &[
     expect_code_lens(6, 2),
     expect_code_lens(13, 0),
     expect_code_lens(21, 0),
-    expect_code_lens(25, 1),
-    expect_code_lens(42, 3),
-    expect_code_lens(45, 0),
-    expect_code_lens(52, 0),
+    expect_code_lens(25, 2),
+    expect_code_lens(41, 3),
+    expect_code_lens(43, 0),
+    expect_code_lens(51, 0),
 ];
 
 #[test]

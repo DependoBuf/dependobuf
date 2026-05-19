@@ -9,14 +9,16 @@ use crate::file_content::Error;
 use crate::file_content::FileContent;
 use crate::reporter::Reporter;
 
-use dbuf_format::pretty_print;
+use dbuf_format::PrettyPrinter;
 
 /// Main for formatter.
 pub fn run(params: &FormatParams) -> ! {
     let mut ok = true;
 
-    for file in &params.target {
-        let res = match format_file(file) {
+    let printer = PrettyPrinter::default().with_tab_size(params.tab_size);
+
+    for file in &params.files {
+        let res = match format_file(file, printer) {
             Ok(res) => res,
             Err(err) => {
                 eprintln!("{err}");
@@ -64,7 +66,7 @@ struct FormatResult {
 }
 
 /// Reads file and returns formatted content.
-fn format_file(file: &PathBuf) -> Result<FormatResult, Error> {
+fn format_file(file: &PathBuf, printer: PrettyPrinter) -> Result<FormatResult, Error> {
     let content = FileContent::new(file)?;
     let mut file = File::new(&content);
 
@@ -72,7 +74,7 @@ fn format_file(file: &PathBuf) -> Result<FormatResult, Error> {
     file.process_cst(&mut reporter);
 
     let new = if let Some(tree) = file.get_cst() {
-        pretty_print(tree).into()
+        printer.pretty_print(tree).into()
     } else {
         None
     };

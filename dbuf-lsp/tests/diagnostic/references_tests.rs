@@ -27,19 +27,19 @@ const M1_RANGES: &[Range] = &[
     get_range(22, 12, 2),
     get_range(28, 15, 2),
     get_range(33, 15, 2),
-    get_range(46, 7, 2),
-    get_range(48, 36, 2),
-    get_range(52, 22, 2),
-    get_range(53, 4, 2),
-    get_range(55, 15, 2),
+    get_range(44, 7, 2),
+    get_range(47, 36, 2),
+    get_range(51, 22, 2),
+    get_range(52, 4, 2),
+    get_range(54, 15, 2),
 ];
 
 const M1F1_RANGES: &[Range] = &[
     get_range(1, 4, 2),
     get_range(10, 13, 2),
     get_range(22, 15, 2),
-    get_range(48, 39, 2),
-    get_range(53, 7, 2),
+    get_range(47, 39, 2),
+    get_range(52, 7, 2),
 ];
 
 const M2F3_RANGES: &[Range] = &[
@@ -54,11 +54,15 @@ const M2D1_RANGES: &[Range] = &[
     get_range(9, 10, 2),
 ];
 
-const SIMPLE_RANGES: &[Range] = &[get_range(25, 5, 6), get_range(42, 27, 6)];
+const SIMPLE_RANGES: &[Range] = &[
+    get_range(25, 5, 6),
+    get_range(41, 27, 6),
+    get_range(45, 7, 6),
+];
 
-const LITERALED_RANGES: &[Range] = &[get_range(32, 8, 9), get_range(48, 22, 9)];
+const LITERALED_RANGES: &[Range] = &[get_range(32, 8, 9), get_range(47, 22, 9)];
 
-const ALIAS_RANGES: &[Range] = &[get_range(53, 11, 5), get_range(55, 18, 5)];
+const ALIAS_RANGES: &[Range] = &[get_range(52, 11, 5), get_range(54, 18, 5)];
 
 const RANGES: &[&[Range]] = &[
     M1_RANGES,
