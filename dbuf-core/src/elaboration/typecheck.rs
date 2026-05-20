@@ -3,6 +3,11 @@ use crate::elaboration::*;
 use crate::error::elaborating::Error;
 use crate::error::elaborating::Error::*;
 
+use crate::arena::InternedString;
+use crate::ast::operators::{OpCall, UnaryOp};
+use crate::ast::parsed::ExpressionNode;
+use crate::elaboration::operators::{binary_accepted_types, unary_accepted_types};
+use crate::location::{LocatedName, Location, Offset};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::iter::zip;

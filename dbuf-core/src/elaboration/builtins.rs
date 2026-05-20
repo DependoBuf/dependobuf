@@ -4,7 +4,6 @@ use std::hash::Hash;
 
 const BUILTIN_NAMES: &[&str] = &["Bool", "Int", "UInt", "String"];
 
-/// Return type expressions for builtin types
 #[must_use]
 pub fn builtins<Str: Eq + Hash + From<String> + Clone>() -> Vec<e::TypeExpression<Str>> {
     BUILTIN_NAMES
@@ -16,7 +15,6 @@ pub fn builtins<Str: Eq + Hash + From<String> + Clone>() -> Vec<e::TypeExpressio
         .collect()
 }
 
-/// Return module only with builtin type
 #[must_use]
 pub fn builtins_module<Str: Eq + Hash + From<String> + Clone>() -> e::Module<Str> {
     e::Module {
@@ -36,7 +34,6 @@ pub fn builtins_module<Str: Eq + Hash + From<String> + Clone>() -> e::Module<Str
     }
 }
 
-/// Create builtin type expression by name.
 #[must_use]
 pub fn get_builtin<Str: From<String>>(type_name: &str) -> e::TypeExpression<Str> {
     e::TypeExpression::TypeExpression {
