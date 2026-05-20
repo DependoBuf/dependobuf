@@ -1,0 +1,5 @@
+message BoolDep (b Bool) {}
+
+message Broken (a Bool) (b Bool) {
+    d BoolDep (a + b);
+}

@@ -283,6 +283,60 @@ pub fn inventory() -> e::Module<InternedString> {
     }
 }
 
+pub fn builtin_message() -> e::Module<InternedString> {
+    e::Module {
+        types: vec![(
+            "Builtins".to_owned().into(),
+            e::Type {
+                dependencies: vec![],
+                constructor_names: e::ConstructorNames::OfMessage("Builtins".to_owned().into()),
+            },
+        )],
+        constructors: vec![(
+            "Builtins".to_owned().into(),
+            e::Constructor {
+                implicits: vec![],
+                fields: vec![
+                    (
+                        "intField".to_owned().into(),
+                        e::TypeExpression::TypeExpression {
+                            name: "Int".to_owned().into(),
+                            dependencies: e::Rec::new([]),
+                        },
+                    ),
+                    (
+                        "boolField".to_owned().into(),
+                        e::TypeExpression::TypeExpression {
+                            name: "Bool".to_owned().into(),
+                            dependencies: e::Rec::new([]),
+                        },
+                    ),
+                    (
+                        "uintField".to_owned().into(),
+                        e::TypeExpression::TypeExpression {
+                            name: "UInt".to_owned().into(),
+                            dependencies: e::Rec::new([]),
+                        },
+                    ),
+                    (
+                        "stringField".to_owned().into(),
+                        e::TypeExpression::TypeExpression {
+                            name: "String".to_owned().into(),
+                            dependencies: e::Rec::new([]),
+                        },
+                    ),
+                ],
+                result_type: e::TypeExpression::TypeExpression {
+                    name: "Builtins".to_owned().into(),
+                    dependencies: e::Rec::new([]),
+                },
+            },
+        )]
+        .into_iter()
+        .collect(),
+    }
+}
+
 #[must_use]
 pub fn get_basic_module() -> e::Module<InternedString> {
     create_module(vec![nat()])

@@ -43,7 +43,6 @@ impl<'a> Type {
         }
         match self.name.as_str() {
             "Bool" => Some("bool"),
-            "Double" => Some("f64"),
             "Int" => Some("i64"),
             "UInt" => Some("u64"),
             "String" => Some("String"),
@@ -298,14 +297,32 @@ mod type_dependencies_import {
                     }
                 }
                 ValueExpression::Constructor {
-                    call: _, // dependencies in called constructor should not matter
+                    call,
                     implicits,
                     arguments,
-                } => implicits
-                    .iter()
-                    .map(Self::value_expression_dependencies)
-                    .chain(arguments.iter().map(Self::value_expression_dependencies))
-                    .collect(),
+                } => {
+                    let result_type_dep: HashSet<_> = call
+                        .upgrade()
+                        .map(|ctor| match &ctor.result_type {
+                            TypeExpression::Type {
+                                call: type_weak, ..
+                            } => {
+                                let ty = type_weak.upgrade().expect("missing type");
+                                if Self::is_primitive_type(&ty.name) {
+                                    HashSet::new()
+                                } else {
+                                    iter::once(NodeId::id_weak(type_weak)).collect()
+                                }
+                            }
+                        })
+                        .unwrap_or_default();
+                    implicits
+                        .iter()
+                        .map(Self::value_expression_dependencies)
+                        .chain(arguments.iter().map(Self::value_expression_dependencies))
+                        .chain(iter::once(result_type_dep))
+                        .collect()
+                }
                 ValueExpression::Variable(symbol) => {
                     vec![Self::symbol_dependencies(
                         &symbol.upgrade().expect("missing type in symbol"),
@@ -321,7 +338,7 @@ mod type_dependencies_import {
 
         // TODO: move this to more appropriate place
         fn is_primitive_type(name: &str) -> bool {
-            matches!(name, "Bool" | "Double" | "Int" | "UInt" | "String")
+            matches!(name, "Bool" | "Int" | "UInt" | "String")
         }
     }
 }
@@ -551,7 +568,9 @@ mod type_declaration {
                     );
                     let constructor = self.constructors[0].as_ref();
                     alloc.intersperse(
-                        generate_fields(&constructor.fields, &mut body_namespace),
+                        generate_fields(&constructor.fields, &mut body_namespace)
+                            .into_iter()
+                            .map(|f| alloc.text("pub ").append(f)),
                         alloc.text(",").append(alloc.hardline()),
                     )
                 }
@@ -2249,7 +2268,6 @@ mod value_from_expression {
             OpCall::Literal(literal) => {
                 let string = match literal {
                     Literal::Bool(val) => val.to_string(),
-                    Literal::Double(val) => val.to_string(),
                     Literal::Int(val) => val.to_string(),
                     Literal::UInt(val) => val.to_string(),
                     Literal::Str(val) => {
@@ -2293,17 +2311,25 @@ mod value_from_expression {
                     BinaryOp::Plus => alloc.text("+"),
                     BinaryOp::Minus => alloc.text("-"),
                     BinaryOp::Star => alloc.text("*"),
-                    BinaryOp::Slash => alloc.text("/"),
+
                     BinaryOp::BinaryAnd => alloc.text("&"),
                     BinaryOp::BinaryOr => alloc.text("|"),
                 };
+                let lhs_doc = lhs.generate_as_value((ctx, namespace.clone()), locator);
+                let rhs_doc = rhs.generate_as_value((ctx, namespace), locator);
+                let rhs_doc =
+                    if matches!(binary_op, BinaryOp::Plus | BinaryOp::Minus | BinaryOp::Star) {
+                        alloc.text("&").append(rhs_doc).into_doc()
+                    } else {
+                        rhs_doc
+                    };
                 alloc
                     .text("(")
-                    .append(lhs.generate_as_value((ctx, namespace.clone()), locator))
+                    .append(lhs_doc)
                     .append(alloc.space())
                     .append(op)
                     .append(alloc.space())
-                    .append(rhs.generate_as_value((ctx, namespace), locator))
+                    .append(rhs_doc)
                     .append(")")
                     .into_doc()
             }
@@ -2328,6 +2354,15 @@ mod value_from_expression {
 
             let ty = self.result_type.get_type();
 
+            let wrap = |expr: &ValueExpression, symbol: &Symbol, val: BoxDoc<'a>| {
+                let is_primitive = symbol.ty.get_type().is_builtin;
+                if matches!(expr, ValueExpression::Variable(_)) || is_primitive {
+                    val
+                } else {
+                    alloc.text("Box::new(").append(val).append(")").into_doc()
+                }
+            };
+
             locator
                 .locate_constructor((ctx, namespace.clone()), self)
                 .append("(")
@@ -2335,22 +2370,20 @@ mod value_from_expression {
                     alloc.intersperse(
                         implicits
                             .iter()
-                            .map(|expr| {
+                            .zip(self.implicits.iter())
+                            .map(|(expr, symbol)| {
                                 let val = expr.generate_as_value((ctx, namespace.clone()), locator);
-                                match expr {
-                                    ValueExpression::Variable(_) => val,
-                                    _ => alloc.text("Box::new(").append(val).append(")").into_doc(),
-                                }
+                                wrap(expr, symbol, val)
                             })
                             .collect::<Vec<_>>()
                             .into_iter()
-                            .chain(arguments.iter().map(|expr| {
-                                let val = expr.generate_as_value((ctx, namespace.clone()), locator);
-                                match expr {
-                                    ValueExpression::Variable(_) => val,
-                                    _ => alloc.text("Box::new(").append(val).append(")").into_doc(),
-                                }
-                            })),
+                            .chain(arguments.iter().zip(self.fields.iter()).map(
+                                |(expr, symbol)| {
+                                    let val =
+                                        expr.generate_as_value((ctx, namespace.clone()), locator);
+                                    wrap(expr, symbol, val)
+                                },
+                            )),
                         alloc.text(",").append(alloc.line()),
                     ),
                 )

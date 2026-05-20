@@ -72,19 +72,6 @@ impl DbufPrimitive for u64 {
     }
 }
 
-impl DbufPrimitive for f64 {
-    fn dbuf_serialize<W: Write>(&self, writer: &mut W) -> io::Result<()> {
-        writer.write_all(&self.to_le_bytes())
-    }
-    fn dbuf_deserialize<R: Read>(reader: &mut R) -> Result<Self, DeserializeError> {
-        let mut buf = [0u8; 8];
-        reader
-            .read_exact(&mut buf)
-            .map_err(DeserializeError::IoError)?;
-        Ok(f64::from_le_bytes(buf))
-    }
-}
-
 impl DbufPrimitive for String {
     fn dbuf_serialize<W: Write>(&self, writer: &mut W) -> io::Result<()> {
         let len = self.len() as u64;

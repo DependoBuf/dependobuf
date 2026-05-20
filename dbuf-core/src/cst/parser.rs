@@ -445,7 +445,6 @@ where
             prefix(5, unary_op(Token::Minus), unary_fold!()),
             prefix(5, unary_op(Token::Bang), unary_fold!()),
             infix(left(4), binary_op(Token::Star), binary_fold!()),
-            infix(left(4), binary_op(Token::Slash), binary_fold!()),
             infix(left(3), binary_op(Token::Plus), binary_fold!()),
             infix(left(3), binary_op(Token::Minus), binary_fold!()),
             infix(left(2), binary_op(Token::Amp), binary_fold!()),
@@ -815,7 +814,6 @@ where
         Token::BoolLiteral(b) => Token::BoolLiteral(b),
         Token::IntLiteral(i) => Token::IntLiteral(i),
         Token::UintLiteral(ui) => Token::UintLiteral(ui),
-        Token::FloatLiteral(f) => Token::FloatLiteral(f),
         Token::StringLiteral(s) => Token::StringLiteral(s),
     }
     .map_token()

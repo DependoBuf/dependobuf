@@ -1,0 +1,22 @@
+message IntDep (n Int) {}
+message BoolDep (b Bool) {}
+
+message UnaryMinus (x Int) {
+    neg IntDep (-x);
+}
+
+message UnaryBang (b Bool) {
+    notb BoolDep (!b);
+}
+
+message DoubleMinus (x Int) {
+    pos IntDep (- -x);
+}
+
+message DoubleBang (b Bool) {
+    same BoolDep (!(!b));
+}
+
+message MinusOnLiteral {
+    d IntDep (-5);
+}

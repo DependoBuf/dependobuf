@@ -1,0 +1,18 @@
+message IntDep (n Int) {}
+message IntDepDep (n Int) (id IntDep n) {}
+
+message FieldOnField {
+    x Int;
+    d IntDep x;
+}
+
+message TwoFieldsOnOne {
+    x Int;
+    d1 IntDep x;
+    d2 IntDep x;
+}
+
+message DepAndField (base Int) {
+    shifted IntDep (base + 1);
+    echo IntDepDep (base + 1) shifted;
+}

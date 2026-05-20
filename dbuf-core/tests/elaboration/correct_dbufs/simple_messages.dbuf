@@ -1,0 +1,13 @@
+message Empty {}
+
+message Scalars {
+    i Int;
+    u UInt;
+    b Bool;
+    s String;
+}
+
+message WithDeps (a Int) (b Bool) (c String) (d UInt){
+    i Int;
+    g Bool;
+}

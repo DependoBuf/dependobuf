@@ -1,0 +1,32 @@
+message IntDep (n Int) {}
+message UIntDep (n UInt) {}
+message BoolDep (b Bool) {}
+message StringDep (s String) {}
+
+message LiteralInt {
+    d IntDep 42;
+}
+
+message LiteralUInt {
+    d UIntDep 100u;
+}
+
+message LiteralBoolTrue {
+    d BoolDep true;
+}
+
+message LiteralBoolFalse {
+    d BoolDep false;
+}
+
+message LiteralString {
+    d StringDep "hello";
+}
+
+message IntAsUInt {
+    d UIntDep 5;
+}
+
+message UIntAsInt {
+    d IntDep 5u;
+}

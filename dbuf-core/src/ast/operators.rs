@@ -15,7 +15,6 @@ pub enum OpCall<S, T> {
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Literal {
     Bool(bool),
-    Double(f64),
     Int(i64),
     UInt(u64),
     Str(String),
@@ -41,8 +40,6 @@ pub enum BinaryOp {
     Minus,
     /// Multiplication
     Star,
-    /// Division
-    Slash,
     /// Binary and.
     BinaryAnd,
     /// Binary or.

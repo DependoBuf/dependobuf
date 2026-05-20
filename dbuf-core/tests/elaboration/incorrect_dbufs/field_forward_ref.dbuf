@@ -1,0 +1,6 @@
+message IntDep (n Int) {}
+
+message Broken {
+    d IntDep x;
+    x Int;
+}

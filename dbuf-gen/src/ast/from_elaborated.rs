@@ -36,7 +36,7 @@ struct ASTContext<'a> {
     constructors: &'a Scope<'a, String, Rc<Constructor>>,
 }
 
-const BUILTIN_NAMES: &[&str] = &["Bool", "Double", "Int", "UInt", "String"];
+const BUILTIN_NAMES: &[&str] = &["Bool", "Int", "UInt", "String"];
 
 impl Module {
     pub(crate) fn from_elaborated(mut module: ElaboratedModule) -> Self {
