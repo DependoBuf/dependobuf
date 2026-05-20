@@ -1,7 +1,4 @@
-#[cfg(not(any(feature = "rust", feature = "kotlin", feature = "swift")))]
-compile_error!(
-    "Using dbuf-gen requiring to enable a feature with specific language to generate code for."
-);
+#![cfg(any(feature = "rust", feature = "kotlin", feature = "swift"))]
 
 mod ast;
 mod format;

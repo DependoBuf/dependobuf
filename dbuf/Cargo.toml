@@ -4,20 +4,20 @@ name = "dbuf"
 version.workspace = true
 
 [features]
-lsp = ["dep:dbuf-lsp"]
 format = ["dep:dbuf-format"]
+lsp = ["dep:dbuf-lsp"]
 
-rust = ["dep:dbuf-gen", "dbuf-gen?/rust"]
 kotlin = ["dep:dbuf-gen", "dbuf-gen?/kotlin"]
+rust = ["dep:dbuf-gen", "dbuf-gen?/rust"]
 swift = ["dep:dbuf-gen", "dbuf-gen?/swift"]
 
 all = ["lsp", "format", "rust", "kotlin", "swift"]
 
 [dependencies]
 dbuf-core.workspace = true
-dbuf-lsp = {workspace = true, optional = true}
 dbuf-format = {workspace = true, optional = true}
 dbuf-gen = {workspace = true, optional = true}
+dbuf-lsp = {workspace = true, optional = true}
 
 ariadne.workspace = true
 clap.workspace = true
