@@ -23,3 +23,9 @@ impl AsRef<str> for InternedString {
         self.inner.as_ref()
     }
 }
+
+impl std::fmt::Display for InternedString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.inner.as_ref())
+    }
+}

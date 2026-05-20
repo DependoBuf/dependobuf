@@ -1,0 +1,7 @@
+message Wrapper {
+    inner Inner;
+}
+
+message Inner {
+    w Wrapper;
+}

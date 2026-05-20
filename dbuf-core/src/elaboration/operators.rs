@@ -1,68 +1,100 @@
 use crate::ast::elaborated as e;
 use crate::ast::operators as o;
+use crate::elaboration::builtins::BuiltinType;
 use crate::elaboration::{builtins, subst};
 use crate::error::elaborating::Error;
-use crate::error::elaborating::Error::ElaboratingError;
+use crate::error::elaborating::Error::{
+    TypeMismatch, UnknownConstructor, UnknownField, UnknownType, UnsupportedSyntax,
+};
 use std::fmt::Debug;
+use std::fmt::Display;
 use std::hash::Hash;
+use std::sync::Arc;
 
-/// Returns the builtin type names that unary operator accepts.
 #[must_use]
-pub fn unary_accepted_types<S>(op: &o::UnaryOp<S>) -> &'static [&'static str] {
+pub fn unary_accepted_types<S>(op: &o::UnaryOp<S>) -> &[BuiltinType] {
     match op {
         o::UnaryOp::Access(_) => &[],
-        o::UnaryOp::Minus => &["Int"],
-        o::UnaryOp::Bang => &["Bool"],
+        o::UnaryOp::Minus => &[BuiltinType::Int],
+        o::UnaryOp::Bang => &[BuiltinType::Bool],
     }
 }
 
-/// Returns the builtin type names that binary operator accepts.
 #[must_use]
-pub fn binary_accepted_types(op: &o::BinaryOp) -> &'static [&'static str] {
+pub fn binary_accepted_types(op: &o::BinaryOp) -> &[BuiltinType] {
     match op {
-        o::BinaryOp::Plus => &["UInt", "Int", "String"],
-        o::BinaryOp::Minus => &["Int"],
-        o::BinaryOp::Star => &["UInt", "Int"],
-        o::BinaryOp::BinaryAnd | o::BinaryOp::BinaryOr => &["Bool"],
+        o::BinaryOp::Plus => &[BuiltinType::UInt, BuiltinType::Int, BuiltinType::String],
+        o::BinaryOp::Minus => &[BuiltinType::Int],
+        o::BinaryOp::Star => &[BuiltinType::UInt, BuiltinType::Int],
+        o::BinaryOp::BinaryAnd | o::BinaryOp::BinaryOr => &[BuiltinType::Bool],
     }
 }
 
-/// Map the builtin type names that binary operator accepts.
 #[must_use]
-pub fn literal_to_type<Str: From<String>>(literal: &o::Literal) -> e::TypeExpression<Str> {
-    builtins::get_builtin(match literal {
-        o::Literal::Bool(_) => "Bool",
-        o::Literal::Int(_) => "Int",
-        o::Literal::UInt(_) => "UInt",
-        o::Literal::Str(_) => "String",
+pub fn literal_to_type<Str: From<BuiltinType>>(literal: &o::Literal) -> e::TypeExpression<Str> {
+    builtins::get_builtin(&match literal {
+        o::Literal::Bool(_) => BuiltinType::Bool,
+        o::Literal::Int(_) => BuiltinType::Int,
+        o::Literal::UInt(_) => BuiltinType::UInt,
+        o::Literal::Str(_) => BuiltinType::String,
     })
 }
 
-/// Checks that a literal is of the expected type
 /// # Errors
-/// If literal didn't match expected type
-pub fn check_literal<Str: Eq + From<String>>(
+pub fn check_literal<Str: Eq + From<BuiltinType>>(
     literal: &o::Literal,
     expected_type: &e::TypeExpression<Str>,
 ) -> Result<(), Error> {
     match literal {
         literal if *expected_type == literal_to_type(literal) => Ok(()),
-        o::Literal::UInt(_) if *expected_type == builtins::get_builtin("Int") => Ok(()),
+        o::Literal::UInt(_) if *expected_type == builtins::get_builtin(&BuiltinType::Int) => Ok(()),
         o::Literal::Int(value)
-            if *expected_type == builtins::get_builtin("UInt") && *value >= 0 =>
+            if *expected_type == builtins::get_builtin(&BuiltinType::UInt) && *value >= 0 =>
         {
             Ok(())
         }
-        // Literal didn't match
-        _ => Err(ElaboratingError),
+        _ => Err(TypeMismatch),
     }
 }
 
-/// Gets the operand type and the name of the field being accessed.
-/// Returns the constructor, the field's position, and the field's type.
+#[must_use]
+pub fn make_lit<Str: Clone>(
+    literal: o::Literal,
+    result_type: e::TypeExpression<Str>,
+) -> e::ValueExpression<Str> {
+    e::ValueExpression::OpCall {
+        op_call: o::OpCall::Literal(literal),
+        result_type,
+    }
+}
+
+#[must_use]
+pub fn make_unary<Str: Clone>(
+    op: o::UnaryOp<Str>,
+    arg: e::ValueExpression<Str>,
+    result_type: e::TypeExpression<Str>,
+) -> e::ValueExpression<Str> {
+    e::ValueExpression::OpCall {
+        op_call: o::OpCall::Unary(op, Arc::new(arg)),
+        result_type,
+    }
+}
+
+#[must_use]
+pub fn make_binary<Str: Clone>(
+    op: o::BinaryOp,
+    lhs: e::ValueExpression<Str>,
+    rhs: e::ValueExpression<Str>,
+    result_type: e::TypeExpression<Str>,
+) -> e::ValueExpression<Str> {
+    e::ValueExpression::OpCall {
+        op_call: o::OpCall::Binary(op, Arc::new(lhs), Arc::new(rhs)),
+        result_type,
+    }
+}
+
 /// # Errors
-/// If the type is not a message, or if no field with the given name exists.
-pub fn resolve_field_access<Str: Debug + Clone + Hash + Eq + Ord>(
+pub fn resolve_field_access<Str: Debug + Clone + Hash + Eq + Ord + From<BuiltinType> + Display>(
     module_ctx: &e::Module<Str>,
     operand_type: &e::TypeExpression<Str>,
     field: &Str,
@@ -76,17 +108,17 @@ pub fn resolve_field_access<Str: Debug + Clone + Hash + Eq + Ord>(
         .types
         .iter()
         .find(|(n, _)| n == type_name)
-        .ok_or(ElaboratingError)?;
+        .ok_or_else(|| UnknownType(type_name.to_string()))?;
 
     let ctor_name = match &ty.constructor_names {
         e::ConstructorNames::OfMessage(ctor_name) => ctor_name.clone(),
-        e::ConstructorNames::OfEnum(_) => return Err(ElaboratingError),
+        e::ConstructorNames::OfEnum(_) => return Err(UnsupportedSyntax),
     };
 
     let ctor = module_ctx
         .constructors
         .get(&ctor_name)
-        .ok_or(ElaboratingError)?
+        .ok_or_else(|| UnknownConstructor(ctor_name.to_string()))?
         .clone();
 
     let (field_idx, (_, field_type)) = ctor
@@ -94,7 +126,7 @@ pub fn resolve_field_access<Str: Debug + Clone + Hash + Eq + Ord>(
         .iter()
         .enumerate()
         .find(|(_, (n, _))| n == field)
-        .ok_or(ElaboratingError)?;
+        .ok_or_else(|| UnknownField(field.to_string()))?;
 
     let concrete_field_type = ctor.implicits.iter().zip(type_deps.iter()).fold(
         field_type.clone(),

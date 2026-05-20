@@ -1,0 +1,11 @@
+message IntDep (n Int) {}
+
+message IntDepDep (n Int) (d IntDep n) {}
+
+message IntDepDepDep (n Int) (d IntDep n) (dd IntDepDep n d) {}
+
+message Chain (x Int) {
+    a IntDep x;
+    b IntDepDep x a;
+    c IntDepDepDep x a b;
+}

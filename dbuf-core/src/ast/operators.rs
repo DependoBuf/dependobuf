@@ -1,7 +1,7 @@
 /// Possible shapes of DependoBuf operator calls.
 ///
 /// NOTE: this includes literals as they can be viewed as "nullary operators".
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
 pub enum OpCall<S, T> {
     /// Literal (nullary operator call).
     Literal(Literal),
@@ -12,7 +12,7 @@ pub enum OpCall<S, T> {
 }
 
 /// Literals used in DependoBuf expressions.
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Literal {
     Bool(bool),
     Int(i64),

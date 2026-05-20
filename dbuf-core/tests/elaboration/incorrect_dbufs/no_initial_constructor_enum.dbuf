@@ -1,0 +1,5 @@
+enum Bad {
+    Loop {
+        next Bad;
+    }
+}

@@ -1,0 +1,12 @@
+enum Nat {
+    Zero {}
+    Suc {
+        pred Nat;
+    }
+}
+
+enum Broken (n Nat) {
+    Suc{pred: p, extra: q} => {
+        Ctor {}
+    }
+}
