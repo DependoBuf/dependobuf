@@ -10,9 +10,7 @@ use std::iter::zip;
 
 type DefRef<'a> = &'a p::definition::Definition<Loc, Name, p::TypeDeclaration<Loc, Name>>;
 
-/// Elaborate top-sorted parsed definitions
 /// # Errors
-/// If the parsed module elaboration failed
 pub(super) fn elaborate_sorted(module: &[DefRef<'_>]) -> Result<Mod, Error> {
     elaborate_with_module_ctx(builtins::builtins_module::<Str>(), module)
 }
@@ -707,4 +705,59 @@ fn ctx_to_deps(elaborated_ctx: &ElaboratedCtx) -> Vec<Value> {
         .cloned()
         .map(|(name, ty)| Value::Variable { name, ty })
         .collect()
+}
+
+/// # Errors
+fn check_constructor_call<'a>(
+    module_ctx: &Mod,
+    local_ctx: &'a Ctx<'a>,
+    name: &Name,
+    constructor_args: &p::definition::Definitions<Loc, Name, p::Expression<Loc, Name>>,
+    expected_type: &TypeExpr,
+) -> Result<(Value, Bindings), Error> {
+    let elaborated = infer_constructor_call(module_ctx, local_ctx, name, constructor_args)?;
+
+    let TypeExpr::TypeExpression {
+        name: inferred_name,
+        dependencies: inferred_deps,
+    } = &type_of(&elaborated);
+
+    let TypeExpr::TypeExpression {
+        name: expected_name,
+        dependencies: expected_deps,
+    } = expected_type;
+
+    if inferred_name != expected_name || inferred_deps.len() != expected_deps.len() {
+        return Err(ElaboratingError);
+    }
+
+    let mut left_bindings: Bindings = vec![];
+    let mut right_bindings: Bindings = vec![];
+
+    for (inferred_dep, expected_dep) in zip(inferred_deps.iter(), expected_deps.iter()) {
+        match inferred_dep {
+            Value::Variable { name, .. } => {
+                left_bindings.push((name.clone(), expected_dep.clone()));
+            }
+            concrete => {
+                let (lb, rb) =
+                    unify::unify_value(concrete, expected_dep).map_err(|_| ElaboratingError)?;
+                left_bindings.extend(lb);
+                right_bindings.extend(rb);
+            }
+        }
+    }
+
+    Ok((
+        subst::apply_bindings(elaborated, &left_bindings),
+        right_bindings,
+    ))
+}
+
+fn ctx_to_deps(elaborated_ctx: &ElaboratedCtx) -> Vec<Value> {
+    elaborated_ctx
+        .iter()
+        .cloned()
+        .map(|(name, ty)| Value::Variable { name, ty })
+        .collect::<Vec<_>>()
 }
