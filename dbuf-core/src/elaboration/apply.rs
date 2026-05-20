@@ -3,6 +3,7 @@ use crate::elaboration::builtins::BuiltinType;
 use crate::elaboration::{subst, type_of, unify};
 use crate::error::elaborating::Error::{self, ArityMismatch};
 
+/// # Errors
 pub fn application<Str>(
     constructor: &e::Constructor<Str>,
     arg: &e::ValueExpression<Str>,

@@ -84,42 +84,6 @@ expression: errors
             at: Location {
                 start: Offset {
                     lines: 3,
-                    columns: 22,
-                },
-                length: Offset {
-                    lines: 0,
-                    columns: 10,
-                },
-            },
-            extra: Some(
-                LexingError(
-                    ParserLexingError(
-                        Error {
-                            stage: LexingStage {
-                                data: LocatedName {
-                                    content: "000aba0000",
-                                    start: Offset {
-                                        lines: 3,
-                                        columns: 22,
-                                    },
-                                },
-                                kind: InvalidInteger,
-                            },
-                        },
-                    ),
-                ),
-            ),
-        },
-    },
-    Error {
-        stage: ParsingStage {
-            found: Some(
-                Err,
-            ),
-            expected: [],
-            at: Location {
-                start: Offset {
-                    lines: 4,
                     columns: 18,
                 },
                 length: Offset {
@@ -253,60 +217,6 @@ expression: errors
                     ),
                 ),
             ),
-        },
-    },
-    Error {
-        stage: ParsingStage {
-            found: Some(
-                Dot,
-            ),
-            expected: [
-                Label(
-                    Comment,
-                ),
-                SomethingElse,
-                Label(
-                    Error,
-                ),
-                Label(
-                    Space,
-                ),
-                Label(
-                    ParenedExpression,
-                ),
-                Label(
-                    VariableIdentifier,
-                ),
-                Label(
-                    Literal,
-                ),
-                Label(
-                    TypeIndentifier,
-                ),
-                Label(
-                    TypedHole,
-                ),
-                Token(
-                    Semicolon,
-                ),
-                Label(
-                    Field,
-                ),
-                Token(
-                    RBrace,
-                ),
-            ],
-            at: Location {
-                start: Offset {
-                    lines: 3,
-                    columns: 21,
-                },
-                length: Offset {
-                    lines: 0,
-                    columns: 1,
-                },
-            },
-            extra: None,
         },
     },
 ]
