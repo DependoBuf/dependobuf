@@ -13,6 +13,8 @@ pretty.workspace = true
 strum.workspace = true
 strum_macros.workspace = true
 thiserror.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true

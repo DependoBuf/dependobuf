@@ -12,14 +12,14 @@ mod elaborated_ast_example;
 
 use elaborated_ast_example::*;
 
-use super::ast_access::ElaboratedAst;
+use super::workspace::ElaboratedAst;
 
 pub fn default_elaborated_ast() -> ElaboratedAst {
     rename_elaborated_ast()
 }
 
 #[cfg(test)]
-use super::ast_access::ParsedAst;
+use super::workspace::ParsedAst;
 #[cfg(test)]
 pub fn default_parsed_ast() -> ParsedAst {
     use dbuf_core::cst::convert_to_ast;

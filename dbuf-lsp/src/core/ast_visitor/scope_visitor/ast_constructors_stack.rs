@@ -23,6 +23,7 @@ impl<'a> AstConstructorsStack<'a> {
     pub fn enter_constructor(&mut self, constructor_name: &'a str) {
         self.stack.push(constructor_name);
     }
+
     /// Leaving from constructor call.
     ///
     /// Panics if there is no constructor calls.
@@ -33,12 +34,7 @@ impl<'a> AstConstructorsStack<'a> {
     }
 
     /// Returns last constructor call.
-    ///
-    /// Panics if there is no constructor calls.
-    #[allow(dead_code, reason = "not using yet")]
-    pub fn get_last(&self) -> &'a str {
-        self.stack
-            .last()
-            .map_or_else(|| panic!("get last on empty constructor stack"), |ctr| ctr)
+    pub fn get_last(&self) -> Option<&'a str> {
+        self.stack.last().copied()
     }
 }

@@ -10,7 +10,7 @@ use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 
-use super::ast_access::{Loc, ParsedAst, Str};
+use super::workspace::{Loc, ParsedAst, Str};
 
 struct Position {
     line: usize,

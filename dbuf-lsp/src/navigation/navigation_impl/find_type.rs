@@ -4,7 +4,7 @@ use dbuf_core::ast::elaborated::TypeExpression;
 
 use dbuf_core::ast::parsed::TypeDefinition;
 
-use crate::core::ast_access::ElaboratedHelper;
+use crate::core::workspace::ElaboratedHelper;
 
 use crate::core::navigator::Navigator;
 use crate::core::navigator::Symbol;

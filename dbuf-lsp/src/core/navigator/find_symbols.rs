@@ -5,7 +5,7 @@
 
 use tower_lsp::lsp_types::Range;
 
-use crate::core::ast_access::{LocNameHelper, LocationHelper, Str};
+use crate::core::workspace::{LocNameHelper, LocationHelper, Str};
 
 use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
 use crate::core::ast_visitor::*;
@@ -26,7 +26,7 @@ pub fn find_symbols_impl(navigator: &Navigator, symbol: &Symbol) -> Vec<Range> {
         ans: Vec::new(),
     };
 
-    visit_ast(navigator.parsed, &mut implementation, navigator.elaborated);
+    visit_ast(navigator.parsed, &mut implementation);
 
     implementation.ans
 }
@@ -38,20 +38,14 @@ impl FindImpl<'_> {
             Symbol::Dependency {
                 type_name,
                 dependency,
-            } => {
-                self.scope.has_type()
-                    && type_name == self.scope.get_type()
-                    && dependency == str.as_ref()
-            }
+            } => self.scope.get_type() == Some(type_name) && dependency == str.as_ref(),
             Symbol::Field {
                 type_name,
                 constructor,
                 field,
             } => {
-                self.scope.has_type()
-                    && type_name == self.scope.get_type()
-                    && self.scope.has_constructor()
-                    && constructor == self.scope.get_constructor()
+                self.scope.get_type() == Some(type_name)
+                    && self.scope.get_constructor() == Some(constructor)
                     && field == str.as_ref()
             }
             Symbol::Alias {
@@ -59,10 +53,8 @@ impl FindImpl<'_> {
                 branch_id,
                 alias,
             } => {
-                self.scope.has_type()
-                    && type_name == self.scope.get_type()
-                    && self.scope.has_branch_id()
-                    && *branch_id == self.scope.get_branch_id()
+                self.scope.get_type() == Some(type_name)
+                    && self.scope.get_branch_id() == Some(*branch_id)
                     && alias == str.as_ref()
             }
             Symbol::Constructor {
@@ -79,11 +71,7 @@ impl FindImpl<'_> {
                 type_name: _,
                 constructor,
                 field,
-            } => {
-                self.scope.has_constructor_expr()
-                    && self.scope.get_constructor_expr() == constructor
-                    && field == str.as_ref()
-            }
+            } => self.scope.get_constructor_expr() == Some(constructor) && field == str.as_ref(),
             _ => false,
         }
     }
