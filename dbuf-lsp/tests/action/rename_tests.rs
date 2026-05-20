@@ -76,13 +76,13 @@ const VALID_TYPE_RENAME: &[Position] = &[
     get_position(6, 25),  // messgae in dependency Type declaration
     get_position(9, 7),   // message in field Type declaration
     get_position(28, 15), // messgae in field Type declaration of constructor
-    get_position(48, 37), // messgae constructor call in other constructor call
-    get_position(42, 29), // enum in dependency type declaration
-    get_position(47, 14), // enum in field type declaration
+    get_position(47, 37), // messgae constructor call in other constructor call
+    get_position(41, 29), // enum in dependency type declaration
+    get_position(45, 7),  // enum in field type declaration
     get_position(22, 14), // message in constructor call
-    get_position(53, 6),  // message in pattern match
-    get_position(27, 12), // constructor declaratino
-    get_position(49, 23), // constructor in constructor call
+    get_position(52, 6),  // message in pattern match
+    get_position(27, 12), // constructor declaration
+    get_position(47, 23), // constructor in constructor call
 ];
 
 const VALID_FIELD_RENAME: &[Position] = &[
@@ -94,12 +94,12 @@ const VALID_FIELD_RENAME: &[Position] = &[
     get_position(9, 14),  // field in type expression
     get_position(18, 14), // field in access chain
     get_position(18, 20), // field in start of access chain
-    get_position(47, 35), // field in constructor expr
+    get_position(46, 35), // field in constructor expr
     get_position(22, 23), // argument in constructor expr
-    get_position(53, 7),  // argument in pattern expr
+    get_position(52, 7),  // argument in pattern expr
     get_position(26, 6),  // alias declaration
     get_position(28, 20), // alias usage
-    get_position(53, 15), // alias in pattern
+    get_position(52, 15), // alias in pattern
 ];
 
 const INVALID_RENAME: &[Position] = &[

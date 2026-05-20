@@ -1,11 +1,12 @@
 [package]
 edition.workspace = true
-name = "dbuf-rust-runtime"
+name = "dbuf-format"
 version.workspace = true
 
 [dependencies]
-serde.workspace = true
-serde_json.workspace = true
+dbuf-core.workspace = true
+
+pretty.workspace = true
 
 [lints]
 workspace = true

@@ -6,7 +6,9 @@ expression: errors
     Error {
         stage: ParsingStage {
             found: Some(
-                Err,
+                Err(
+                    "100000000000000000000",
+                ),
             ),
             expected: [],
             at: Location {
@@ -42,7 +44,9 @@ expression: errors
     Error {
         stage: ParsingStage {
             found: Some(
-                Err,
+                Err(
+                    "1000aba0000",
+                ),
             ),
             expected: [],
             at: Location {
@@ -78,7 +82,9 @@ expression: errors
     Error {
         stage: ParsingStage {
             found: Some(
-                Err,
+                Err(
+                    "\"aaa\\aaaa\"",
+                ),
             ),
             expected: [],
             at: Location {
@@ -114,7 +120,9 @@ expression: errors
     Error {
         stage: ParsingStage {
             found: Some(
-                Err,
+                Err(
+                    "aba_aba",
+                ),
             ),
             expected: [],
             at: Location {
@@ -150,7 +158,9 @@ expression: errors
     Error {
         stage: ParsingStage {
             found: Some(
-                Err,
+                Err(
+                    "Aba_Aba",
+                ),
             ),
             expected: [],
             at: Location {
@@ -186,7 +196,9 @@ expression: errors
     Error {
         stage: ParsingStage {
             found: Some(
-                Err,
+                Err(
+                    "@",
+                ),
             ),
             expected: [],
             at: Location {

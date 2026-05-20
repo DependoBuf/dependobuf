@@ -132,7 +132,7 @@ impl ParsingError {
 impl From<LexingError> for error::ParsingError {
     fn from(value: LexingError) -> Self {
         ParsingError {
-            found: Some(Token::Err),
+            found: Some(Token::Err(value.data.content.clone())),
             expected: vec![],
             at: value.location(),
             extra: Some(ErrorExtra::LexingError(ParserLexingError(value))),

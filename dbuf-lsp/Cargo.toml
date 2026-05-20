@@ -1,20 +1,21 @@
 [package]
-name = "dbuf-lsp"
 edition.workspace = true
+name = "dbuf-lsp"
 version.workspace = true
 
 [dependencies]
 dbuf-core.workspace = true
+dbuf-format.workspace = true
 
-tower-lsp.workspace = true
-tokio.workspace = true
 dashmap.workspace = true
 pretty.workspace = true
 strum.workspace = true
 strum_macros.workspace = true
 thiserror.workspace = true
-tracing.workspace = true
+tokio.workspace = true
+tower-lsp.workspace = true
 tracing-subscriber.workspace = true
+tracing.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true

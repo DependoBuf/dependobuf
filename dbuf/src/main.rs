@@ -1,8 +1,9 @@
-mod cli;
-
 use clap::Parser;
 
+use dbuf::Cli;
+use dbuf::run_cli;
+
 fn main() {
-    let cli = cli::Cli::parse();
-    cli::parse_cli(cli);
+    let cli = Cli::parse();
+    run_cli(cli);
 }

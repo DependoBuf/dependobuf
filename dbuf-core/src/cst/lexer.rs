@@ -185,7 +185,7 @@ pub enum Token {
     #[regex(r"/\*([^*]|\*[^/])*\*/", block_comment_callback)]
     BlockComment(String),
 
-    Err,
+    Err(String),
 }
 
 impl Locatable for Lexer<'_, Token> {
