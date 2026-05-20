@@ -2,610 +2,612 @@
 source: dbuf-core/tests/elaboration/elaboration_correct.rs
 expression: elaborated
 ---
-Module {
-    types: [
-        (
-            InternedString {
-                inner: "IntDep",
-            },
-            Type {
-                dependencies: [
-                    (
-                        InternedString {
-                            inner: "n_dep",
-                        },
-                        TypeExpression {
-                            name: InternedString {
-                                inner: "Int",
-                            },
-                            dependencies: [],
-                        },
-                    ),
-                ],
-                constructor_names: OfMessage(
-                    InternedString {
-                        inner: "IntDep",
-                    },
-                ),
-            },
-        ),
-        (
-            InternedString {
-                inner: "UIntDep",
-            },
-            Type {
-                dependencies: [
-                    (
-                        InternedString {
-                            inner: "n_dep",
-                        },
-                        TypeExpression {
-                            name: InternedString {
-                                inner: "UInt",
-                            },
-                            dependencies: [],
-                        },
-                    ),
-                ],
-                constructor_names: OfMessage(
-                    InternedString {
-                        inner: "UIntDep",
-                    },
-                ),
-            },
-        ),
-        (
-            InternedString {
-                inner: "BoolDep",
-            },
-            Type {
-                dependencies: [
-                    (
-                        InternedString {
-                            inner: "b_dep",
-                        },
-                        TypeExpression {
-                            name: InternedString {
-                                inner: "Bool",
-                            },
-                            dependencies: [],
-                        },
-                    ),
-                ],
-                constructor_names: OfMessage(
-                    InternedString {
-                        inner: "BoolDep",
-                    },
-                ),
-            },
-        ),
-        (
-            InternedString {
-                inner: "StringDep",
-            },
-            Type {
-                dependencies: [
-                    (
-                        InternedString {
-                            inner: "s_dep",
-                        },
-                        TypeExpression {
-                            name: InternedString {
-                                inner: "String",
-                            },
-                            dependencies: [],
-                        },
-                    ),
-                ],
-                constructor_names: OfMessage(
-                    InternedString {
-                        inner: "StringDep",
-                    },
-                ),
-            },
-        ),
-        (
-            InternedString {
-                inner: "LiteralInt",
-            },
-            Type {
-                dependencies: [],
-                constructor_names: OfMessage(
-                    InternedString {
-                        inner: "LiteralInt",
-                    },
-                ),
-            },
-        ),
-        (
-            InternedString {
-                inner: "LiteralUInt",
-            },
-            Type {
-                dependencies: [],
-                constructor_names: OfMessage(
-                    InternedString {
-                        inner: "LiteralUInt",
-                    },
-                ),
-            },
-        ),
-        (
-            InternedString {
-                inner: "LiteralBoolTrue",
-            },
-            Type {
-                dependencies: [],
-                constructor_names: OfMessage(
-                    InternedString {
-                        inner: "LiteralBoolTrue",
-                    },
-                ),
-            },
-        ),
-        (
-            InternedString {
-                inner: "LiteralBoolFalse",
-            },
-            Type {
-                dependencies: [],
-                constructor_names: OfMessage(
-                    InternedString {
-                        inner: "LiteralBoolFalse",
-                    },
-                ),
-            },
-        ),
-        (
-            InternedString {
-                inner: "LiteralString",
-            },
-            Type {
-                dependencies: [],
-                constructor_names: OfMessage(
-                    InternedString {
-                        inner: "LiteralString",
-                    },
-                ),
-            },
-        ),
-        (
-            InternedString {
-                inner: "IntAsUInt",
-            },
-            Type {
-                dependencies: [],
-                constructor_names: OfMessage(
-                    InternedString {
-                        inner: "IntAsUInt",
-                    },
-                ),
-            },
-        ),
-        (
-            InternedString {
-                inner: "UIntAsInt",
-            },
-            Type {
-                dependencies: [],
-                constructor_names: OfMessage(
-                    InternedString {
-                        inner: "UIntAsInt",
-                    },
-                ),
-            },
-        ),
-    ],
-    constructors: {
-        InternedString {
-            inner: "BoolDep",
-        }: Constructor {
-            implicits: [
-                (
-                    InternedString {
-                        inner: "b",
-                    },
-                    TypeExpression {
-                        name: InternedString {
-                            inner: "Bool",
-                        },
-                        dependencies: [],
-                    },
-                ),
-            ],
-            fields: [],
-            result_type: TypeExpression {
-                name: InternedString {
+Ok(
+    Module {
+        types: [
+            (
+                InternedString {
                     inner: "BoolDep",
                 },
-                dependencies: [
-                    Variable {
-                        name: InternedString {
+                Type {
+                    dependencies: [
+                        (
+                            InternedString {
+                                inner: "b_dep",
+                            },
+                            TypeExpression {
+                                name: InternedString {
+                                    inner: "Bool",
+                                },
+                                dependencies: [],
+                            },
+                        ),
+                    ],
+                    constructor_names: OfMessage(
+                        InternedString {
+                            inner: "BoolDep",
+                        },
+                    ),
+                },
+            ),
+            (
+                InternedString {
+                    inner: "IntDep",
+                },
+                Type {
+                    dependencies: [
+                        (
+                            InternedString {
+                                inner: "n_dep",
+                            },
+                            TypeExpression {
+                                name: InternedString {
+                                    inner: "Int",
+                                },
+                                dependencies: [],
+                            },
+                        ),
+                    ],
+                    constructor_names: OfMessage(
+                        InternedString {
+                            inner: "IntDep",
+                        },
+                    ),
+                },
+            ),
+            (
+                InternedString {
+                    inner: "StringDep",
+                },
+                Type {
+                    dependencies: [
+                        (
+                            InternedString {
+                                inner: "s_dep",
+                            },
+                            TypeExpression {
+                                name: InternedString {
+                                    inner: "String",
+                                },
+                                dependencies: [],
+                            },
+                        ),
+                    ],
+                    constructor_names: OfMessage(
+                        InternedString {
+                            inner: "StringDep",
+                        },
+                    ),
+                },
+            ),
+            (
+                InternedString {
+                    inner: "UIntDep",
+                },
+                Type {
+                    dependencies: [
+                        (
+                            InternedString {
+                                inner: "n_dep",
+                            },
+                            TypeExpression {
+                                name: InternedString {
+                                    inner: "UInt",
+                                },
+                                dependencies: [],
+                            },
+                        ),
+                    ],
+                    constructor_names: OfMessage(
+                        InternedString {
+                            inner: "UIntDep",
+                        },
+                    ),
+                },
+            ),
+            (
+                InternedString {
+                    inner: "LiteralBoolFalse",
+                },
+                Type {
+                    dependencies: [],
+                    constructor_names: OfMessage(
+                        InternedString {
+                            inner: "LiteralBoolFalse",
+                        },
+                    ),
+                },
+            ),
+            (
+                InternedString {
+                    inner: "LiteralBoolTrue",
+                },
+                Type {
+                    dependencies: [],
+                    constructor_names: OfMessage(
+                        InternedString {
+                            inner: "LiteralBoolTrue",
+                        },
+                    ),
+                },
+            ),
+            (
+                InternedString {
+                    inner: "LiteralInt",
+                },
+                Type {
+                    dependencies: [],
+                    constructor_names: OfMessage(
+                        InternedString {
+                            inner: "LiteralInt",
+                        },
+                    ),
+                },
+            ),
+            (
+                InternedString {
+                    inner: "UIntAsInt",
+                },
+                Type {
+                    dependencies: [],
+                    constructor_names: OfMessage(
+                        InternedString {
+                            inner: "UIntAsInt",
+                        },
+                    ),
+                },
+            ),
+            (
+                InternedString {
+                    inner: "LiteralString",
+                },
+                Type {
+                    dependencies: [],
+                    constructor_names: OfMessage(
+                        InternedString {
+                            inner: "LiteralString",
+                        },
+                    ),
+                },
+            ),
+            (
+                InternedString {
+                    inner: "IntAsUInt",
+                },
+                Type {
+                    dependencies: [],
+                    constructor_names: OfMessage(
+                        InternedString {
+                            inner: "IntAsUInt",
+                        },
+                    ),
+                },
+            ),
+            (
+                InternedString {
+                    inner: "LiteralUInt",
+                },
+                Type {
+                    dependencies: [],
+                    constructor_names: OfMessage(
+                        InternedString {
+                            inner: "LiteralUInt",
+                        },
+                    ),
+                },
+            ),
+        ],
+        constructors: {
+            InternedString {
+                inner: "BoolDep",
+            }: Constructor {
+                implicits: [
+                    (
+                        InternedString {
                             inner: "b",
                         },
-                        ty: TypeExpression {
+                        TypeExpression {
                             name: InternedString {
                                 inner: "Bool",
                             },
                             dependencies: [],
                         },
-                    },
+                    ),
                 ],
-            },
-        },
-        InternedString {
-            inner: "IntAsUInt",
-        }: Constructor {
-            implicits: [],
-            fields: [
-                (
-                    InternedString {
-                        inner: "d",
+                fields: [],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "BoolDep",
                     },
-                    TypeExpression {
-                        name: InternedString {
-                            inner: "UIntDep",
-                        },
-                        dependencies: [
-                            OpCall {
-                                op_call: Literal(
-                                    Int(
-                                        5,
-                                    ),
-                                ),
-                                result_type: TypeExpression {
-                                    name: InternedString {
-                                        inner: "UInt",
-                                    },
-                                    dependencies: [],
-                                },
+                    dependencies: [
+                        Variable {
+                            name: InternedString {
+                                inner: "b",
                             },
-                        ],
-                    },
-                ),
-            ],
-            result_type: TypeExpression {
-                name: InternedString {
-                    inner: "IntAsUInt",
-                },
-                dependencies: [],
-            },
-        },
-        InternedString {
-            inner: "IntDep",
-        }: Constructor {
-            implicits: [
-                (
-                    InternedString {
-                        inner: "n",
-                    },
-                    TypeExpression {
-                        name: InternedString {
-                            inner: "Int",
+                            ty: TypeExpression {
+                                name: InternedString {
+                                    inner: "Bool",
+                                },
+                                dependencies: [],
+                            },
                         },
-                        dependencies: [],
-                    },
-                ),
-            ],
-            fields: [],
-            result_type: TypeExpression {
-                name: InternedString {
-                    inner: "IntDep",
+                    ],
                 },
-                dependencies: [
-                    Variable {
-                        name: InternedString {
+            },
+            InternedString {
+                inner: "IntAsUInt",
+            }: Constructor {
+                implicits: [],
+                fields: [
+                    (
+                        InternedString {
+                            inner: "d",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "UIntDep",
+                            },
+                            dependencies: [
+                                OpCall {
+                                    op_call: Literal(
+                                        Int(
+                                            5,
+                                        ),
+                                    ),
+                                    result_type: TypeExpression {
+                                        name: InternedString {
+                                            inner: "UInt",
+                                        },
+                                        dependencies: [],
+                                    },
+                                },
+                            ],
+                        },
+                    ),
+                ],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "IntAsUInt",
+                    },
+                    dependencies: [],
+                },
+            },
+            InternedString {
+                inner: "IntDep",
+            }: Constructor {
+                implicits: [
+                    (
+                        InternedString {
                             inner: "n",
                         },
-                        ty: TypeExpression {
+                        TypeExpression {
                             name: InternedString {
                                 inner: "Int",
                             },
                             dependencies: [],
                         },
-                    },
+                    ),
                 ],
-            },
-        },
-        InternedString {
-            inner: "LiteralBoolFalse",
-        }: Constructor {
-            implicits: [],
-            fields: [
-                (
-                    InternedString {
-                        inner: "d",
+                fields: [],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "IntDep",
                     },
-                    TypeExpression {
-                        name: InternedString {
-                            inner: "BoolDep",
-                        },
-                        dependencies: [
-                            OpCall {
-                                op_call: Literal(
-                                    Bool(
-                                        false,
-                                    ),
-                                ),
-                                result_type: TypeExpression {
-                                    name: InternedString {
-                                        inner: "Bool",
-                                    },
-                                    dependencies: [],
-                                },
+                    dependencies: [
+                        Variable {
+                            name: InternedString {
+                                inner: "n",
                             },
-                        ],
-                    },
-                ),
-            ],
-            result_type: TypeExpression {
-                name: InternedString {
-                    inner: "LiteralBoolFalse",
-                },
-                dependencies: [],
-            },
-        },
-        InternedString {
-            inner: "LiteralBoolTrue",
-        }: Constructor {
-            implicits: [],
-            fields: [
-                (
-                    InternedString {
-                        inner: "d",
-                    },
-                    TypeExpression {
-                        name: InternedString {
-                            inner: "BoolDep",
-                        },
-                        dependencies: [
-                            OpCall {
-                                op_call: Literal(
-                                    Bool(
-                                        true,
-                                    ),
-                                ),
-                                result_type: TypeExpression {
-                                    name: InternedString {
-                                        inner: "Bool",
-                                    },
-                                    dependencies: [],
+                            ty: TypeExpression {
+                                name: InternedString {
+                                    inner: "Int",
                                 },
+                                dependencies: [],
                             },
-                        ],
-                    },
-                ),
-            ],
-            result_type: TypeExpression {
-                name: InternedString {
-                    inner: "LiteralBoolTrue",
-                },
-                dependencies: [],
-            },
-        },
-        InternedString {
-            inner: "LiteralInt",
-        }: Constructor {
-            implicits: [],
-            fields: [
-                (
-                    InternedString {
-                        inner: "d",
-                    },
-                    TypeExpression {
-                        name: InternedString {
-                            inner: "IntDep",
                         },
-                        dependencies: [
-                            OpCall {
-                                op_call: Literal(
-                                    Int(
-                                        42,
+                    ],
+                },
+            },
+            InternedString {
+                inner: "LiteralBoolFalse",
+            }: Constructor {
+                implicits: [],
+                fields: [
+                    (
+                        InternedString {
+                            inner: "d",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "BoolDep",
+                            },
+                            dependencies: [
+                                OpCall {
+                                    op_call: Literal(
+                                        Bool(
+                                            false,
+                                        ),
                                     ),
-                                ),
-                                result_type: TypeExpression {
-                                    name: InternedString {
-                                        inner: "Int",
+                                    result_type: TypeExpression {
+                                        name: InternedString {
+                                            inner: "Bool",
+                                        },
+                                        dependencies: [],
                                     },
-                                    dependencies: [],
                                 },
-                            },
-                        ],
-                    },
-                ),
-            ],
-            result_type: TypeExpression {
-                name: InternedString {
-                    inner: "LiteralInt",
-                },
-                dependencies: [],
-            },
-        },
-        InternedString {
-            inner: "LiteralString",
-        }: Constructor {
-            implicits: [],
-            fields: [
-                (
-                    InternedString {
-                        inner: "d",
-                    },
-                    TypeExpression {
-                        name: InternedString {
-                            inner: "StringDep",
+                            ],
                         },
-                        dependencies: [
-                            OpCall {
-                                op_call: Literal(
-                                    Str(
-                                        "hello",
+                    ),
+                ],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "LiteralBoolFalse",
+                    },
+                    dependencies: [],
+                },
+            },
+            InternedString {
+                inner: "LiteralBoolTrue",
+            }: Constructor {
+                implicits: [],
+                fields: [
+                    (
+                        InternedString {
+                            inner: "d",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "BoolDep",
+                            },
+                            dependencies: [
+                                OpCall {
+                                    op_call: Literal(
+                                        Bool(
+                                            true,
+                                        ),
                                     ),
-                                ),
-                                result_type: TypeExpression {
-                                    name: InternedString {
-                                        inner: "String",
+                                    result_type: TypeExpression {
+                                        name: InternedString {
+                                            inner: "Bool",
+                                        },
+                                        dependencies: [],
                                     },
-                                    dependencies: [],
                                 },
-                            },
-                        ],
-                    },
-                ),
-            ],
-            result_type: TypeExpression {
-                name: InternedString {
-                    inner: "LiteralString",
-                },
-                dependencies: [],
-            },
-        },
-        InternedString {
-            inner: "LiteralUInt",
-        }: Constructor {
-            implicits: [],
-            fields: [
-                (
-                    InternedString {
-                        inner: "d",
-                    },
-                    TypeExpression {
-                        name: InternedString {
-                            inner: "UIntDep",
+                            ],
                         },
-                        dependencies: [
-                            OpCall {
-                                op_call: Literal(
-                                    UInt(
-                                        100,
+                    ),
+                ],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "LiteralBoolTrue",
+                    },
+                    dependencies: [],
+                },
+            },
+            InternedString {
+                inner: "LiteralInt",
+            }: Constructor {
+                implicits: [],
+                fields: [
+                    (
+                        InternedString {
+                            inner: "d",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "IntDep",
+                            },
+                            dependencies: [
+                                OpCall {
+                                    op_call: Literal(
+                                        Int(
+                                            42,
+                                        ),
                                     ),
-                                ),
-                                result_type: TypeExpression {
-                                    name: InternedString {
-                                        inner: "UInt",
+                                    result_type: TypeExpression {
+                                        name: InternedString {
+                                            inner: "Int",
+                                        },
+                                        dependencies: [],
                                     },
-                                    dependencies: [],
                                 },
-                            },
-                        ],
-                    },
-                ),
-            ],
-            result_type: TypeExpression {
-                name: InternedString {
-                    inner: "LiteralUInt",
-                },
-                dependencies: [],
-            },
-        },
-        InternedString {
-            inner: "StringDep",
-        }: Constructor {
-            implicits: [
-                (
-                    InternedString {
-                        inner: "s",
-                    },
-                    TypeExpression {
-                        name: InternedString {
-                            inner: "String",
+                            ],
                         },
-                        dependencies: [],
+                    ),
+                ],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "LiteralInt",
                     },
-                ),
-            ],
-            fields: [],
-            result_type: TypeExpression {
-                name: InternedString {
-                    inner: "StringDep",
+                    dependencies: [],
                 },
-                dependencies: [
-                    Variable {
-                        name: InternedString {
+            },
+            InternedString {
+                inner: "LiteralString",
+            }: Constructor {
+                implicits: [],
+                fields: [
+                    (
+                        InternedString {
+                            inner: "d",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "StringDep",
+                            },
+                            dependencies: [
+                                OpCall {
+                                    op_call: Literal(
+                                        Str(
+                                            "hello",
+                                        ),
+                                    ),
+                                    result_type: TypeExpression {
+                                        name: InternedString {
+                                            inner: "String",
+                                        },
+                                        dependencies: [],
+                                    },
+                                },
+                            ],
+                        },
+                    ),
+                ],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "LiteralString",
+                    },
+                    dependencies: [],
+                },
+            },
+            InternedString {
+                inner: "LiteralUInt",
+            }: Constructor {
+                implicits: [],
+                fields: [
+                    (
+                        InternedString {
+                            inner: "d",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "UIntDep",
+                            },
+                            dependencies: [
+                                OpCall {
+                                    op_call: Literal(
+                                        UInt(
+                                            100,
+                                        ),
+                                    ),
+                                    result_type: TypeExpression {
+                                        name: InternedString {
+                                            inner: "UInt",
+                                        },
+                                        dependencies: [],
+                                    },
+                                },
+                            ],
+                        },
+                    ),
+                ],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "LiteralUInt",
+                    },
+                    dependencies: [],
+                },
+            },
+            InternedString {
+                inner: "StringDep",
+            }: Constructor {
+                implicits: [
+                    (
+                        InternedString {
                             inner: "s",
                         },
-                        ty: TypeExpression {
+                        TypeExpression {
                             name: InternedString {
                                 inner: "String",
                             },
                             dependencies: [],
                         },
-                    },
+                    ),
                 ],
-            },
-        },
-        InternedString {
-            inner: "UIntAsInt",
-        }: Constructor {
-            implicits: [],
-            fields: [
-                (
-                    InternedString {
-                        inner: "d",
+                fields: [],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "StringDep",
                     },
-                    TypeExpression {
-                        name: InternedString {
-                            inner: "IntDep",
-                        },
-                        dependencies: [
-                            OpCall {
-                                op_call: Literal(
-                                    UInt(
-                                        5,
-                                    ),
-                                ),
-                                result_type: TypeExpression {
-                                    name: InternedString {
-                                        inner: "Int",
-                                    },
-                                    dependencies: [],
-                                },
+                    dependencies: [
+                        Variable {
+                            name: InternedString {
+                                inner: "s",
                             },
-                        ],
-                    },
-                ),
-            ],
-            result_type: TypeExpression {
-                name: InternedString {
-                    inner: "UIntAsInt",
-                },
-                dependencies: [],
-            },
-        },
-        InternedString {
-            inner: "UIntDep",
-        }: Constructor {
-            implicits: [
-                (
-                    InternedString {
-                        inner: "n",
-                    },
-                    TypeExpression {
-                        name: InternedString {
-                            inner: "UInt",
+                            ty: TypeExpression {
+                                name: InternedString {
+                                    inner: "String",
+                                },
+                                dependencies: [],
+                            },
                         },
-                        dependencies: [],
-                    },
-                ),
-            ],
-            fields: [],
-            result_type: TypeExpression {
-                name: InternedString {
-                    inner: "UIntDep",
+                    ],
                 },
-                dependencies: [
-                    Variable {
-                        name: InternedString {
+            },
+            InternedString {
+                inner: "UIntAsInt",
+            }: Constructor {
+                implicits: [],
+                fields: [
+                    (
+                        InternedString {
+                            inner: "d",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "IntDep",
+                            },
+                            dependencies: [
+                                OpCall {
+                                    op_call: Literal(
+                                        UInt(
+                                            5,
+                                        ),
+                                    ),
+                                    result_type: TypeExpression {
+                                        name: InternedString {
+                                            inner: "Int",
+                                        },
+                                        dependencies: [],
+                                    },
+                                },
+                            ],
+                        },
+                    ),
+                ],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "UIntAsInt",
+                    },
+                    dependencies: [],
+                },
+            },
+            InternedString {
+                inner: "UIntDep",
+            }: Constructor {
+                implicits: [
+                    (
+                        InternedString {
                             inner: "n",
                         },
-                        ty: TypeExpression {
+                        TypeExpression {
                             name: InternedString {
                                 inner: "UInt",
                             },
                             dependencies: [],
                         },
-                    },
+                    ),
                 ],
+                fields: [],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "UIntDep",
+                    },
+                    dependencies: [
+                        Variable {
+                            name: InternedString {
+                                inner: "n",
+                            },
+                            ty: TypeExpression {
+                                name: InternedString {
+                                    inner: "UInt",
+                                },
+                                dependencies: [],
+                            },
+                        },
+                    ],
+                },
             },
         },
     },
-}
+)

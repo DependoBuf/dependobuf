@@ -58,7 +58,7 @@ pub struct Constructor<Str> {
 pub type Context<Str> = Vec<(Str, TypeExpression<Str>)>;
 
 /// Elaborated DependoBuf expression returning value.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValueExpression<Str> {
     /// An operator call.
     OpCall {
@@ -77,7 +77,7 @@ pub enum ValueExpression<Str> {
 }
 
 /// Elaborated DependoBuf expression returning type.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeExpression<Str> {
     /// Call to dependent type.
     TypeExpression {

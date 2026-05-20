@@ -1,0 +1,10 @@
+---
+source: dbuf-core/tests/elaboration/elaboration_correct.rs
+expression: elaborated
+---
+Err(
+    ArityMismatch {
+        expected: 2,
+        found: 1,
+    },
+)

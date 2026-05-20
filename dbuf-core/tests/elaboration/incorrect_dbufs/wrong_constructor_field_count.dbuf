@@ -1,0 +1,10 @@
+message Pair {
+    x Int;
+    y Int;
+}
+
+message PairDep (p Pair) {}
+
+message Broken {
+    d PairDep Pair{x: 5};
+}

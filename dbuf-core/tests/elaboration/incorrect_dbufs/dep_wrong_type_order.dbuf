@@ -1,0 +1,5 @@
+message TwoDeps (a Int) (b String) {}
+
+message Broken {
+    d TwoDeps "hello" 42;
+}

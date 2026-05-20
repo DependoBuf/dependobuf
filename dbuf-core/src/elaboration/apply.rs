@@ -1,17 +1,16 @@
 use crate::ast::elaborated as e;
-use crate::elaboration::{Binds, subst, type_of, unify};
-use crate::error::elaborating::Error::{self, ElaboratingError};
+use crate::elaboration::builtins::BuiltinType;
+use crate::elaboration::{subst, type_of, unify};
+use crate::error::elaborating::Error::{self, ArityMismatch};
 
-/// Apply constructor to argument
 /// # Errors
-/// If the application failed
 pub fn application<Str>(
     constructor: &e::Constructor<Str>,
     arg: &e::ValueExpression<Str>,
     module: &e::Module<Str>,
-) -> Result<(e::Constructor<Str>, Binds<Str>), Error>
+) -> Result<e::Constructor<Str>, Error>
 where
-    Str: Clone + Eq + Ord,
+    Str: Clone + Eq + Ord + From<BuiltinType> + ToString,
 {
     let e::Constructor {
         implicits,
@@ -19,11 +18,13 @@ where
         result_type,
     } = constructor;
 
-    let ((_var_name, field_type), rest_fields) = fields.split_first().ok_or(ElaboratingError)?;
+    let ((_var_name, field_type), rest_fields) = fields.split_first().ok_or(ArityMismatch {
+        expected: 1,
+        found: 0,
+    })?;
 
     let arg_type = type_of(arg);
-    let (arg_bindings, implicit_bindings) =
-        unify::unify_type(&arg_type, field_type, module).map_err(|_| ElaboratingError)?;
+    let implicit_bindings = unify::unify_type(&arg_type, field_type, module)?;
 
     let new_fields = rest_fields
         .iter()
@@ -35,12 +36,9 @@ where
 
     let new_result_type = subst::apply_bindings_to_type(result_type.clone(), &implicit_bindings);
 
-    Ok((
-        e::Constructor {
-            implicits: implicits.clone(),
-            fields: new_fields,
-            result_type: new_result_type,
-        },
-        arg_bindings,
-    ))
+    Ok(e::Constructor {
+        implicits: implicits.clone(),
+        fields: new_fields,
+        result_type: new_result_type,
+    })
 }

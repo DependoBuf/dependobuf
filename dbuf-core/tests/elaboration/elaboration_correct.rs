@@ -1,5 +1,5 @@
 use super::parse_file;
-use dbuf_core::elaboration::typecheck::elaborate;
+use dbuf_core::elaboration::elaborate;
 use insta::Settings;
 use std::path::Path;
 
@@ -62,6 +62,51 @@ fn test_field_on_field() {
 fn test_dependent_messages() {
     insta::glob!("correct_dbufs/dependent_messages.dbuf", test_file);
     insta::glob!("correct_dbufs/expressions.dbuf", test_file);
+}
+
+#[test]
+fn test_enums_simple() {
+    insta::glob!("correct_dbufs/enums_simple.dbuf", test_file);
+}
+
+#[test]
+fn test_enums_dependent() {
+    insta::glob!("correct_dbufs/enums_dependent.dbuf", test_file);
+}
+
+#[test]
+fn test_enums_recursive() {
+    insta::glob!("correct_dbufs/enums_recursive.dbuf", test_file);
+}
+
+#[test]
+fn test_enums_multi_dep() {
+    insta::glob!("correct_dbufs/enums_multi_dep.dbuf", test_file);
+}
+
+#[test]
+fn test_enums_wildcard_implicits() {
+    insta::glob!("correct_dbufs/enums_wildcard_implicits.dbuf", test_file);
+}
+
+#[test]
+fn test_enum_as_dep() {
+    insta::glob!("correct_dbufs/enum_as_dep.dbuf", test_file);
+}
+
+#[test]
+fn test_normalize_arithmetic() {
+    insta::glob!("correct_dbufs/normalize_arithmetic.dbuf", test_file);
+}
+
+#[test]
+fn test_dep_chain() {
+    insta::glob!("correct_dbufs/dep_chain.dbuf", test_file);
+}
+
+#[test]
+fn test_string_ops_extended() {
+    insta::glob!("correct_dbufs/string_ops_extended.dbuf", test_file);
 }
 
 #[test]

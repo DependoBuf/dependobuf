@@ -1,0 +1,26 @@
+enum Nat {
+    Zero {}
+    Suc {
+        pred Nat;
+    }
+}
+
+enum Vec (n Nat) {
+    Zero{} => {
+        Nil {}
+    }
+    Suc{pred: p} => {
+        Cons {
+            head Int;
+            tail Vec p;
+        }
+    }
+}
+
+message NatDep (n Nat) {}
+
+message UseNat {
+    n Nat;
+    d NatDep Zero{};
+    d2 NatDep Suc{pred: Zero{}};
+}

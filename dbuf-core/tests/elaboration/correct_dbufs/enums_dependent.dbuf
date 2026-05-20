@@ -1,0 +1,39 @@
+enum BoolBranch (b Bool) {
+    true => {
+        TrueCase {
+            x Int;
+        }
+    }
+    false => {
+        FalseCase {
+            y UInt;
+        }
+    }
+    * => {
+        AnyCase {}
+    }
+}
+
+enum IntBranch (n Int) {
+    0 => {
+        ZeroCase {}
+    }
+    * => {
+        NonZeroCase {
+            s String;
+        }
+    }
+}
+
+message IntDep (n Int) {}
+
+enum WithExprDep (a Int) (b Int) {
+    0 => {
+        ZeroA {
+            rest IntDep b;
+        }
+    }
+    * => {
+        Other {}
+    }
+}
