@@ -187,7 +187,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::elaborated::{ConstructorNames, Constructor, Type, TypeExpression, ValueExpression};
+    use crate::ast::elaborated::{
+        Constructor, ConstructorNames, Type, TypeExpression, ValueExpression,
+    };
     use crate::ast::operators::{BinaryOp, Literal, OpCall, UnaryOp};
     use std::collections::BTreeMap;
 
@@ -289,8 +291,7 @@ mod tests {
                         result_type: TypeExpression::TypeExpression {
                             name: "T".to_owned(),
                             dependencies: Rec::from(
-                                [ctor_dep, access_dep, minus_dep, bang_dep, binary_dep]
-                                    .as_slice(),
+                                [ctor_dep, access_dep, minus_dep, bang_dep, binary_dep].as_slice(),
                             ),
                         },
                     },
@@ -305,8 +306,6 @@ mod tests {
         assert!(mapped.constructors.contains_key("Ctor_x"));
 
         let msg = mapped.types.iter().find(|(n, _)| n == "Msg_x").unwrap();
-        assert!(
-            matches!(&msg.1.constructor_names, ConstructorNames::OfMessage(n) if n == "Msg_x")
-        );
+        assert!(matches!(&msg.1.constructor_names, ConstructorNames::OfMessage(n) if n == "Msg_x"));
     }
 }
