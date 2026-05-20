@@ -35,6 +35,7 @@ pub fn literal_to_type<Str: From<String>>(literal: &o::Literal) -> e::TypeExpres
     })
 }
 
+/// # Errors
 pub fn check_literal<Str: Eq + From<String>>(
     literal: &o::Literal,
     expected_type: &e::TypeExpression<Str>,
@@ -52,6 +53,7 @@ pub fn check_literal<Str: Eq + From<String>>(
     }
 }
 
+/// # Errors
 pub fn resolve_field_access<Str: Debug + Clone + Hash + Eq + Ord>(
     module_ctx: &e::Module<Str>,
     operand_type: &e::TypeExpression<Str>,
