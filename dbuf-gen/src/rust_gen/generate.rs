@@ -1,6 +1,11 @@
-use std::rc::Rc;
+use std::{
+    rc::Rc,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
 use super::prelude::*;
+
+static FRESH_VAR_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 // TODO: make string here and in ast stored in arena and remove cloning
 
@@ -740,6 +745,7 @@ mod type_inherent_impl {
     use crate::rust_gen::generate::value_from_expression::Locator;
 
     use super::super::prelude::*;
+    use super::wrap_with_deferred_checks;
 
     struct ConstructorObjectsLocator {}
 
@@ -1843,23 +1849,28 @@ mod type_inherent_impl {
                 let dependencies = ty
                     .dependencies
                     .iter()
-                    .map(|dependency| {
-                        dependencies_param
-                            .to_doc(ctx)
-                            .append(".")
-                            .append(
-                                dependencies_type_cursor
-                                    .clone()
-                                    .get_generated::<objects::Variable>(objects::ObjectId(
-                                        ast::NodeId::id_rc(dependency),
-                                        objects::Tag::None,
-                                    ))
-                                    .expect("couldn't get generated dependency")
-                                    .0
-                                    .to_doc(ctx),
-                            )
-                            .append(".")
-                            .append("body")
+                    .zip(self.result_type.get_dependencies().iter())
+                    .map(|(dependency, value_expr)| {
+                        let field_access = dependencies_param.to_doc(ctx).append(".").append(
+                            dependencies_type_cursor
+                                .clone()
+                                .get_generated::<objects::Variable>(objects::ObjectId(
+                                    ast::NodeId::id_rc(dependency),
+                                    objects::Tag::None,
+                                ))
+                                .expect("couldn't get generated dependency")
+                                .0
+                                .to_doc(ctx),
+                        );
+                        match value_expr {
+                            ValueExpression::Constructor { .. } => {
+                                field_access.append(".").append("body")
+                            }
+                            ValueExpression::OpCall(OpCall::Literal(Literal::Str(_))) => {
+                                field_access.append(".").append("as_str()")
+                            }
+                            _ => field_access,
+                        }
                     })
                     .collect::<Vec<_>>();
 
@@ -1870,14 +1881,28 @@ mod type_inherent_impl {
                         objects::ObjectId::from_name("implicits_extractor".to_owned()),
                     ));
 
+                let mut all_deferred: Vec<(objects::GeneratedVariable, ValueExpression)> = vec![];
                 let implicits_extracting_patterns = self
                     .result_type
                     .get_dependencies()
                     .iter()
                     .map(|dependency| {
-                        dependency.generate_as_pattern((ctx, &mut implicits_extractor_if_scope))
+                        let (pattern, deferred) = dependency
+                            .generate_as_pattern((ctx, &mut implicits_extractor_if_scope));
+                        all_deferred.extend(deferred);
+                        pattern
                     })
                     .collect::<Vec<_>>();
+
+                let constructor_call =
+                    self.generate_constructor_call((ctx, &mut implicits_extractor_if_scope), true);
+
+                let wrapped_body = wrap_with_deferred_checks(
+                    constructor_call,
+                    all_deferred,
+                    ctx,
+                    &mut implicits_extractor_if_scope,
+                );
 
                 alloc
                     .text("if")
@@ -1898,15 +1923,7 @@ mod type_inherent_impl {
                     .append(")")
                     .append(alloc.space())
                     .append("{")
-                    .append(
-                        alloc
-                            .hardline()
-                            .append(self.generate_constructor_call(
-                                (ctx, &mut implicits_extractor_if_scope),
-                                true,
-                            ))
-                            .nest(NEST_UNIT),
-                    )
+                    .append(alloc.hardline().append(wrapped_body).nest(NEST_UNIT))
                     .append("}")
                     .append(alloc.space())
                     .append("else")
@@ -2574,13 +2591,73 @@ impl<'a> Type {
     }
 }
 
+fn literal_as_pattern<'a>(op_call: &OpCall, alloc: &'a crate::format::BoxAllocator) -> BoxDoc<'a> {
+    match op_call {
+        OpCall::Literal(Literal::Bool(val)) => alloc.text(val.to_string()).into_doc(),
+        OpCall::Literal(Literal::Int(val)) => alloc.text(val.to_string()).into_doc(),
+        OpCall::Literal(Literal::UInt(val)) => alloc.text(val.to_string()).into_doc(),
+        OpCall::Literal(Literal::Str(val)) => {
+            let escaped = val.replace('\\', "\\\\").replace('"', "\\\"");
+            alloc.text(format!("\"{escaped}\"")).into_doc()
+        }
+        _ => panic!(
+            "only literal patterns are supported in pattern matching; got a complex operator expression"
+        ),
+    }
+}
+
+fn wrap_with_deferred_checks<'a>(
+    body: BoxDoc<'a>,
+    deferred: Vec<(objects::GeneratedVariable, ValueExpression)>,
+    ctx: crate::generate::GlobalContext<'a>,
+    namespace: &mut context::NamingContext<'a, '_>,
+) -> BoxDoc<'a> {
+    let alloc = ctx.alloc;
+    deferred
+        .into_iter()
+        .rev()
+        .fold(body, |inner_body, (fresh_var, value_expr)| {
+            let accessor = fresh_var.to_doc(ctx).append(".").append("body");
+            let (pattern, sub_deferred) = value_expr.generate_as_pattern((ctx, namespace));
+            let inner_with_sub =
+                wrap_with_deferred_checks(inner_body, sub_deferred, ctx, namespace);
+            alloc
+                .text("if let ")
+                .append(pattern)
+                .append(alloc.space())
+                .append("=")
+                .append(alloc.space())
+                .append(accessor)
+                .append(alloc.space())
+                .append("{")
+                .append(alloc.hardline().append(inner_with_sub).nest(NEST_UNIT))
+                .append("} else {")
+                .append(
+                    alloc
+                        .hardline()
+                        .append("Err(super::DeserializeError::DependenciesDescriptorMismatch)")
+                        .nest(NEST_UNIT)
+                        .append(alloc.hardline()),
+                )
+                .append("}")
+                .into_doc()
+        })
+}
+
 impl<'a> ValueExpression {
-    pub fn generate_as_pattern(&self, (ctx, namespace): MutContext<'a, '_, '_>) -> BoxDoc<'a> {
+    fn generate_as_pattern(
+        &self,
+        (ctx, namespace): MutContext<'a, '_, '_>,
+    ) -> (
+        BoxDoc<'a>,
+        Vec<(objects::GeneratedVariable, ValueExpression)>,
+    ) {
         let alloc = ctx.alloc;
 
         match self {
-            ValueExpression::OpCall(_) => {
-                panic!("OpCall's are currently not supported in patterns")
+            ValueExpression::OpCall(op_call) => {
+                let doc = literal_as_pattern(op_call, alloc);
+                (doc, vec![])
             }
             ValueExpression::Constructor {
                 call,
@@ -2597,11 +2674,11 @@ impl<'a> ValueExpression {
 
                 let (type_module_prefix, type_module_cursor) = ty
                     .lookup_type_module((ctx, namespace.cursor()))
-                    .expect("coudln't lookup type module");
+                    .expect("couldn't lookup type module");
 
                 let (body_type, body_type_cursor) = type_module_cursor
                     .get_generated::<objects::Type>(ObjectId::from_name("Body".to_owned()))
-                    .expect("coudln't get generated Body type");
+                    .expect("couldn't get generated Body type");
 
                 let (constructor_enum_branch, constructor_enum_branch_cursor) = body_type_cursor
                     .get_generated::<objects::Type>(ObjectId(
@@ -2609,24 +2686,6 @@ impl<'a> ValueExpression {
                         objects::Tag::String("enum_branch"),
                     ))
                     .expect("couldn't get constructor enum branch");
-
-                // TODO: Do something with the following
-
-                // Problem with current approach is following:
-                // enum T (n Nat) {
-                //     Zero => ...
-                //     Suc ( p ) => ...
-                //     Suc ( Suc ( p ) ) => ...
-                // }
-                // To third constructor be expressible (to something like `if let Suc { pred: Suc { pred } } = ...` be compiled)
-                // in current api at least one of the following statements must be true:
-                // 1. box, deref etc pattern becomes stable
-                // 2. constructor fields are stored by reference
-
-                // I see 2 approaces:
-                // Either extract needed implicits from dependencies by hand without any matching.
-                // Or implement reference type for the messages, so 2. option could be available.
-                // Both requires non small amount of code.
 
                 let fields = call
                     .fields
@@ -2646,12 +2705,27 @@ impl<'a> ValueExpression {
 
                 drop(constructor_enum_branch_cursor);
 
-                let arguments = arguments
+                let mut all_deferred: Vec<(objects::GeneratedVariable, ValueExpression)> = vec![];
+                let arg_patterns: Vec<BoxDoc<'a>> = arguments
                     .iter()
-                    .map(|argument| argument.generate_as_pattern((ctx, namespace)))
-                    .collect::<Vec<_>>();
+                    .map(|argument| {
+                        if let ValueExpression::Constructor { .. } = argument {
+                            let id = FRESH_VAR_COUNTER.fetch_add(1, Ordering::Relaxed);
+                            let var_name = format!("_nested_{id}");
+                            let (fresh_var, _) = namespace
+                                .insert_object_auto_name(objects::Variable::from_name(var_name));
+                            all_deferred.push((fresh_var.clone(), argument.clone()));
+                            fresh_var.to_doc(ctx)
+                        } else {
+                            let (arg_doc, sub_deferred) =
+                                argument.generate_as_pattern((ctx, namespace));
+                            all_deferred.extend(sub_deferred);
+                            arg_doc
+                        }
+                    })
+                    .collect();
 
-                type_module_prefix
+                let pattern = type_module_prefix
                     .append(body_type.to_doc(ctx))
                     .append("::")
                     .append(constructor_enum_branch.to_doc(ctx))
@@ -2659,13 +2733,15 @@ impl<'a> ValueExpression {
                     .append("{")
                     .append(alloc.space())
                     .append(alloc.intersperse(
-                        fields.into_iter().zip(arguments).map(|(field, argument)| {
-                            field.append(":").append(alloc.space()).append(argument)
+                        fields.into_iter().zip(arg_patterns).map(|(field, arg)| {
+                            field.append(":").append(alloc.space()).append(arg)
                         }),
                         alloc.text(",").append(alloc.space()),
                     ))
                     .append(alloc.space())
-                    .append("}")
+                    .append("}");
+
+                (pattern, all_deferred)
             }
             ValueExpression::Variable(symbol) => {
                 let symbol = symbol.upgrade().expect("use of unknown variable");
@@ -2674,7 +2750,7 @@ impl<'a> ValueExpression {
                         objects::ObjectId(ast::NodeId::id_rc(&symbol), objects::Tag::None),
                         symbol.name.clone(),
                     ));
-                variable.to_doc(ctx)
+                (variable.to_doc(ctx), vec![])
             }
         }
     }

@@ -1,24 +1,15 @@
 use crate::ast::elaborated as e;
-use crate::elaboration::{subst, unify};
+use crate::elaboration::{Binds, subst, type_of, unify};
 use crate::error::elaborating::Error::{self, ElaboratingError};
 
-pub type Bindings<Str> = Vec<(Str, e::ValueExpression<Str>)>;
-
-fn type_of<Str: Clone>(expr: &e::ValueExpression<Str>) -> e::TypeExpression<Str> {
-    match expr {
-        e::ValueExpression::Variable { ty, .. } => ty.clone(),
-        e::ValueExpression::Constructor { result_type, .. } => result_type.clone(),
-        e::ValueExpression::OpCall { result_type, .. } => result_type.clone(),
-    }
-}
-
-/// # Panics
+/// Apply constructor to argument
 /// # Errors
+/// If the application failed
 pub fn application<Str>(
     constructor: &e::Constructor<Str>,
     arg: &e::ValueExpression<Str>,
     module: &e::Module<Str>,
-) -> Result<(e::Constructor<Str>, Bindings<Str>), Error>
+) -> Result<(e::Constructor<Str>, Binds<Str>), Error>
 where
     Str: Clone + Eq + Ord,
 {
