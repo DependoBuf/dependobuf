@@ -3,10 +3,10 @@
 
 use dbuf_core::ast::elaborated::{Constructor, ConstructorNames};
 
-use crate::core::ast_access::{ElaboratedAst, ElaboratedHelper};
 use crate::core::dbuf_language::{self, FieldName, TypeName};
 use crate::core::errors::RenameError;
 use crate::core::navigator::Symbol;
+use crate::core::workspace::{ElaboratedAst, ElaboratedHelper};
 
 /// Check if symbol can be renamed.
 ///

@@ -29,8 +29,8 @@ use dbuf_format::PrettyPrinter;
 
 use crate::handler_box;
 
-use crate::core::ast_access::{Saved, WorkspaceAccess};
 use crate::core::navigator::Navigator;
+use crate::core::workspace::{Saved, WorkspaceAccess};
 
 pub struct Handler {
     rename_cache: RenameCache,

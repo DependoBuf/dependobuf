@@ -33,6 +33,9 @@ tokio = {version = "1.45.0", features = ["full"]}
 tower-lsp = "0.20.0"
 unescape = "0.1.0"
 
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3", features = [ "env-filter" ] }
+
 [workspace.lints.clippy]
 enum_glob_use = "allow"
 match_same_arms = "allow"

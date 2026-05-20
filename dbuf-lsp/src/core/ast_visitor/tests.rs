@@ -1,8 +1,5 @@
-use std::collections::BTreeMap;
-
-use crate::core::ast_access::ElaboratedAst;
-use crate::core::ast_access::ParsedAst;
 use crate::core::default_ast::default_parsed_ast;
+use crate::core::workspace::ParsedAst;
 
 use super::Visit;
 use super::VisitResult;
@@ -140,15 +137,11 @@ fn test_skip_mask_iterator() {
 #[test]
 fn test_stop_after_signal() {
     let ast = get_ast();
-    let tempo_elaborated = ElaboratedAst {
-        types: vec![],
-        constructors: BTreeMap::new(),
-    };
 
     for stop_after in 0.. {
         let skip_mask = SkipMask::new(0);
         let mut visitor = TestVisitor::new(skip_mask, stop_after);
-        let res = visit_ast(&ast, &mut visitor, &tempo_elaborated);
+        let res = visit_ast(&ast, &mut visitor);
         if visitor.stopped {
             assert!(res.is_some());
             assert!(res.unwrap() == visitor.step);
@@ -163,16 +156,12 @@ fn test_stop_after_signal() {
 #[test]
 fn test_skip_correctness() {
     let ast = get_ast();
-    let tempo_elaborated = ElaboratedAst {
-        types: vec![],
-        constructors: BTreeMap::new(),
-    };
 
     let skip_mask = SkipMask::new(15);
 
     for mask in skip_mask {
         let mut visitor = TestVisitor::new(mask, 1_000_000_000);
-        let res = visit_ast(&ast, &mut visitor, &tempo_elaborated);
+        let res = visit_ast(&ast, &mut visitor);
         assert!(!visitor.stopped, "all steps done");
         assert!(res.is_none());
     }
@@ -181,16 +170,12 @@ fn test_skip_correctness() {
 #[test]
 fn test_skip_stop_correctness() {
     let ast = get_ast();
-    let tempo_elaborated = ElaboratedAst {
-        types: vec![],
-        constructors: BTreeMap::new(),
-    };
 
     let skip_mask = SkipMask::new(9);
     for mask in skip_mask {
         for stop_after in 0.. {
             let mut visitor = TestVisitor::new(mask.clone(), stop_after);
-            let res = visit_ast(&ast, &mut visitor, &tempo_elaborated);
+            let res = visit_ast(&ast, &mut visitor);
             if visitor.stopped {
                 assert!(res.is_some());
                 assert!(res.unwrap() == visitor.step);

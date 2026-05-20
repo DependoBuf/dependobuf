@@ -2,7 +2,7 @@
 //! scopes in parsed ast.
 //!
 
-use crate::core::ast_access::ElaboratedAst;
+use crate::core::workspace::ElaboratedAst;
 
 mod ast_constructors_stack;
 mod ast_scope;
@@ -23,11 +23,11 @@ use super::*;
 /// 'a is lifetime of parsed ast reference.
 pub struct ScopeVisitor<'a> {
     /// branch id in enums or -1 in messages.
-    pub branch_id: i32,
+    branch_id: i32,
     /// current scope (type, constructor).
-    pub scope: AstScope<'a>,
+    scope: AstScope<'a>,
     /// constructors call stack.
-    pub cons_stack: AstConstructorsStack<'a>,
+    cons_stack: AstConstructorsStack<'a>,
 }
 
 impl<'a> ScopeVisitor<'a> {
@@ -39,52 +39,36 @@ impl<'a> ScopeVisitor<'a> {
         }
     }
 
-    /// Returns if type is set
-    pub fn has_type(&self) -> bool {
-        self.scope.has_type()
-    }
-
-    /// Checks if type is set and if so, returns it.
+    /// Returns type of current scope.
     ///
-    /// Panics if type is not set.
-    pub fn get_type(&self) -> &'a str {
+    /// Returns None if not set, or if cannot
+    /// be deduced in call chain.
+    pub fn get_type(&self) -> Option<&'a str> {
         self.scope.get_type()
     }
 
-    /// Returns if constructor is set
-    pub fn has_constructor(&self) -> bool {
-        self.scope.has_constructor()
-    }
-
-    /// Checks if constructor is set and if so, returns it.
+    /// Returns constructor of current scope.
     ///
-    /// Panics if constructor is not set.
-    pub fn get_constructor(&self) -> &'a str {
+    /// Returns None if not set, or if cannot
+    /// be deduced in call chain.
+    pub fn get_constructor(&self) -> Option<&'a str> {
         self.scope.get_constructor()
     }
 
-    /// Checks if constructors calls is not empty.
-    pub fn has_constructor_expr(&self) -> bool {
-        !self.cons_stack.is_empty()
-    }
     /// Returns last constructor in constructors calls.
     ///
-    /// Panics if there is no constructor calls.
-    pub fn get_constructor_expr(&self) -> &'a str {
+    /// Returns None if there is no constructors calls.
+    pub fn get_constructor_expr(&self) -> Option<&'a str> {
         self.cons_stack.get_last()
     }
 
-    /// Returns if `branch_id` is set
-    pub fn has_branch_id(&self) -> bool {
-        self.branch_id >= 0 && self.branch_id <= 1_000_000_000
-    }
-
     /// Returns current `branch_id`.
-    ///
-    /// Panics if it is not set.
-    pub fn get_branch_id(&self) -> usize {
-        assert!(self.has_branch_id());
-        usize::try_from(self.branch_id).unwrap()
+    pub fn get_branch_id(&self) -> Option<usize> {
+        if self.branch_id >= 0 && self.branch_id <= 1_000_000_000 {
+            usize::try_from(self.branch_id).unwrap().into()
+        } else {
+            None
+        }
     }
 }
 

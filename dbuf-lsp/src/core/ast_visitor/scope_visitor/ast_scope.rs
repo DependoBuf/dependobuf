@@ -4,24 +4,12 @@
 
 use dbuf_core::ast::elaborated::*;
 
-use crate::core::ast_access::ElaboratedAst;
-use crate::core::ast_access::ElaboratedHelper;
+use crate::core::workspace::ElaboratedAst;
+use crate::core::workspace::ElaboratedHelper;
 
-struct Cache<'a> {
-    type_name: &'a str,
-    constructor_name: &'a str,
-}
-
-impl<'a> From<&mut AstScope<'a>> for Cache<'a> {
-    fn from(value: &mut AstScope<'a>) -> Cache<'a> {
-        Cache {
-            type_name: value.type_name,
-            constructor_name: value.constructor_name,
-        }
-    }
-}
-
-/// Scope control for parsed ast.
+/// Scope control for parsed ast. Contains current
+/// type name and constructor name with their
+/// representations in EAST if any.
 ///
 /// Usage:
 /// * call `enter_in_type` on entering in type.
@@ -30,94 +18,68 @@ impl<'a> From<&mut AstScope<'a>> for Cache<'a> {
 pub struct AstScope<'a> {
     elaborated: &'a ElaboratedAst,
 
-    type_name: &'a str,
-    constructor_name: &'a str,
+    /// current scope type.
+    ///
+    /// 0: name of type
+    ///
+    /// 1: representation in elaborated ast of type.
+    ty: Option<(&'a str, Option<&'a Type<String>>)>,
 
-    cache: Option<Cache<'a>>,
+    /// current scope constructor.
+    ///
+    /// 0: name of constructor
+    ///
+    /// 1: representation in elaborated ast of constructor.
+    constructor: Option<(&'a str, Option<&'a Constructor<String>>)>,
+
+    cache_ty: Option<(&'a str, Option<&'a Type<String>>)>,
+    cache_constructor: Option<(&'a str, Option<&'a Constructor<String>>)>,
 }
 
 impl<'a> AstScope<'a> {
     pub fn new(elaborated: &ElaboratedAst) -> AstScope<'_> {
         AstScope {
             elaborated,
-            type_name: "",
-            constructor_name: "",
-            cache: None,
+            ty: None,
+            constructor: None,
+            cache_ty: None,
+            cache_constructor: None,
         }
-    }
-
-    /// Returns if type is set
-    pub fn has_type(&self) -> bool {
-        !self.type_name.is_empty()
     }
 
     /// Returns type name.
-    ///
-    /// Panic if type is not set.
-    pub fn get_type(&self) -> &'a str {
-        assert!(!self.type_name.is_empty());
-        self.type_name
-    }
-
-    /// Returns if constructor is set.
-    pub fn has_constructor(&self) -> bool {
-        !self.constructor_name.is_empty()
+    pub fn get_type(&self) -> Option<&'a str> {
+        self.ty.map(|a| a.0)
     }
 
     /// Returns constructor name.
-    ///
-    /// Panic if constructor is not set.
-    pub fn get_constructor(&self) -> &'a str {
-        assert!(!self.constructor_name.is_empty());
-        self.constructor_name
+    pub fn get_constructor(&self) -> Option<&'a str> {
+        self.constructor.map(|a| a.0)
     }
 
     /// Enters in type.
-    ///
-    /// Panic if no such type in elaborated ast.
     pub fn enter_in_type(&mut self, type_name: &'a str) {
-        assert!(
-            self.elaborated.has_type(type_name),
-            "no type in elaborated ast"
-        );
-
-        self.type_name = type_name;
-        self.constructor_name = "";
+        self.ty = (type_name, self.elaborated.get_type(type_name)).into();
+        self.constructor = None;
     }
 
     /// Enters in constructor.
-    ///
-    /// Panics if:
-    /// * type is not set.
-    /// * type hasn't got that constructor.
     pub fn enter_in_constructor(&mut self, constructor_name: &'a str) {
-        assert!(!self.type_name.is_empty());
-        assert!(
-            self.elaborated
-                .is_type_constructor(self.type_name, constructor_name),
-            "type hasn't got that constructor"
-        );
+        let Some((_ty_n, ty_rep)) = self.ty else {
+            return;
+        };
 
-        self.constructor_name = constructor_name;
-    }
-
-    /// Enters in message:
-    ///
-    /// Enter in type `message` and then
-    /// enter in constructor `message`.
-    pub fn enter_in_message(&mut self, message: &'a str) {
-        self.enter_in_type(message);
-        self.enter_in_constructor(message);
-    }
-
-    fn switch_to_type(&mut self, type_name: &'a str) {
-        if self.elaborated.is_message(type_name) {
-            self.enter_in_message(type_name);
+        let c_rep = if let Some(ty) = ty_rep {
+            self.elaborated.get_type_constructor(ty, constructor_name)
         } else {
-            self.enter_in_type(type_name);
-        }
+            None
+        };
+
+        self.constructor = (constructor_name, c_rep).into();
     }
 
+    /// checks variants of fields types. If found same field
+    /// returns its type name.
     fn try_switch_to(
         variable: &str,
         variants: &'a [(String, TypeExpression<String>)],
@@ -136,47 +98,51 @@ impl<'a> AstScope<'a> {
         }
     }
 
+    /// resets type and constructor to None.
+    fn reset(&mut self) {
+        self.ty = None;
+        self.constructor = None;
+    }
+
     /// Changes scopes according to variable.
-    ///
-    /// Panics on fail
     pub fn apply_variable(&mut self, variable: &str) {
-        assert!(!self.type_name.is_empty(), "unknow type to apply variable");
+        let Some((_ty_n, Some(ty))) = self.ty else {
+            self.reset();
+            return;
+        };
 
-        let t = self.elaborated.get_type(self.type_name).unwrap();
-
-        let mut switch = Self::try_switch_to(variable, &t.dependencies).unwrap_or("");
-
-        if !self.constructor_name.is_empty() {
-            let c = self
-                .elaborated
-                .get_constructor(self.constructor_name)
-                .unwrap();
-            switch = Self::try_switch_to(variable, &c.implicits).unwrap_or(switch);
-            switch = Self::try_switch_to(variable, &c.fields).unwrap_or(switch);
+        let mut switch_to = None;
+        if let Some((_ctr_n, Some(ctr))) = self.constructor {
+            switch_to = switch_to.or_else(|| Self::try_switch_to(variable, &ctr.fields));
+            switch_to = switch_to.or_else(|| Self::try_switch_to(variable, &ctr.implicits));
         }
+        switch_to = switch_to.or_else(|| Self::try_switch_to(variable, &ty.dependencies));
 
-        assert!(!switch.is_empty(), "unknow variable to switch");
+        let Some(new_ty_name) = switch_to else {
+            self.reset();
+            return;
+        };
+        self.enter_in_type(new_ty_name);
 
-        self.switch_to_type(switch);
+        if let Some((_new_ty_n, Some(new_ty))) = self.ty
+            && self.elaborated.is_message(new_ty)
+        {
+            self.enter_in_constructor(new_ty_name);
+        }
     }
 
     /// Save state to local cache.
-    ///
-    /// Panics if cache is not empty.
     pub fn save_state(&mut self) {
-        assert!(self.cache.is_none(), "no saved state");
-
-        self.cache = Some(self.into());
+        self.cache_ty = self.ty;
+        self.cache_constructor = self.constructor;
     }
 
     /// Loads state from cache.
-    ///
-    /// Panics if cache is empty.
     pub fn load_state(&mut self) {
-        assert!(self.cache.is_some(), "has saved state");
+        self.ty = self.cache_ty.or(self.ty);
+        self.constructor = self.cache_constructor.or(self.constructor);
 
-        let cache = self.cache.take().unwrap();
-        self.type_name = cache.type_name;
-        self.constructor_name = cache.constructor_name;
+        self.cache_ty = None;
+        self.cache_constructor = None;
     }
 }

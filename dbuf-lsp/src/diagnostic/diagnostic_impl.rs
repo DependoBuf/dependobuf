@@ -4,9 +4,9 @@ use tower_lsp::lsp_types::DiagnosticSeverity;
 use tower_lsp::lsp_types::Location;
 use tower_lsp::lsp_types::Url;
 
-use crate::core::ast_access::File;
-use crate::core::ast_access::Loc;
-use crate::core::ast_access::LocationHelper;
+use crate::core::workspace::File;
+use crate::core::workspace::Loc;
+use crate::core::workspace::LocationHelper;
 
 use crate::core::errors::Error;
 use dbuf_core::error::ErrorStage;

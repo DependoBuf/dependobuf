@@ -5,7 +5,7 @@
 
 pub(crate) mod core;
 
-pub use core::ast_access::WorkspaceAccess;
+pub use core::workspace::WorkspaceAccess;
 
 pub mod handler_box;
 
@@ -15,3 +15,5 @@ pub mod diagnostic;
 pub mod navigation;
 
 pub mod backend;
+
+mod trace;

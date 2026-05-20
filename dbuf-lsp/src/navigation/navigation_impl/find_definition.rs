@@ -3,13 +3,13 @@
 
 use tower_lsp::lsp_types::Range;
 
-use crate::core::ast_access::LocNameHelper;
-use crate::core::ast_access::LocationHelper;
-use crate::core::ast_access::Str;
 use crate::core::ast_visitor::VisitResult::*;
 use crate::core::ast_visitor::safe_skip::safe_skip;
 use crate::core::ast_visitor::*;
 use crate::core::dbuf_language::get_builtin_types;
+use crate::core::workspace::LocNameHelper;
+use crate::core::workspace::LocationHelper;
+use crate::core::workspace::Str;
 
 use crate::core::navigator::Navigator;
 use crate::core::navigator::Symbol;
@@ -21,7 +21,7 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
                 return None;
             }
             let mut visitor = FindTypeVisitor { type_name };
-            visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
+            visit_ast(navigator.parsed, &mut visitor)
         }
         Symbol::Dependency {
             type_name,
@@ -31,7 +31,7 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
                 type_name,
                 dependency,
             };
-            visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
+            visit_ast(navigator.parsed, &mut visitor)
         }
         Symbol::Field {
             type_name,
@@ -43,7 +43,7 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
                 constructor,
                 field,
             };
-            visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
+            visit_ast(navigator.parsed, &mut visitor)
         }
         Symbol::Alias {
             type_name,
@@ -55,7 +55,7 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
                 branch_id: *branch_id,
                 alias,
             };
-            visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
+            visit_ast(navigator.parsed, &mut visitor)
         }
         Symbol::Constructor {
             type_name,
@@ -65,7 +65,7 @@ pub fn find_definition_impl(navigator: &Navigator, symbol: &Symbol) -> Option<Ra
                 type_name,
                 constructor,
             };
-            visit_ast(navigator.parsed, &mut visitor, navigator.elaborated)
+            visit_ast(navigator.parsed, &mut visitor)
         }
         Symbol::None => None,
     }
