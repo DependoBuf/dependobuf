@@ -10,6 +10,7 @@ version = "0.1.0"
 dbuf-core = {path = "./dbuf-core"}
 dbuf-format = {path = "./dbuf-format"}
 dbuf-gen = {path = "./dbuf-gen"}
+dbuf-lsp = {path = "./dbuf-lsp"}
 dbuf-rust-runtime = {path = "runtime/dbuf-rust-runtime"}
 
 ariadne = "0.6.0"

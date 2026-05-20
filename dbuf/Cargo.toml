@@ -4,22 +4,24 @@ name = "dbuf"
 version.workspace = true
 
 [features]
-lsp = ["dbuf-lsp"]
+lsp = ["dep:dbuf-lsp"]
+format = ["dep:dbuf-format"]
+
+rust = ["dep:dbuf-gen", "dbuf-gen?/rust"]
+kotlin = ["dep:dbuf-gen", "dbuf-gen?/kotlin"]
+swift = ["dep:dbuf-gen", "dbuf-gen?/swift"]
+
+all = ["lsp", "format", "rust", "kotlin", "swift"]
 
 [dependencies]
-# The dbuf-lsp crate cannot be included as a workspace dependency because it needs to be optional
-dbuf-lsp = {path = "../dbuf-lsp", optional = true}
+dbuf-core.workspace = true
+dbuf-lsp = {workspace = true, optional = true}
+dbuf-format = {workspace = true, optional = true}
+dbuf-gen = {workspace = true, optional = true}
 
 ariadne.workspace = true
 clap.workspace = true
-dbuf-core.workspace = true
 thiserror.workspace = true
-
-# Probably worth add features for each language
-dbuf-gen.workspace = true
-
-# TODO: make as feature
-dbuf-format.workspace = true
 
 [lints]
 workspace = true

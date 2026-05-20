@@ -3,6 +3,12 @@ edition.workspace = true
 name = "dbuf-gen"
 version.workspace = true
 
+[features]
+rust = []
+kotlin = []
+swift = []
+all = ["rust", "kotlin", "swift"]
+
 [dependencies]
 dbuf-core.workspace = true
 pretty.workspace = true
