@@ -83,51 +83,13 @@ expression: errors
         stage: ParsingStage {
             found: Some(
                 Err(
-                    "1000.000aba0000",
-                ),
-            ),
-            expected: [],
-            at: Location {
-                start: Offset {
-                    lines: 3,
-                    columns: 17,
-                },
-                length: Offset {
-                    lines: 0,
-                    columns: 15,
-                },
-            },
-            extra: Some(
-                LexingError(
-                    ParserLexingError(
-                        Error {
-                            stage: LexingStage {
-                                data: LocatedName {
-                                    content: "1000.000aba0000",
-                                    start: Offset {
-                                        lines: 3,
-                                        columns: 17,
-                                    },
-                                },
-                                kind: InvalidFloat,
-                            },
-                        },
-                    ),
-                ),
-            ),
-        },
-    },
-    Error {
-        stage: ParsingStage {
-            found: Some(
-                Err(
                     "\"aaa\\aaaa\"",
                 ),
             ),
             expected: [],
             at: Location {
                 start: Offset {
-                    lines: 4,
+                    lines: 3,
                     columns: 18,
                 },
                 length: Offset {
@@ -143,7 +105,7 @@ expression: errors
                                 data: LocatedName {
                                     content: "\"aaa\\aaaa\"",
                                     start: Offset {
-                                        lines: 4,
+                                        lines: 3,
                                         columns: 18,
                                     },
                                 },
@@ -165,7 +127,7 @@ expression: errors
             expected: [],
             at: Location {
                 start: Offset {
-                    lines: 5,
+                    lines: 4,
                     columns: 14,
                 },
                 length: Offset {
@@ -181,7 +143,7 @@ expression: errors
                                 data: LocatedName {
                                     content: "aba_aba",
                                     start: Offset {
-                                        lines: 5,
+                                        lines: 4,
                                         columns: 14,
                                     },
                                 },
@@ -203,7 +165,7 @@ expression: errors
             expected: [],
             at: Location {
                 start: Offset {
-                    lines: 6,
+                    lines: 5,
                     columns: 14,
                 },
                 length: Offset {
@@ -219,7 +181,7 @@ expression: errors
                                 data: LocatedName {
                                     content: "Aba_Aba",
                                     start: Offset {
-                                        lines: 6,
+                                        lines: 5,
                                         columns: 14,
                                     },
                                 },
@@ -241,7 +203,7 @@ expression: errors
             expected: [],
             at: Location {
                 start: Offset {
-                    lines: 7,
+                    lines: 6,
                     columns: 15,
                 },
                 length: Offset {
@@ -257,7 +219,7 @@ expression: errors
                                 data: LocatedName {
                                     content: "@",
                                     start: Offset {
-                                        lines: 7,
+                                        lines: 6,
                                         columns: 15,
                                     },
                                 },

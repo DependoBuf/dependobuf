@@ -29,9 +29,8 @@ fn simple_type(name: &str) -> TypeExpression<Str> {
 fn get_literal_type(l: &Literal) -> TypeExpression<Str> {
     match l {
         Literal::Bool(_) => simple_type("Bool"),
-        Literal::Double(_) => simple_type("Double"),
         Literal::Int(_) => simple_type("Int"),
-        Literal::UInt(_) => simple_type("Unsigned"),
+        Literal::UInt(_) => simple_type("UInt"),
         Literal::Str(_) => simple_type("String"),
     }
 }

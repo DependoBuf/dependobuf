@@ -445,9 +445,6 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
                     self.write("false");
                 }
             }
-            Literal::Double(d) => {
-                self.write(d.to_string());
-            }
             Literal::Int(i) => {
                 self.write(i.to_string());
             }
@@ -501,9 +498,6 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
             }
             BinaryOp::Plus => {
                 self.write("+");
-            }
-            BinaryOp::Slash => {
-                self.write("/");
             }
             BinaryOp::Star => {
                 self.write("*");

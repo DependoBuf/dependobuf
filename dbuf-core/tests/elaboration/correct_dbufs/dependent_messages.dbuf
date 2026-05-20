@@ -1,0 +1,13 @@
+message IntDep (n Int) {}
+
+message Pair (x Int) (y Int) {}
+
+message UsePair (x Int) (y Int) {
+    p Pair x y;
+    sum IntDep (x + y);
+}
+
+message Chain (n Int) {
+    d IntDep n;
+    d2 IntDep (-n);
+}

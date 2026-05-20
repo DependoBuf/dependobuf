@@ -133,9 +133,6 @@ pub enum Token {
     // Number without u or ., followed by u, followed by any
     #[regex(r"[0-9]([a-tv-zA-Z0-9])*u[a-zA-Z0-9.]*", parse_uint)]
     UintLiteral(u64),
-    // Number without u or ., followed by ., followed by any
-    #[regex(r"[0-9]([a-tv-zA-Z0-9])*\.[a-zA-Z0-9.]*", parse_float)]
-    FloatLiteral(f64),
     #[regex(r#""([^"\\]|\\.)*""#, parse_string_literal)]
     StringLiteral(String),
 
@@ -169,8 +166,6 @@ pub enum Token {
     Minus,
     #[token("*", at_callback)]
     Star,
-    #[token("/", at_callback)]
-    Slash,
     #[token("&", at_callback)]
     Amp,
     #[token("|", at_callback)]
@@ -282,17 +277,6 @@ fn parse_uint(lex: &mut Lexer<'_, Token>) -> Result<u64, LexingError> {
     })
 }
 
-/// Parser for `FloatLiteral` token. Parses f64 and return `Result`.
-///
-/// Errors
-///   * `LexingErrorKind::InvalidFloat` text is not float.
-fn parse_float(lex: &mut Lexer<'_, Token>) -> Result<f64, LexingError> {
-    at_callback(lex);
-    lex.slice()
-        .parse()
-        .map_err(|_| LexingError::from_lexer(lex, ErrorKind::InvalidFloat))
-}
-
 /// Parser for `StringLiteral` token. Parses string and return `Result`.
 ///
 /// Errors
@@ -378,7 +362,6 @@ mod tests {
     fn test_number_correct() {
         test_same("123", &[Some(Token::IntLiteral(123))]);
         test_same("123u", &[Some(Token::UintLiteral(123))]);
-        test_same("123.32", &[Some(Token::FloatLiteral(123.32))]);
 
         test_same(
             "123+32",
@@ -394,14 +377,6 @@ mod tests {
                 Some(Token::UintLiteral(123)),
                 Some(Token::Plus),
                 Some(Token::UintLiteral(32)),
-            ],
-        );
-        test_same(
-            "123.32+32.32",
-            &[
-                Some(Token::FloatLiteral(123.32)),
-                Some(Token::Plus),
-                Some(Token::FloatLiteral(32.32)),
             ],
         );
     }

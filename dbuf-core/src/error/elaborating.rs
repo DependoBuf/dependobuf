@@ -2,30 +2,53 @@
 //! during elaborating phase
 
 use super::ErrorStage;
-use std::fmt::{Display, Formatter};
+use crate::arena::InternedString;
+use crate::ast::elaborated;
+use crate::ast::operators::Literal;
 use thiserror::Error;
 
-/// TODO: implement
-#[derive(Debug, Error)]
+/// Errors that can occur during type elaboration.
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum Error {
-    ElaboratingError,
+    #[error("unknown type {0}")]
+    UnknownType(String),
+    #[error("unknown variable {0}")]
+    UnknownVariable(String),
+    #[error("unknown constructor {0}")]
+    UnknownConstructor(String),
+    #[error("unknown field {0}")]
+    UnknownField(String),
+    #[error("arity mismatch: expected {expected}, found {found}")]
+    ArityMismatch { expected: usize, found: usize },
+    #[error("type mismatch")]
+    TypeMismatch,
+    #[error("operator type mismatch")]
+    OperatorTypeMismatch,
+    #[error("unsupported syntax")]
+    UnsupportedSyntax,
+    #[error("constructor mismatch: {0} vs {1}")]
+    ConstructorMismatch(String, String),
+    #[error("literal mismatch: {0:?} vs {1:?}")]
+    LiteralMismatch(Literal, Literal),
+    #[error("conflicting binding for {0}")]
+    ConflictingBinding(String),
+    #[error("cycle in type dependencies")]
+    Cycle(Vec<String>),
+    #[error("no initial constructor for: {}", .0.join(", "))]
+    NoInitialConstructor(Vec<String>),
+    #[error("type hole should have type {0:?}")]
+    TypeHole(elaborated::TypeExpression<InternedString>),
 }
 
-impl Display for Error {
-    fn fmt(&self, _f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!("error display not implemented")
-    }
-}
-
-#[derive(Debug, Error)]
-#[error("Elaborating stage")]
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[error("elaborating error: {error}")]
 pub struct ElaboratingStage {
-    error: Error,
+    pub error: Error,
 }
 
 impl ErrorStage for ElaboratingStage {
     fn location(&self) -> crate::location::Location<crate::location::Offset> {
-        unreachable!("since ElaboratingStage is unconstructable")
+        unreachable!()
     }
 }
 

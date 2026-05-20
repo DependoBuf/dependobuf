@@ -4,6 +4,7 @@ name = "dbuf-core"
 version.workspace = true
 
 [dependencies]
+num-traits.workspace = true
 internment.workspace = true
 
 chumsky.workspace = true
@@ -17,7 +18,6 @@ thiserror.workspace = true
 
 [dev-dependencies]
 insta.workspace = true
-pretty_assertions.workspace = true
 
 [lints]
 workspace = true

@@ -1,0 +1,32 @@
+message IntDep (n Int) {}
+message UIntDep (n UInt) {}
+message BoolDep (b Bool) {}
+
+message ConstantFolding {
+    sum IntDep (2 + 3);
+    prod IntDep (3 * 4);
+    diff IntDep (10 - 3);
+}
+
+message Cancellation (x Int) {
+    zero IntDep (x - x);
+    addZero IntDep (x + 0);
+}
+
+message UIntFolding {
+    sum UIntDep (3u + 4u);
+    prod UIntDep (2u * 5u);
+}
+
+message BoolSimplification (a Bool) (b Bool) {
+    withTrue BoolDep (a & true);
+    withFalse BoolDep (a & false);
+    orTrue BoolDep (a | true);
+    doubleNot BoolDep (!(!a));
+    andSelf BoolDep (a & a);
+}
+
+message MixedArith (x Int) (y Int) {
+    combined IntDep ((x + y) - y);
+    scaled IntDep (2 * x);
+}

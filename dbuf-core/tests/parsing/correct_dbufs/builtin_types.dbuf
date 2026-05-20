@@ -2,11 +2,10 @@ message MessageFieldTypes {
     f1 Int;
     f2 String;
     f3 Bool;
-    f4 Unsigned;
-    f5 Float;
+    f4 UInt;
 }
 
-message MessageDependenciesTypes (d1 Int) (d2 String) (d3 Bool) (d4 Unsigned) (d5 Float) {
+message MessageDependenciesTypes (d1 Int) (d2 String) (d3 Bool) (d4 UInt) {
 }
 
 enum EnumConstructorTypes {
@@ -14,10 +13,9 @@ enum EnumConstructorTypes {
         f1 Int;
         f2 String;
         f3 Bool;
-        f4 Unsigned;
-        f5 Float;
+        f4 UInt;
     }
 }
 
-enum EnumDependenciesTypes (d1 Int) (d2 String) (d3 Bool) (d4 Unsigned) (d5 Float) {
+enum EnumDependenciesTypes (d1 Int) (d2 String) (d3 Bool) (d4 UInt) {
 }

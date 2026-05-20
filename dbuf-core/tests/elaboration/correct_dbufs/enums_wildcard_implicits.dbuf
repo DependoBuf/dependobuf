@@ -1,0 +1,24 @@
+enum Nat {
+    Zero {}
+    Suc {
+        pred Nat;
+    }
+}
+
+enum NatTag (n Nat) {
+    Suc{pred: p} => {
+        HasPred {}
+    }
+    * => {
+        AnyNat {}
+    }
+}
+
+enum BoolTag (b Bool) {
+    true => {
+        IsTrue {}
+    }
+    * => {
+        Anything {}
+    }
+}

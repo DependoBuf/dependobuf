@@ -32,7 +32,6 @@ fn compile_value_expression<'a>(
         match expr {
             ast::OpCall::Literal(literal) => alloc.text(match literal {
                 ast::Literal::Bool(bool) => bool.to_string(),
-                ast::Literal::Double(f64) => f64.to_string(),
                 ast::Literal::Int(i64) => i64.to_string(),
                 ast::Literal::UInt(u64) => u64.to_string(),
                 ast::Literal::Str(_string) => panic!("Not implemented"),
@@ -46,7 +45,6 @@ fn compile_value_expression<'a>(
                     ast::BinaryOp::Plus => alloc.text("+"),
                     ast::BinaryOp::Minus => alloc.text("-"),
                     ast::BinaryOp::Star => alloc.text("*"),
-                    ast::BinaryOp::Slash => alloc.text("/"),
                     ast::BinaryOp::BinaryAnd => alloc.text("&"),
                     ast::BinaryOp::BinaryOr => alloc.text("|"),
                 };

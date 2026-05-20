@@ -1,0 +1,5 @@
+message UIntDep (n UInt) {}
+
+message Broken (u UInt) {
+    d UIntDep (-u);
+}
