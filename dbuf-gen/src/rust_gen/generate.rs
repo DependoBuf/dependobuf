@@ -1,6 +1,11 @@
-use std::rc::Rc;
+use std::{
+    rc::Rc,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
 use super::prelude::*;
+
+static FRESH_VAR_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 // TODO: make string here and in ast stored in arena and remove cloning
 
@@ -24,7 +29,7 @@ impl<'a> Module {
         alloc
             .intersperse(
                 [
-                    "use dbuf_rust_runtime::{Box, ConstructorError, DeserializeError};",
+                    "use dbuf_rust_runtime::{Box, ConstructorError, DeserializeError, DbufPrimitive};",
                     "use std::io::{Write, Read, Error};",
                     "use std::slice;",
                 ],
@@ -37,6 +42,18 @@ impl<'a> Module {
 }
 
 impl<'a> Type {
+    pub fn builtin_rust_type(&self) -> Option<&'static str> {
+        if !self.is_builtin {
+            return None;
+        }
+        match self.name.as_str() {
+            "Bool" => Some("bool"),
+            "Int" => Some("i64"),
+            "UInt" => Some("u64"),
+            "String" => Some("String"),
+            _ => None,
+        }
+    }
     pub fn generate(&self, (ctx, namespace): MutContext<'a, '_, '_>) -> BoxDoc<'a> {
         let alloc = ctx.alloc;
 
@@ -285,14 +302,32 @@ mod type_dependencies_import {
                     }
                 }
                 ValueExpression::Constructor {
-                    call: _, // dependencies in called constructor should not matter
+                    call,
                     implicits,
                     arguments,
-                } => implicits
-                    .iter()
-                    .map(Self::value_expression_dependencies)
-                    .chain(arguments.iter().map(Self::value_expression_dependencies))
-                    .collect(),
+                } => {
+                    let result_type_dep: HashSet<_> = call
+                        .upgrade()
+                        .map(|ctor| match &ctor.result_type {
+                            TypeExpression::Type {
+                                call: type_weak, ..
+                            } => {
+                                let ty = type_weak.upgrade().expect("missing type");
+                                if Self::is_primitive_type(&ty.name) {
+                                    HashSet::new()
+                                } else {
+                                    iter::once(NodeId::id_weak(type_weak)).collect()
+                                }
+                            }
+                        })
+                        .unwrap_or_default();
+                    implicits
+                        .iter()
+                        .map(Self::value_expression_dependencies)
+                        .chain(arguments.iter().map(Self::value_expression_dependencies))
+                        .chain(iter::once(result_type_dep))
+                        .collect()
+                }
                 ValueExpression::Variable(symbol) => {
                     vec![Self::symbol_dependencies(
                         &symbol.upgrade().expect("missing type in symbol"),
@@ -308,7 +343,7 @@ mod type_dependencies_import {
 
         // TODO: move this to more appropriate place
         fn is_primitive_type(name: &str) -> bool {
-            matches!(name, "Bool" | "Double" | "Int" | "UInt" | "String")
+            matches!(name, "Bool" | "Int" | "UInt" | "String")
         }
     }
 }
@@ -538,7 +573,9 @@ mod type_declaration {
                     );
                     let constructor = self.constructors[0].as_ref();
                     alloc.intersperse(
-                        generate_fields(&constructor.fields, &mut body_namespace),
+                        generate_fields(&constructor.fields, &mut body_namespace)
+                            .into_iter()
+                            .map(|f| alloc.text("pub ").append(f)),
                         alloc.text(",").append(alloc.hardline()),
                     )
                 }
@@ -708,6 +745,7 @@ mod type_inherent_impl {
     use crate::rust_gen::generate::value_from_expression::Locator;
 
     use super::super::prelude::*;
+    use super::wrap_with_deferred_checks;
 
     struct ConstructorObjectsLocator {}
 
@@ -873,26 +911,32 @@ mod type_inherent_impl {
                 .append("}")
                 .append("?;");
 
+            let result_type_dep_types: Vec<_> =
+                ty.dependencies.iter().map(|s| s.ty.get_type()).collect();
+
             let dependencies = dependencies
                 .iter()
-                .map(|expr| match expr {
-                    // Variables are already Box<T>, use directly without re-boxing
-                    ValueExpression::Variable(_) => expr.generate_as_value(
+                .enumerate()
+                .map(|(dep_idx, expr)| {
+                    let val = expr.generate_as_value(
                         (ctx, namespace.cursor()),
                         &ConstructorObjectsLocator {},
-                    ),
-                    // Constructor calls and op calls return T, must be wrapped
-                    _ => alloc
-                        .text("Box")
-                        .append("::")
-                        .append("new")
-                        .append("(")
-                        .append(expr.generate_as_value(
-                            (ctx, namespace.cursor()),
-                            &ConstructorObjectsLocator {},
-                        ))
-                        .append(")")
-                        .into_doc(),
+                    );
+                    let dep_is_primitive = result_type_dep_types
+                        .get(dep_idx)
+                        .is_some_and(|t| t.is_builtin);
+                    if dep_is_primitive || matches!(expr, ValueExpression::Variable(_)) {
+                        val
+                    } else {
+                        alloc
+                            .text("Box")
+                            .append("::")
+                            .append("new")
+                            .append("(")
+                            .append(val)
+                            .append(")")
+                            .into_doc()
+                    }
                 })
                 .collect();
 
@@ -946,29 +990,31 @@ mod type_inherent_impl {
             alloc
                 .text("if (")
                 .append(alloc.intersperse(
-                    self.fields.iter().map(|symbol| {
-                        match &symbol.ty {
-                            TypeExpression::Type {
-                                call: _,
-                                dependencies,
-                            } => alloc
+                    self.fields.iter().map(|symbol| match &symbol.ty {
+                        TypeExpression::Type { call, dependencies } => {
+                            let field_type = call.upgrade().expect("call to unknown type");
+                            alloc
                                 .text("(")
                                 .append(alloc.intersperse(
-                                    dependencies.iter().map(|expr| {
-                                        let val = expr.generate_as_value(
-                                            (ctx, namespace.cursor()),
-                                            &ConstructorObjectsLocator {},
-                                        );
-                                        match expr {
-                                            ValueExpression::Variable(_) => {
+                                    dependencies.iter().zip(field_type.dependencies.iter()).map(
+                                        |(expr, dep_sym)| {
+                                            let dep_ty = dep_sym.ty.get_type();
+                                            let val = expr.generate_as_value(
+                                                (ctx, namespace.cursor()),
+                                                &ConstructorObjectsLocator {},
+                                            );
+                                            if dep_ty.is_builtin
+                                                || matches!(expr, ValueExpression::Variable(_))
+                                            {
                                                 alloc.text("&").append(val)
+                                            } else {
+                                                alloc.text("&Box::new(").append(val).append(")")
                                             }
-                                            _ => alloc.text("&Box::new(").append(val).append(")"),
-                                        }
-                                    }),
+                                        },
+                                    ),
                                     alloc.text(",").append(alloc.line()),
                                 ))
-                                .append(")"),
+                                .append(")")
                         }
                     }),
                     alloc.text(",").append(alloc.line()),
@@ -989,6 +1035,10 @@ mod type_inherent_impl {
                                 dependencies: _,
                             } => call.upgrade().expect("call to unknown type"),
                         };
+
+                        if symbol_ty.is_builtin {
+                            return alloc.text("()").into_doc();
+                        }
 
                         let (_, dependencies_struct_namespace) = symbol_ty
                             .lookup_type_module((ctx, namespace.cursor()))
@@ -1024,6 +1074,7 @@ mod type_inherent_impl {
                                 alloc.text(",").append(alloc.line()),
                             ))
                             .append(")")
+                            .into_doc()
                     }),
                     alloc.text(",").append(alloc.line()),
                 ))
@@ -1401,21 +1452,41 @@ mod type_inherent_impl {
 
             alloc
                 .concat(self.fields.iter().map(|field| {
-                    namespace
+                    let field_ty = field.ty.get_type();
+                    let field_var = namespace
                         .get_generated::<objects::Variable>(objects::ObjectId::from_name(
                             field.name.clone(),
                         ))
                         .expect("couldn't get generated constructor field")
                         .0
-                        .to_doc(ctx)
-                        .append(".")
-                        .append("serialize") // TODO
-                        .append("(")
-                        .append(writer_parameter.to_doc(ctx))
-                        .append(")")
-                        .append("?")
-                        .append(";")
-                        .append(alloc.hardline())
+                        .to_doc(ctx);
+
+                    if let Some(rust_ty) = field_ty.builtin_rust_type() {
+                        alloc
+                            .text(format!(
+                                "<{rust_ty} as super::DbufPrimitive>::dbuf_serialize(&"
+                            ))
+                            .append(field_var)
+                            .append(",")
+                            .append(alloc.space())
+                            .append(writer_parameter.to_doc(ctx))
+                            .append(")")
+                            .append("?")
+                            .append(";")
+                            .append(alloc.hardline())
+                    } else {
+                        alloc
+                            .nil()
+                            .append(field_var)
+                            .append(".")
+                            .append("serialize")
+                            .append("(")
+                            .append(writer_parameter.to_doc(ctx))
+                            .append(")")
+                            .append("?")
+                            .append(";")
+                            .append(alloc.hardline())
+                    }
                 }))
                 .into_doc()
         }
@@ -1778,23 +1849,28 @@ mod type_inherent_impl {
                 let dependencies = ty
                     .dependencies
                     .iter()
-                    .map(|dependency| {
-                        dependencies_param
-                            .to_doc(ctx)
-                            .append(".")
-                            .append(
-                                dependencies_type_cursor
-                                    .clone()
-                                    .get_generated::<objects::Variable>(objects::ObjectId(
-                                        ast::NodeId::id_rc(dependency),
-                                        objects::Tag::None,
-                                    ))
-                                    .expect("couldn't get generated dependency")
-                                    .0
-                                    .to_doc(ctx),
-                            )
-                            .append(".")
-                            .append("body")
+                    .zip(self.result_type.get_dependencies().iter())
+                    .map(|(dependency, value_expr)| {
+                        let field_access = dependencies_param.to_doc(ctx).append(".").append(
+                            dependencies_type_cursor
+                                .clone()
+                                .get_generated::<objects::Variable>(objects::ObjectId(
+                                    ast::NodeId::id_rc(dependency),
+                                    objects::Tag::None,
+                                ))
+                                .expect("couldn't get generated dependency")
+                                .0
+                                .to_doc(ctx),
+                        );
+                        match value_expr {
+                            ValueExpression::Constructor { .. } => {
+                                field_access.append(".").append("body")
+                            }
+                            ValueExpression::OpCall(OpCall::Literal(Literal::Str(_))) => {
+                                field_access.append(".").append("as_str()")
+                            }
+                            _ => field_access,
+                        }
                     })
                     .collect::<Vec<_>>();
 
@@ -1805,14 +1881,28 @@ mod type_inherent_impl {
                         objects::ObjectId::from_name("implicits_extractor".to_owned()),
                     ));
 
+                let mut all_deferred: Vec<(objects::GeneratedVariable, ValueExpression)> = vec![];
                 let implicits_extracting_patterns = self
                     .result_type
                     .get_dependencies()
                     .iter()
                     .map(|dependency| {
-                        dependency.generate_as_pattern((ctx, &mut implicits_extractor_if_scope))
+                        let (pattern, deferred) = dependency
+                            .generate_as_pattern((ctx, &mut implicits_extractor_if_scope));
+                        all_deferred.extend(deferred);
+                        pattern
                     })
                     .collect::<Vec<_>>();
+
+                let constructor_call =
+                    self.generate_constructor_call((ctx, &mut implicits_extractor_if_scope), true);
+
+                let wrapped_body = wrap_with_deferred_checks(
+                    constructor_call,
+                    all_deferred,
+                    ctx,
+                    &mut implicits_extractor_if_scope,
+                );
 
                 alloc
                     .text("if")
@@ -1833,15 +1923,7 @@ mod type_inherent_impl {
                     .append(")")
                     .append(alloc.space())
                     .append("{")
-                    .append(
-                        alloc
-                            .hardline()
-                            .append(self.generate_constructor_call(
-                                (ctx, &mut implicits_extractor_if_scope),
-                                true,
-                            ))
-                            .nest(NEST_UNIT),
-                    )
+                    .append(alloc.hardline().append(wrapped_body).nest(NEST_UNIT))
                     .append("}")
                     .append(alloc.space())
                     .append("else")
@@ -1887,46 +1969,51 @@ mod type_inherent_impl {
             let fields_deserialization = alloc.concat(self.fields.iter().map(|field| {
                 let field_ty = field.ty.get_type();
 
+                if let Some(rust_ty) = field_ty.builtin_rust_type() {
+                    let (reader_parameter, _) = namespace
+                        .get_generated::<objects::Variable>(objects::ObjectId::from_name(
+                            "reader".to_owned(),
+                        ))
+                        .expect("couldn't get generated reader parameter");
+                    return alloc
+                        .text("let")
+                        .append(alloc.space())
+                        .append(
+                            namespace
+                                .insert_object_auto_name(objects::Variable::from_object(
+                                    objects::ObjectId(
+                                        ast::NodeId::id_rc(field),
+                                        objects::Tag::None,
+                                    ),
+                                    field.name.clone(),
+                                ))
+                                .0
+                                .to_doc(ctx),
+                        )
+                        .append(alloc.space())
+                        .append("=")
+                        .append(alloc.space())
+                        .append(format!(
+                            "<{rust_ty} as super::DbufPrimitive>::dbuf_deserialize("
+                        ))
+                        .append(reader_parameter.to_doc(ctx))
+                        .append(")")
+                        .append("?")
+                        .append(";")
+                        .append(alloc.hardline());
+                }
+
                 let (field_type_module_prefix, field_type_module_cursor) = field_ty
                     .lookup_type_module((ctx, namespace.cursor()))
                     .expect("couldn't lookup type module");
 
                 // let namespace_cursor = namespace.cursor();
 
-                let generate_value_expression: Box<dyn Fn(&ValueExpression) -> BoxDoc<'a>> =
-                    if is_enum_constructor {
-                        Box::new(|value: &ValueExpression| {
-                            let val = value.generate_as_value(
-                                (ctx, namespace.cursor()),
-                                &EnumConstructorDeserializationObjectsLocator {},
-                            );
-                            match value {
-                                ValueExpression::Variable(_) => val,
-                                _ => ctx
-                                    .alloc
-                                    .text("Box::new(")
-                                    .append(val)
-                                    .append(")")
-                                    .into_doc(),
-                            }
-                        })
-                    } else {
-                        Box::new(|value: &ValueExpression| {
-                            let val = value.generate_as_value(
-                                (ctx, namespace.cursor()),
-                                &MessageConstructorDeserializationObjectsLocator {},
-                            );
-                            match value {
-                                ValueExpression::Variable(_) => val,
-                                _ => ctx
-                                    .alloc
-                                    .text("Box::new(")
-                                    .append(val)
-                                    .append(")")
-                                    .into_doc(),
-                            }
-                        })
-                    };
+                let field_dep_types: Vec<_> = field_ty
+                    .dependencies
+                    .iter()
+                    .map(|s| s.ty.get_type())
+                    .collect();
 
                 let dependencies_struct = field_type_module_prefix.append(
                     field_ty.generate_type_dependencies_struct(
@@ -1935,11 +2022,48 @@ mod type_inherent_impl {
                             .ty
                             .get_dependencies()
                             .iter()
-                            .map(|dep| {
-                                let val = generate_value_expression(dep);
+                            .enumerate()
+                            .map(|(dep_idx, dep)| {
+                                let val = if is_enum_constructor {
+                                    let val = dep.generate_as_value(
+                                        (ctx, namespace.cursor()),
+                                        &EnumConstructorDeserializationObjectsLocator {},
+                                    );
+                                    if field_dep_types.get(dep_idx).is_some_and(|t| t.is_builtin)
+                                        || matches!(dep, ValueExpression::Variable(_))
+                                    {
+                                        val
+                                    } else {
+                                        ctx.alloc
+                                            .text("Box::new(")
+                                            .append(val)
+                                            .append(")")
+                                            .into_doc()
+                                    }
+                                } else {
+                                    let val = dep.generate_as_value(
+                                        (ctx, namespace.cursor()),
+                                        &MessageConstructorDeserializationObjectsLocator {},
+                                    );
+                                    if field_dep_types.get(dep_idx).is_some_and(|t| t.is_builtin)
+                                        || matches!(dep, ValueExpression::Variable(_))
+                                    {
+                                        val
+                                    } else {
+                                        ctx.alloc
+                                            .text("Box::new(")
+                                            .append(val)
+                                            .append(")")
+                                            .into_doc()
+                                    }
+                                };
                                 // Field variables are plain T (not Box<T>), so they need wrapping
                                 // when used as type dependencies (which expect Box<T>).
-                                if let ValueExpression::Variable(weak) = dep
+                                // Skip wrapping for primitive dep types.
+                                let dep_ty =
+                                    field_dep_types.get(dep_idx).is_some_and(|t| t.is_builtin);
+                                if !dep_ty
+                                    && let ValueExpression::Variable(weak) = dep
                                     && field_symbol_ptrs.contains(&(Weak::as_ptr(weak) as usize))
                                 {
                                     return alloc
@@ -1953,8 +2077,6 @@ mod type_inherent_impl {
                             .collect(),
                     ),
                 );
-
-                drop(generate_value_expression);
 
                 let (field_type_type_prefix, _) = field_ty
                     .lookup_type_type((ctx, namespace.cursor()))
@@ -2006,23 +2128,27 @@ mod type_inherent_impl {
                         }
                     })
                     .chain(self.fields.iter().map(|field| {
-                        alloc
-                            .text("Box")
-                            .append("::")
-                            .append("new")
-                            .append("(")
-                            .append(
-                                namespace
-                                    .get_generated::<objects::Variable>(objects::ObjectId(
-                                        ast::NodeId::id_rc(field),
-                                        objects::Tag::None,
-                                    ))
-                                    .expect("couldn't get generated field variable")
-                                    .0
-                                    .to_doc(ctx),
-                            )
-                            .append(")")
-                            .into_doc()
+                        let field_var = namespace
+                            .get_generated::<objects::Variable>(objects::ObjectId(
+                                ast::NodeId::id_rc(field),
+                                objects::Tag::None,
+                            ))
+                            .expect("couldn't get generated field variable")
+                            .0
+                            .to_doc(ctx);
+
+                        if field.ty.get_type().is_builtin {
+                            field_var
+                        } else {
+                            alloc
+                                .text("Box")
+                                .append("::")
+                                .append("new")
+                                .append("(")
+                                .append(field_var)
+                                .append(")")
+                                .into_doc()
+                        }
                     }))
                     .collect(),
             );
@@ -2159,10 +2285,13 @@ mod value_from_expression {
             OpCall::Literal(literal) => {
                 let string = match literal {
                     Literal::Bool(val) => val.to_string(),
-                    Literal::Double(val) => val.to_string(),
                     Literal::Int(val) => val.to_string(),
                     Literal::UInt(val) => val.to_string(),
-                    Literal::Str(val) => val.clone(),
+                    Literal::Str(val) => {
+                        // Escape backslashes and double-quotes.
+                        let escaped = val.replace('\\', "\\\\").replace('"', "\\\"");
+                        format!("String::from(\"{escaped}\")")
+                    }
                 };
                 alloc.text(string).into_doc()
             }
@@ -2199,17 +2328,25 @@ mod value_from_expression {
                     BinaryOp::Plus => alloc.text("+"),
                     BinaryOp::Minus => alloc.text("-"),
                     BinaryOp::Star => alloc.text("*"),
-                    BinaryOp::Slash => alloc.text("/"),
+
                     BinaryOp::BinaryAnd => alloc.text("&"),
                     BinaryOp::BinaryOr => alloc.text("|"),
                 };
+                let lhs_doc = lhs.generate_as_value((ctx, namespace.clone()), locator);
+                let rhs_doc = rhs.generate_as_value((ctx, namespace), locator);
+                let rhs_doc =
+                    if matches!(binary_op, BinaryOp::Plus | BinaryOp::Minus | BinaryOp::Star) {
+                        alloc.text("&").append(rhs_doc).into_doc()
+                    } else {
+                        rhs_doc
+                    };
                 alloc
                     .text("(")
-                    .append(lhs.generate_as_value((ctx, namespace.clone()), locator))
+                    .append(lhs_doc)
                     .append(alloc.space())
                     .append(op)
                     .append(alloc.space())
-                    .append(rhs.generate_as_value((ctx, namespace), locator))
+                    .append(rhs_doc)
                     .append(")")
                     .into_doc()
             }
@@ -2234,6 +2371,15 @@ mod value_from_expression {
 
             let ty = self.result_type.get_type();
 
+            let wrap = |expr: &ValueExpression, symbol: &Symbol, val: BoxDoc<'a>| {
+                let is_primitive = symbol.ty.get_type().is_builtin;
+                if matches!(expr, ValueExpression::Variable(_)) || is_primitive {
+                    val
+                } else {
+                    alloc.text("Box::new(").append(val).append(")").into_doc()
+                }
+            };
+
             locator
                 .locate_constructor((ctx, namespace.clone()), self)
                 .append("(")
@@ -2241,22 +2387,20 @@ mod value_from_expression {
                     alloc.intersperse(
                         implicits
                             .iter()
-                            .map(|expr| {
+                            .zip(self.implicits.iter())
+                            .map(|(expr, symbol)| {
                                 let val = expr.generate_as_value((ctx, namespace.clone()), locator);
-                                match expr {
-                                    ValueExpression::Variable(_) => val,
-                                    _ => alloc.text("Box::new(").append(val).append(")").into_doc(),
-                                }
+                                wrap(expr, symbol, val)
                             })
                             .collect::<Vec<_>>()
                             .into_iter()
-                            .chain(arguments.iter().map(|expr| {
-                                let val = expr.generate_as_value((ctx, namespace.clone()), locator);
-                                match expr {
-                                    ValueExpression::Variable(_) => val,
-                                    _ => alloc.text("Box::new(").append(val).append(")").into_doc(),
-                                }
-                            })),
+                            .chain(arguments.iter().zip(self.fields.iter()).map(
+                                |(expr, symbol)| {
+                                    let val =
+                                        expr.generate_as_value((ctx, namespace.clone()), locator);
+                                    wrap(expr, symbol, val)
+                                },
+                            )),
                         alloc.text(",").append(alloc.line()),
                     ),
                 )
@@ -2309,26 +2453,30 @@ impl<'a> Symbol {
         self: Rc<Self>,
         (ctx, namespace): MutContext<'a, '_, '_>,
     ) -> BoxDoc<'a> {
-        let ty = ctx
-            .alloc
-            .text("super::Box<")
-            .append({
-                let ty = self.ty.get_type();
-                let (type_module_prefix, type_module) = ty
-                    .lookup_type_module((ctx, namespace.cursor()))
-                    .expect("couldn't lookup type module");
-                type_module_prefix.append(
-                    type_module
-                        .get_generated::<objects::Type>(ObjectId(
-                            NodeId::id_rc(&ty),
-                            Tag::String("type"),
-                        ))
-                        .expect("couldn't get message type")
-                        .0
-                        .to_doc(ctx),
-                )
-            })
-            .append(">");
+        let field_ty = self.ty.get_type();
+        let ty = if let Some(rust_ty) = field_ty.builtin_rust_type() {
+            ctx.alloc.text(rust_ty).into_doc()
+        } else {
+            ctx.alloc
+                .text("super::Box<")
+                .append({
+                    let (type_module_prefix, type_module) = field_ty
+                        .lookup_type_module((ctx, namespace.cursor()))
+                        .expect("couldn't lookup type module");
+                    type_module_prefix.append(
+                        type_module
+                            .get_generated::<objects::Type>(ObjectId(
+                                NodeId::id_rc(&field_ty),
+                                Tag::String("type"),
+                            ))
+                            .expect("couldn't get message type")
+                            .0
+                            .to_doc(ctx),
+                    )
+                })
+                .append(">")
+                .into_doc()
+        };
         let name = namespace
             .insert_object_auto_name(objects::Variable::from_object(
                 ObjectId(NodeId::id_rc(&self), Tag::None),
@@ -2443,13 +2591,73 @@ impl<'a> Type {
     }
 }
 
+fn literal_as_pattern<'a>(op_call: &OpCall, alloc: &'a crate::format::BoxAllocator) -> BoxDoc<'a> {
+    match op_call {
+        OpCall::Literal(Literal::Bool(val)) => alloc.text(val.to_string()).into_doc(),
+        OpCall::Literal(Literal::Int(val)) => alloc.text(val.to_string()).into_doc(),
+        OpCall::Literal(Literal::UInt(val)) => alloc.text(val.to_string()).into_doc(),
+        OpCall::Literal(Literal::Str(val)) => {
+            let escaped = val.replace('\\', "\\\\").replace('"', "\\\"");
+            alloc.text(format!("\"{escaped}\"")).into_doc()
+        }
+        _ => panic!(
+            "only literal patterns are supported in pattern matching; got a complex operator expression"
+        ),
+    }
+}
+
+fn wrap_with_deferred_checks<'a>(
+    body: BoxDoc<'a>,
+    deferred: Vec<(objects::GeneratedVariable, ValueExpression)>,
+    ctx: crate::generate::GlobalContext<'a>,
+    namespace: &mut context::NamingContext<'a, '_>,
+) -> BoxDoc<'a> {
+    let alloc = ctx.alloc;
+    deferred
+        .into_iter()
+        .rev()
+        .fold(body, |inner_body, (fresh_var, value_expr)| {
+            let accessor = fresh_var.to_doc(ctx).append(".").append("body");
+            let (pattern, sub_deferred) = value_expr.generate_as_pattern((ctx, namespace));
+            let inner_with_sub =
+                wrap_with_deferred_checks(inner_body, sub_deferred, ctx, namespace);
+            alloc
+                .text("if let ")
+                .append(pattern)
+                .append(alloc.space())
+                .append("=")
+                .append(alloc.space())
+                .append(accessor)
+                .append(alloc.space())
+                .append("{")
+                .append(alloc.hardline().append(inner_with_sub).nest(NEST_UNIT))
+                .append("} else {")
+                .append(
+                    alloc
+                        .hardline()
+                        .append("Err(super::DeserializeError::DependenciesDescriptorMismatch)")
+                        .nest(NEST_UNIT)
+                        .append(alloc.hardline()),
+                )
+                .append("}")
+                .into_doc()
+        })
+}
+
 impl<'a> ValueExpression {
-    pub fn generate_as_pattern(&self, (ctx, namespace): MutContext<'a, '_, '_>) -> BoxDoc<'a> {
+    fn generate_as_pattern(
+        &self,
+        (ctx, namespace): MutContext<'a, '_, '_>,
+    ) -> (
+        BoxDoc<'a>,
+        Vec<(objects::GeneratedVariable, ValueExpression)>,
+    ) {
         let alloc = ctx.alloc;
 
         match self {
-            ValueExpression::OpCall(_) => {
-                panic!("OpCall's are currently not supported in patterns")
+            ValueExpression::OpCall(op_call) => {
+                let doc = literal_as_pattern(op_call, alloc);
+                (doc, vec![])
             }
             ValueExpression::Constructor {
                 call,
@@ -2466,11 +2674,11 @@ impl<'a> ValueExpression {
 
                 let (type_module_prefix, type_module_cursor) = ty
                     .lookup_type_module((ctx, namespace.cursor()))
-                    .expect("coudln't lookup type module");
+                    .expect("couldn't lookup type module");
 
                 let (body_type, body_type_cursor) = type_module_cursor
                     .get_generated::<objects::Type>(ObjectId::from_name("Body".to_owned()))
-                    .expect("coudln't get generated Body type");
+                    .expect("couldn't get generated Body type");
 
                 let (constructor_enum_branch, constructor_enum_branch_cursor) = body_type_cursor
                     .get_generated::<objects::Type>(ObjectId(
@@ -2478,24 +2686,6 @@ impl<'a> ValueExpression {
                         objects::Tag::String("enum_branch"),
                     ))
                     .expect("couldn't get constructor enum branch");
-
-                // TODO: Do something with the following
-
-                // Problem with current approach is following:
-                // enum T (n Nat) {
-                //     Zero => ...
-                //     Suc ( p ) => ...
-                //     Suc ( Suc ( p ) ) => ...
-                // }
-                // To third constructor be expressible (to something like `if let Suc { pred: Suc { pred } } = ...` be compiled)
-                // in current api at least one of the following statements must be true:
-                // 1. box, deref etc pattern becomes stable
-                // 2. constructor fields are stored by reference
-
-                // I see 2 approaces:
-                // Either extract needed implicits from dependencies by hand without any matching.
-                // Or implement reference type for the messages, so 2. option could be available.
-                // Both requires non small amount of code.
 
                 let fields = call
                     .fields
@@ -2515,12 +2705,27 @@ impl<'a> ValueExpression {
 
                 drop(constructor_enum_branch_cursor);
 
-                let arguments = arguments
+                let mut all_deferred: Vec<(objects::GeneratedVariable, ValueExpression)> = vec![];
+                let arg_patterns: Vec<BoxDoc<'a>> = arguments
                     .iter()
-                    .map(|argument| argument.generate_as_pattern((ctx, namespace)))
-                    .collect::<Vec<_>>();
+                    .map(|argument| {
+                        if let ValueExpression::Constructor { .. } = argument {
+                            let id = FRESH_VAR_COUNTER.fetch_add(1, Ordering::Relaxed);
+                            let var_name = format!("_nested_{id}");
+                            let (fresh_var, _) = namespace
+                                .insert_object_auto_name(objects::Variable::from_name(var_name));
+                            all_deferred.push((fresh_var.clone(), argument.clone()));
+                            fresh_var.to_doc(ctx)
+                        } else {
+                            let (arg_doc, sub_deferred) =
+                                argument.generate_as_pattern((ctx, namespace));
+                            all_deferred.extend(sub_deferred);
+                            arg_doc
+                        }
+                    })
+                    .collect();
 
-                type_module_prefix
+                let pattern = type_module_prefix
                     .append(body_type.to_doc(ctx))
                     .append("::")
                     .append(constructor_enum_branch.to_doc(ctx))
@@ -2528,13 +2733,15 @@ impl<'a> ValueExpression {
                     .append("{")
                     .append(alloc.space())
                     .append(alloc.intersperse(
-                        fields.into_iter().zip(arguments).map(|(field, argument)| {
-                            field.append(":").append(alloc.space()).append(argument)
+                        fields.into_iter().zip(arg_patterns).map(|(field, arg)| {
+                            field.append(":").append(alloc.space()).append(arg)
                         }),
                         alloc.text(",").append(alloc.space()),
                     ))
                     .append(alloc.space())
-                    .append("}")
+                    .append("}");
+
+                (pattern, all_deferred)
             }
             ValueExpression::Variable(symbol) => {
                 let symbol = symbol.upgrade().expect("use of unknown variable");
@@ -2543,7 +2750,7 @@ impl<'a> ValueExpression {
                         objects::ObjectId(ast::NodeId::id_rc(&symbol), objects::Tag::None),
                         symbol.name.clone(),
                     ));
-                variable.to_doc(ctx)
+                (variable.to_doc(ctx), vec![])
             }
         }
     }

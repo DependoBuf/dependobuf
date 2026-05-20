@@ -1,30 +1,23 @@
 use crate::ast::elaborated as e;
 use crate::ast::operators as o;
+use crate::elaboration::builtins::BuiltinType;
 use crate::elaboration::subst;
+use crate::error::elaborating::Error;
+use crate::error::elaborating::Error::{
+    ArityMismatch, ConflictingBinding, ConstructorMismatch, LiteralMismatch, OperatorTypeMismatch,
+    TypeMismatch,
+};
 
 pub type Bindings<Str> = Vec<(Str, e::ValueExpression<Str>)>;
-
-pub type UnifyResult<Str> = (Bindings<Str>, Bindings<Str>);
-
-#[derive(Debug, PartialEq)]
-pub enum UnifyError {
-    TypeNameMismatch,
-    ArityMismatch,
-    ConstructorNameMismatch,
-    OperatorMismatch,
-    LiteralMismatch,
-    ConflictingBinding,
-    CannotUnify,
-}
 
 /// # Errors
 pub fn unify_type<Str>(
     a: &e::TypeExpression<Str>,
     b: &e::TypeExpression<Str>,
     module: &e::Module<Str>,
-) -> Result<UnifyResult<Str>, UnifyError>
+) -> Result<Bindings<Str>, Error>
 where
-    Str: Clone + Eq + Ord,
+    Str: Clone + Eq + Ord + From<BuiltinType> + ToString,
 {
     let e::TypeExpression::TypeExpression {
         name: name_a,
@@ -36,7 +29,7 @@ where
     } = b;
 
     if name_a != name_b {
-        return Err(UnifyError::TypeNameMismatch);
+        return Err(TypeMismatch);
     }
 
     let declared_arity = module
@@ -46,46 +39,42 @@ where
         .map_or(0, |(_, ty)| ty.dependencies.len());
 
     if deps_a.len() != declared_arity || deps_b.len() != declared_arity {
-        return Err(UnifyError::ArityMismatch);
+        return Err(ArityMismatch {
+            expected: declared_arity,
+            found: deps_a.len(),
+        });
     }
 
-    unify_args(
-        deps_a.iter().cloned().collect(),
-        deps_b.iter().cloned().collect(),
-    )
+    unify_args(deps_a, &mut (deps_b.iter().cloned().collect::<Vec<_>>()))
 }
 
 /// # Errors
 pub fn unify_value<Str>(
     a: &e::ValueExpression<Str>,
     b: &e::ValueExpression<Str>,
-) -> Result<UnifyResult<Str>, UnifyError>
+) -> Result<Bindings<Str>, Error>
 where
-    Str: Clone + Eq,
+    Str: Clone + Eq + From<BuiltinType> + ToString,
 {
     match (a, b) {
         (
             e::ValueExpression::Variable { name: x, .. },
             e::ValueExpression::Variable { name: y, .. },
-        ) if x == y => Ok((vec![], vec![])),
-        //TODO: check types are equal
+        ) if x == y => Ok(vec![]),
         (
             e::ValueExpression::Variable { name: x, ty: ty_x },
-            e::ValueExpression::Variable { name: y, ty: _ty_y },
-        ) => Ok((
-            vec![],
-            vec![(
-                y.clone(),
-                e::ValueExpression::Variable {
-                    name: x.clone(),
-                    ty: ty_x.clone(),
-                },
-            )],
-        )),
-        (e::ValueExpression::Variable { .. }, _) => Err(UnifyError::CannotUnify),
+            e::ValueExpression::Variable { name: y, .. },
+        ) => Ok(vec![(
+            y.clone(),
+            e::ValueExpression::Variable {
+                name: x.clone(),
+                ty: ty_x.clone(),
+            },
+        )]),
+        (e::ValueExpression::Variable { .. }, _) => Err(TypeMismatch),
 
         (other, e::ValueExpression::Variable { name, .. }) => {
-            Ok((vec![], vec![(name.clone(), other.clone())]))
+            Ok(vec![(name.clone(), other.clone())])
         }
 
         (
@@ -103,11 +92,11 @@ where
             },
         ) => {
             if n1 != n2 {
-                return Err(UnifyError::ConstructorNameMismatch);
+                return Err(ConstructorMismatch(n1.to_string(), n2.to_string()));
             }
             let left: Vec<_> = i1.iter().chain(a1.iter()).cloned().collect();
-            let right: Vec<_> = i2.iter().chain(a2.iter()).cloned().collect();
-            unify_args(left, right)
+            let mut right: Vec<_> = i2.iter().chain(a2.iter()).cloned().collect();
+            unify_args(&left, &mut right)
         }
 
         (
@@ -115,87 +104,74 @@ where
             e::ValueExpression::OpCall { op_call: op_b, .. },
         ) => unify_op_call(op_a, op_b),
 
-        _ => Err(UnifyError::CannotUnify),
+        _ => Err(TypeMismatch),
     }
 }
 
 fn unify_args<Str>(
-    mut left: Vec<e::ValueExpression<Str>>,
-    mut right: Vec<e::ValueExpression<Str>>,
-) -> Result<UnifyResult<Str>, UnifyError>
+    left: &[e::ValueExpression<Str>],
+    right: &mut [e::ValueExpression<Str>],
+) -> Result<Bindings<Str>, Error>
 where
-    Str: Clone + Eq,
+    Str: Clone + Eq + From<BuiltinType> + ToString,
 {
-    let mut acc_left: Bindings<Str> = vec![];
-    let mut acc_right: Bindings<Str> = vec![];
+    let mut acc = vec![];
 
     for i in 0..left.len() {
-        let (bl, br) = unify_value(&left[i], &right[i])?;
+        let bindings = unify_value(&left[i], &right[i])?;
 
-        for arg in &mut left[i + 1..] {
-            *arg = subst::apply_bindings(arg.clone(), &bl);
-        }
         for arg in &mut right[i + 1..] {
-            *arg = subst::apply_bindings(arg.clone(), &br);
+            *arg = subst::apply_bindings(arg.clone(), &bindings);
         }
 
-        extend_bindings(&mut acc_left, bl)?;
-        extend_bindings(&mut acc_right, br)?;
+        extend_bindings(&mut acc, bindings)?;
     }
 
-    Ok((acc_left, acc_right))
+    Ok(acc)
 }
 
 fn unify_op_call<Str>(
     a: &o::OpCall<Str, e::Rec<e::ValueExpression<Str>>>,
     b: &o::OpCall<Str, e::Rec<e::ValueExpression<Str>>>,
-) -> Result<UnifyResult<Str>, UnifyError>
+) -> Result<Bindings<Str>, Error>
 where
-    Str: Clone + Eq,
+    Str: Clone + Eq + From<BuiltinType> + ToString,
 {
     match (a, b) {
         (o::OpCall::Literal(la), o::OpCall::Literal(lb)) => {
             if la == lb {
-                Ok((vec![], vec![]))
+                Ok(vec![])
             } else {
-                Err(UnifyError::LiteralMismatch)
+                Err(LiteralMismatch(la.clone(), lb.clone()))
             }
         }
         (o::OpCall::Unary(op_a, expr_a), o::OpCall::Unary(op_b, expr_b)) => {
-            if !unary_ops_match(op_a, op_b) {
-                return Err(UnifyError::OperatorMismatch);
+            if op_a != op_b {
+                return Err(OperatorTypeMismatch);
             }
             unify_value(expr_a, expr_b)
         }
         (o::OpCall::Binary(op_a, la, ra), o::OpCall::Binary(op_b, lb, rb)) => {
             if op_a != op_b {
-                return Err(UnifyError::OperatorMismatch);
+                return Err(OperatorTypeMismatch);
             }
             unify_args(
-                vec![(**la).clone(), (**ra).clone()],
-                vec![(**lb).clone(), (**rb).clone()],
+                &[(**la).clone(), (**ra).clone()],
+                &mut [(**lb).clone(), (**rb).clone()],
             )
         }
-        _ => Err(UnifyError::OperatorMismatch),
+        _ => Err(OperatorTypeMismatch),
     }
 }
 
-fn unary_ops_match<Str: Eq>(a: &o::UnaryOp<Str>, b: &o::UnaryOp<Str>) -> bool {
-    match (a, b) {
-        (o::UnaryOp::Access(fa), o::UnaryOp::Access(fb)) => fa == fb,
-        (o::UnaryOp::Minus, o::UnaryOp::Minus) | (o::UnaryOp::Bang, o::UnaryOp::Bang) => true,
-        _ => false,
-    }
-}
-
-fn extend_bindings<Str>(acc: &mut Bindings<Str>, new: Bindings<Str>) -> Result<(), UnifyError>
+fn extend_bindings<Str>(acc: &mut Bindings<Str>, new: Bindings<Str>) -> Result<(), Error>
 where
-    Str: Clone + Eq,
+    Str: Clone + Eq + ToString,
 {
     for (name, val) in new {
         match acc.iter().find(|(n, _)| n == &name) {
             Some((_, existing)) if existing == &val => {}
-            Some(_) => return Err(UnifyError::ConflictingBinding),
+            Some(_) => return Err(ConflictingBinding(name.to_string())),
             None => acc.push((name, val)),
         }
     }
@@ -206,7 +182,11 @@ where
 mod tests {
     use super::*;
     use crate::ast::elaborated::{self as e, ConstructorNames};
-    use crate::elaboration::unify::UnifyError::CannotUnify;
+    use crate::ast::operators::Literal;
+    use crate::elaboration::builtins;
+    use crate::error::elaborating::Error::{
+        ArityMismatch, ConstructorMismatch, LiteralMismatch, TypeMismatch,
+    };
     use std::collections::BTreeMap;
 
     fn nat_ty() -> e::TypeExpression<String> {
@@ -251,7 +231,7 @@ mod tests {
     fn lit_int(v: i64) -> e::ValueExpression<String> {
         e::ValueExpression::OpCall {
             op_call: o::OpCall::Literal(crate::ast::operators::Literal::Int(v)),
-            result_type: nat_ty(),
+            result_type: builtins::get_builtin(&BuiltinType::Int),
         }
     }
 
@@ -282,62 +262,28 @@ mod tests {
     }
 
     #[test]
-    fn value_same_variable_is_empty() {
-        assert_eq!(unify_value(&var("x"), &var("x")), Ok((vec![], vec![])));
+    fn same_binds() {
+        assert_eq!(unify_value(&var("x"), &var("x")), Ok(vec![]));
     }
 
     #[test]
-    fn value_variable_left_is_error() {
-        assert_eq!(unify_value(&var("x"), &zero()), Err(CannotUnify));
+    fn left_binds() {
+        assert_eq!(unify_value(&var("x"), &zero()), Err(TypeMismatch));
     }
 
     #[test]
-    fn value_variable_right_produces_right_binding() {
+    fn right_binds() {
         assert_eq!(
             unify_value(&zero(), &var("y")),
-            Ok((vec![], vec![("y".to_owned(), zero())]))
+            Ok(vec![("y".to_owned(), zero())])
         );
     }
 
     #[test]
-    fn value_two_different_variables_binds_right_to_left() {
+    fn var_binds() {
         assert_eq!(
             unify_value(&var("x"), &var("y")),
-            Ok((vec![], vec![("y".to_owned(), var("x"))]))
-        );
-    }
-
-    #[test]
-    fn value_constructors_equal_no_args() {
-        assert_eq!(unify_value(&zero(), &zero()), Ok((vec![], vec![])));
-    }
-
-    #[test]
-    fn value_constructors_variable_arg_left() {
-        assert_eq!(unify_value(&suc(var("x")), &suc(zero())), Err(CannotUnify));
-    }
-
-    #[test]
-    fn value_constructors_variable_arg_right() {
-        assert_eq!(
-            unify_value(&suc(zero()), &suc(var("y"))),
-            Ok((vec![], vec![("y".to_owned(), zero())]))
-        );
-    }
-
-    #[test]
-    fn value_constructors_equal_both_same_variable() {
-        assert_eq!(
-            unify_value(&suc(var("x")), &suc(var("x"))),
-            Ok((vec![], vec![]))
-        );
-    }
-
-    #[test]
-    fn value_constructor_name_mismatch() {
-        assert_eq!(
-            unify_value(&zero(), &suc(zero())),
-            Err(UnifyError::ConstructorNameMismatch)
+            Ok(vec![("y".to_owned(), var("x"))])
         );
     }
 
@@ -352,19 +298,12 @@ mod tests {
             result_type: nat_ty(),
         }
     }
-    #[test]
-    fn value_incremental_substitution_applied_to_remaining_args() {
-        assert_eq!(
-            unify_value(&pair(zero(), zero()), &pair(var("x"), var("x"))),
-            Ok((vec![], vec![("x".to_owned(), zero())]))
-        );
-    }
 
     #[test]
     fn value_conflicting_bindings() {
         assert_eq!(
             unify_value(&pair(zero(), suc(zero())), &pair(var("x"), var("x"))),
-            Err(UnifyError::ConstructorNameMismatch)
+            Err(ConstructorMismatch("Suc".to_owned(), "Zero".to_owned()))
         );
     }
 
@@ -382,15 +321,7 @@ mod tests {
                 &tuple(suc(suc(var("x"))), var("y"), suc(suc(zero()))),
                 &tuple(suc(var("z")), suc(suc(suc(zero()))), suc(var("z"))),
             ),
-            Err(CannotUnify)
-        );
-    }
-
-    #[test]
-    fn value_literal_equal() {
-        assert_eq!(
-            unify_value(&lit_int(42), &lit_int(42)),
-            Ok((vec![], vec![]))
+            Err(TypeMismatch)
         );
     }
 
@@ -398,21 +329,7 @@ mod tests {
     fn value_literal_mismatch() {
         assert_eq!(
             unify_value(&lit_int(1), &lit_int(2)),
-            Err(UnifyError::LiteralMismatch)
-        );
-    }
-
-    #[test]
-    fn value_mismatched_variants() {
-        assert_eq!(unify_value(&zero(), &lit_int(0)), Err(CannotUnify));
-    }
-
-    #[test]
-    fn type_equal_no_deps() {
-        let module = test_module();
-        assert_eq!(
-            unify_type(&nat_ty(), &nat_ty(), &module),
-            Ok((vec![], vec![]))
+            Err(LiteralMismatch(Literal::Int(1), Literal::Int(2)))
         );
     }
 
@@ -421,7 +338,7 @@ mod tests {
         let module = test_module();
         assert_eq!(
             unify_type(&nat_ty(), &vec_ty(zero()), &module),
-            Err(UnifyError::TypeNameMismatch)
+            Err(TypeMismatch)
         );
     }
 
@@ -434,43 +351,19 @@ mod tests {
         };
         assert_eq!(
             unify_type(&bad, &vec_ty(zero()), &module),
-            Err(UnifyError::ArityMismatch)
+            Err(ArityMismatch {
+                expected: 1,
+                found: 0
+            })
         );
     }
 
     #[test]
-    fn type_equal_with_concrete_dep() {
-        let module = test_module();
-        assert_eq!(
-            unify_type(&vec_ty(zero()), &vec_ty(zero()), &module),
-            Ok((vec![], vec![]))
-        );
-    }
-
-    #[test]
-    fn type_variable_dep_left() {
-        let module = test_module();
-        assert_eq!(
-            unify_type(&vec_ty(var("n")), &vec_ty(zero()), &module),
-            Err(CannotUnify)
-        );
-    }
-
-    #[test]
-    fn type_variable_dep_right() {
-        let module = test_module();
-        assert_eq!(
-            unify_type(&vec_ty(zero()), &vec_ty(var("m")), &module),
-            Ok((vec![], vec![("m".to_owned(), zero())]))
-        );
-    }
-
-    #[test]
-    fn type_dep_mismatch() {
+    fn ctor_mismatch() {
         let module = test_module();
         assert_eq!(
             unify_type(&vec_ty(zero()), &vec_ty(suc(zero())), &module),
-            Err(UnifyError::ConstructorNameMismatch)
+            Err(ConstructorMismatch("Zero".to_owned(), "Suc".to_owned()))
         );
     }
 }

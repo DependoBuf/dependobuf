@@ -1,4 +1,4 @@
-use dbuf_rust_runtime::{Box, ConstructorError, DeserializeError};
+use dbuf_rust_runtime::{Box, ConstructorError, DeserializeError, DbufPrimitive};
 use std::io::{Write, Read, Error};
 use std::slice;
 pub mod nat {

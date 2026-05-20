@@ -1,0 +1,27 @@
+enum Nat {
+    Zero {}
+    Suc {
+        pred Nat;
+    }
+}
+
+message NatDep (n Nat) {}
+
+message UseConstructedNat {
+    zero NatDep Zero{};
+    one NatDep Suc{pred: Zero{}};
+    two NatDep Suc{pred: Suc{pred: Zero{}}};
+}
+
+enum Color {
+    Red {}
+    Green {}
+    Blue {}
+}
+
+message ColorDep (c Color) {}
+
+message UseConstructedColor {
+    r ColorDep Red{};
+    g ColorDep Green{};
+}

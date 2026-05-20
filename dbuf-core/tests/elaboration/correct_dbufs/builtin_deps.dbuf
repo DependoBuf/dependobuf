@@ -1,0 +1,11 @@
+message IntDep (n Int) {}
+message UIntDep (n UInt) {}
+message BoolDep (n Bool) {}
+message StringDep (n String) {}
+
+message UseMultiple (n Int) (s String) (u UInt) (b Bool) {
+    di IntDep n;
+    ds StringDep s;
+    du UIntDep u;
+    db BoolDep b;
+}

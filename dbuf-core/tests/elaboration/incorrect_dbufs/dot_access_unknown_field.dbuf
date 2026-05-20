@@ -1,0 +1,9 @@
+message IntDep (n Int) {}
+
+message Record {
+    x Int;
+}
+
+message Broken (r Record) {
+    d IntDep r.y;
+}

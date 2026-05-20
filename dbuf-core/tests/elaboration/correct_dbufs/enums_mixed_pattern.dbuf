@@ -1,0 +1,36 @@
+enum Nat {
+    Zero {}
+    Suc {
+        pred Nat;
+    }
+}
+
+message NatBox (n Nat) {}
+
+enum Mixed (n Nat) (b Bool) {
+    Zero{}, true => {
+        ZeroAndTrue {}
+    }
+    Suc{pred: p}, false => {
+        SucAndFalse {
+            box NatBox p;
+        }
+    }
+    *, * => {
+        Other {}
+    }
+}
+
+enum IntBoolMixed (k Int) (b Bool) {
+    0, true => {
+        ZeroTrue {}
+    }
+    *, false => {
+        AnyFalse {
+            val Int;
+        }
+    }
+    *, * => {
+        Default {}
+    }
+}

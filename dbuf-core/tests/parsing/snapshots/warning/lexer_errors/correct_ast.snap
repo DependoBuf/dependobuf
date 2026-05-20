@@ -10,7 +10,7 @@ expression: ast
                 columns: 0,
             },
             length: Offset {
-                lines: 8,
+                lines: 7,
                 columns: 1,
             },
         },
@@ -125,12 +125,12 @@ expression: ast
                             },
                             length: Offset {
                                 lines: 0,
-                                columns: 29,
+                                columns: 25,
                             },
                         },
                         name: LocatedName {
                             content: InternedString {
-                                inner: "badFloat",
+                                inner: "badString",
                             },
                             start: Offset {
                                 lines: 3,
@@ -141,7 +141,7 @@ expression: ast
                             loc: Location {
                                 start: Offset {
                                     lines: 3,
-                                    columns: 13,
+                                    columns: 14,
                                 },
                                 length: Offset {
                                     lines: 0,
@@ -155,7 +155,7 @@ expression: ast
                                     },
                                     start: Offset {
                                         lines: 3,
-                                        columns: 13,
+                                        columns: 14,
                                     },
                                 },
                                 args: [],
@@ -170,12 +170,12 @@ expression: ast
                             },
                             length: Offset {
                                 lines: 0,
-                                columns: 25,
+                                columns: 18,
                             },
                         },
                         name: LocatedName {
                             content: InternedString {
-                                inner: "badString",
+                                inner: "badLC",
                             },
                             start: Offset {
                                 lines: 4,
@@ -186,7 +186,7 @@ expression: ast
                             loc: Location {
                                 start: Offset {
                                     lines: 4,
-                                    columns: 14,
+                                    columns: 10,
                                 },
                                 length: Offset {
                                     lines: 0,
@@ -200,7 +200,7 @@ expression: ast
                                     },
                                     start: Offset {
                                         lines: 4,
-                                        columns: 14,
+                                        columns: 10,
                                     },
                                 },
                                 args: [],
@@ -220,7 +220,7 @@ expression: ast
                         },
                         name: LocatedName {
                             content: InternedString {
-                                inner: "badLC",
+                                inner: "badUC",
                             },
                             start: Offset {
                                 lines: 5,
@@ -260,12 +260,12 @@ expression: ast
                             },
                             length: Offset {
                                 lines: 0,
-                                columns: 18,
+                                columns: 13,
                             },
                         },
                         name: LocatedName {
                             content: InternedString {
-                                inner: "badUC",
+                                inner: "unknow",
                             },
                             start: Offset {
                                 lines: 6,
@@ -276,51 +276,6 @@ expression: ast
                             loc: Location {
                                 start: Offset {
                                     lines: 6,
-                                    columns: 10,
-                                },
-                                length: Offset {
-                                    lines: 0,
-                                    columns: 3,
-                                },
-                            },
-                            node: FunCall {
-                                fun: LocatedName {
-                                    content: InternedString {
-                                        inner: "Dep",
-                                    },
-                                    start: Offset {
-                                        lines: 6,
-                                        columns: 10,
-                                    },
-                                },
-                                args: [],
-                            },
-                        },
-                    },
-                    Definition {
-                        loc: Location {
-                            start: Offset {
-                                lines: 7,
-                                columns: 4,
-                            },
-                            length: Offset {
-                                lines: 0,
-                                columns: 13,
-                            },
-                        },
-                        name: LocatedName {
-                            content: InternedString {
-                                inner: "unknow",
-                            },
-                            start: Offset {
-                                lines: 7,
-                                columns: 4,
-                            },
-                        },
-                        data: Expression {
-                            loc: Location {
-                                start: Offset {
-                                    lines: 7,
                                     columns: 11,
                                 },
                                 length: Offset {
@@ -334,7 +289,7 @@ expression: ast
                                         inner: "Dep",
                                     },
                                     start: Offset {
-                                        lines: 7,
+                                        lines: 6,
                                         columns: 11,
                                     },
                                 },

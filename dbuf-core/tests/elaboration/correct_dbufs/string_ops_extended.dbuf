@@ -1,0 +1,9 @@
+message StringDep (s String) {}
+
+message StringChain (s1 String) (s2 String) (s3 String) {
+    two StringDep (s1 + s2);
+    three StringDep (s1 + s2 + s3);
+    withLit StringDep (s1 + "!");
+    litFirst StringDep ("hello" + s1);
+    allLit StringDep ("foo" + "bar" + "baz");
+}

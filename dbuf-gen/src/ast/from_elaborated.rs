@@ -36,11 +36,32 @@ struct ASTContext<'a> {
     constructors: &'a Scope<'a, String, Rc<Constructor>>,
 }
 
+const BUILTIN_NAMES: &[&str] = &["Bool", "Int", "UInt", "String"];
+
 impl Module {
     pub(crate) fn from_elaborated(mut module: ElaboratedModule) -> Self {
         let mut all_constructors = Scope::<String, Rc<Constructor>>::empty();
         let mut types = Vec::with_capacity(module.types.len());
         let mut known_types = Scope::<String, Weak<Type>>::empty();
+
+        let builtins: Vec<Rc<Type>> = BUILTIN_NAMES
+            .iter()
+            .map(|&name| {
+                let ty = Rc::new(Type {
+                    name: name.to_owned(),
+                    dependencies: vec![],
+                    constructors: vec![],
+                    kind: TypeKind::Enum,
+                    is_builtin: true,
+                });
+                assert!(
+                    known_types.try_insert(name.to_owned(), Rc::downgrade(&ty)),
+                    "builtin '{name}' inserted twice"
+                );
+                ty
+            })
+            .collect();
+
         for (name, ty) in module.types {
             // all this scope constructs Rc<Type> and can be become Type::from_elaborated
             // but I do not really want this, because I do not feel like it will simplify logic
@@ -106,12 +127,16 @@ impl Module {
                     dependencies,
                     constructors,
                     kind,
+                    is_builtin: false,
                 }
             });
 
             types.push(ty);
         }
-        Module { types }
+        Module {
+            types,
+            _builtins: builtins,
+        }
     }
 }
 

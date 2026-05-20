@@ -1,0 +1,18 @@
+enum Color {
+    Red {}
+    Green {}
+    Blue {}
+}
+
+message HasColor {
+    c Color;
+}
+
+enum Unit {
+    Only {}
+}
+
+message UseUnit {
+    u Unit;
+    c Color;
+}

@@ -148,10 +148,6 @@ impl SemanticTokenVisitor<'_> {
                 let str = if *b { "true" } else { "false" };
                 self.push_str(str, *location, Token::Keyword);
             }
-            Literal::Double(d) => {
-                let str = d.to_string();
-                self.push_str(&str, *location, Token::Number);
-            }
             Literal::Int(i) => {
                 let str = i.to_string();
                 self.push_str(&str, *location, Token::Number);

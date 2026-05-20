@@ -1,0 +1,32 @@
+enum Nat {
+    Zero {}
+    Suc {
+        pred Nat;
+    }
+}
+
+enum NatPair (a Nat) (b Nat) {
+    Zero{}, Zero{} => {
+        BothZero {}
+    }
+    Suc{pred: m}, Suc{pred: n} => {
+        BothSuc {
+            rest NatPair m n;
+        }
+    }
+    *, * => {
+        Otherwise {}
+    }
+}
+
+enum BoolPair (a Bool) (b Bool) {
+    true, true => {
+        TT {}
+    }
+    false, false => {
+        FF {}
+    }
+    *, * => {
+        Mixed {}
+    }
+}

@@ -1,0 +1,7 @@
+message IntDep (n Int) {}
+
+enum TwoDep (a Int) (b Int) {
+    0 => {
+        WrongCount {}
+    }
+}

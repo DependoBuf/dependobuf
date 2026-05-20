@@ -1,0 +1,10 @@
+enum Color {
+    Red {}
+    Green {}
+}
+
+message IntDep (n Int) {}
+
+message Broken (c Color) {
+    x IntDep c.something;
+}

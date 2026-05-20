@@ -5,13 +5,12 @@ use std::{collections::HashSet, sync::LazyLock};
 
 use std::string::ToString;
 
-static BUILTIN_TYPES: LazyLock<HashSet<String>> = LazyLock::new(|| {
-    HashSet::from(["Int", "String", "Bool", "Unsigned", "Float"].map(ToString::to_string))
-});
+static BUILTIN_TYPES: LazyLock<HashSet<String>> =
+    LazyLock::new(|| HashSet::from(["Int", "String", "Bool", "UInt"].map(ToString::to_string)));
 static KEYWORDS: LazyLock<HashSet<String>> =
     LazyLock::new(|| HashSet::from(["message", "enum"].map(ToString::to_string)));
 
-/// Returns builtint types set.
+/// Returns builtin types set.
 pub fn get_builtin_types() -> &'static HashSet<String> {
     &BUILTIN_TYPES
 }

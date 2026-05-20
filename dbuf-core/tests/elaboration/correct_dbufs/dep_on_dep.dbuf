@@ -1,0 +1,7 @@
+message IntDep (n Int) {}
+
+message TwoDeps (a Int) (b IntDep a) {}
+
+message ThreeDeps (a Int) (b IntDep a) (c IntDep a) {}
+
+message DepWithExpr (a Int) (b IntDep (1 - a)) {}
