@@ -137,6 +137,7 @@ mod rust_gen_impl {
     /// impl of rust code generation.
     pub fn run(module: &ElaboratedModule) -> String {
         let mut writer = Vec::new();
+        // FIXME
         assert!(codegen::generate_module(module, &mut writer).is_ok());
         String::from_utf8(writer).expect("generated code must be correct utf8")
     }
