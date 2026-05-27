@@ -1,4 +1,5 @@
 use crate::ast;
+use crate::ast::Str;
 
 mod generate;
 
@@ -11,7 +12,7 @@ mod generate;
 /// It is good enough for snapshot-testing purposes and can be gradually
 /// replaced by a full-featured backend later.
 #[must_use]
-pub fn generate_module(module: ast::elaborated::Module<String>) -> String {
+pub fn generate_module(module: &ast::elaborated::Module<Str>) -> String {
     // Convert the elaborated AST used by the type-checker into the internal
     // representation expected by the generators.
     let module = ast::Module::from_elaborated(module);

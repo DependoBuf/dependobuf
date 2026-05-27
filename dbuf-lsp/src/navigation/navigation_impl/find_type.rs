@@ -9,13 +9,15 @@ use crate::core::workspace::ElaboratedHelper;
 use crate::core::navigator::Navigator;
 use crate::core::navigator::Symbol;
 
-fn get_type(te: &TypeExpression<String>) -> Symbol {
+use crate::core::workspace::Str;
+
+fn get_type(te: &TypeExpression<Str>) -> Symbol {
     let TypeExpression::TypeExpression {
         name,
         dependencies: _,
     } = te;
     Symbol::Type {
-        type_name: name.clone(),
+        type_name: name.to_string(),
     }
 }
 
@@ -33,7 +35,7 @@ pub fn find_type_impl(navigator: &Navigator, symbol: Symbol) -> Symbol {
 
             t.dependencies
                 .iter()
-                .find(|d| d.0 == dependency.as_ref())
+                .find(|d| d.0.as_ref() == dependency)
                 .map_or_else(
                     || {
                         panic!("dependency not found\n{symbol:#?}");
@@ -52,7 +54,7 @@ pub fn find_type_impl(navigator: &Navigator, symbol: Symbol) -> Symbol {
             });
             cons.fields
                 .iter()
-                .find(|f| f.0 == field.as_ref())
+                .find(|f| f.0.as_ref() == field)
                 .map_or_else(
                     || {
                         panic!("field not found\n{symbol:#?}");
@@ -89,7 +91,7 @@ pub fn find_type_impl(navigator: &Navigator, symbol: Symbol) -> Symbol {
                 });
                 cons.implicits
                     .iter()
-                    .find(|i| i.0 == alias.as_ref())
+                    .find(|i| i.0.as_ref() == alias)
                     .map_or_else(
                         || {
                             panic!("alias not found\n{symbol:#?}");

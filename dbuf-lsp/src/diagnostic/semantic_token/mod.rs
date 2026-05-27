@@ -18,7 +18,7 @@ use tower_lsp::lsp_types::SemanticTokens;
 
 use crate::core::workspace::LocationHelper;
 use crate::core::workspace::PositionHelper;
-use crate::core::workspace::{ElaboratedAst, ElaboratedHelper, File, Loc, LocNameHelper, Str};
+use crate::core::workspace::{ElaboratedAst, ElaboratedHelper, File, Loc, LocNameHelper, Name};
 
 use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
 use crate::core::ast_visitor::*;
@@ -163,7 +163,7 @@ impl SemanticTokenVisitor<'_> {
         }
     }
 
-    fn get_type_token(&self, type_name: &Str) -> Token {
+    fn get_type_token(&self, type_name: &Name) -> Token {
         if self.elaborated.is_builtin_type(type_name.as_ref()) {
             return Token::Type;
         }
@@ -178,7 +178,7 @@ impl SemanticTokenVisitor<'_> {
         }
     }
 
-    fn get_constructor_token(&self, constructor_name: &Str) -> Token {
+    fn get_constructor_token(&self, constructor_name: &Name) -> Token {
         if let Some(ty) = self.elaborated.get_type(constructor_name.as_ref())
             && self.elaborated.is_message(ty)
         {
@@ -188,7 +188,7 @@ impl SemanticTokenVisitor<'_> {
         }
     }
 
-    fn get_access_token(&self, access_name: &Str) -> Token {
+    fn get_access_token(&self, access_name: &Name) -> Token {
         let Some(type_name) = self.scope.get_type() else {
             return Token::Property;
         };

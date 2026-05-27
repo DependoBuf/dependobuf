@@ -10,7 +10,7 @@ use dbuf_core::ast::operators::*;
 use dbuf_core::ast::parsed::definition::*;
 use dbuf_core::ast::parsed::*;
 
-use super::workspace::{Loc, ParsedAst, Str};
+use super::workspace::{Loc, Name, ParsedAst};
 
 struct Position {
     line: usize,
@@ -216,7 +216,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
     fn print_type_definition(
         &mut self,
-        definition: &Definition<Loc, Str, TypeDeclaration<Loc, Str>>,
+        definition: &Definition<Loc, Name, TypeDeclaration<Loc, Name>>,
     ) {
         match definition.data.body {
             TypeDefinition::Message(_) => {
@@ -233,7 +233,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         self.print_type_declaration(&definition.data);
     }
 
-    fn print_type_declaration(&mut self, type_declaration: &TypeDeclaration<Loc, Str>) {
+    fn print_type_declaration(&mut self, type_declaration: &TypeDeclaration<Loc, Name>) {
         if self.with_dependencies {
             for dependency in &type_declaration.dependencies {
                 self.print_dependency(dependency);
@@ -262,7 +262,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         }
     }
 
-    fn print_dependency(&mut self, dependency: &Definition<Loc, Str, TypeExpression<Loc, Str>>) {
+    fn print_dependency(&mut self, dependency: &Definition<Loc, Name, TypeExpression<Loc, Name>>) {
         self.write("(");
         self.write(&dependency.name);
         self.write(" ");
@@ -270,7 +270,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         self.write(")");
     }
 
-    fn print_enum_bracnh(&mut self, branch: &EnumBranch<Loc, Str>) {
+    fn print_enum_bracnh(&mut self, branch: &EnumBranch<Loc, Name>) {
         self.write_tabs(1);
 
         self.print_all_patterns(&branch.patterns);
@@ -286,7 +286,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         self.write("}");
     }
 
-    fn print_all_patterns(&mut self, patterns: &[Pattern<Loc, Str>]) {
+    fn print_all_patterns(&mut self, patterns: &[Pattern<Loc, Name>]) {
         let mut first = true;
         for p in patterns {
             if !first {
@@ -297,7 +297,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         }
     }
 
-    fn print_pattern(&mut self, pattern: &Pattern<Loc, Str>) {
+    fn print_pattern(&mut self, pattern: &Pattern<Loc, Name>) {
         match &pattern.node {
             PatternNode::ConstructorCall { name, fields } => {
                 self.write(name);
@@ -328,7 +328,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
 
     fn print_enum_constructor(
         &mut self,
-        constructor: &Definition<Loc, Str, ConstructorBody<Loc, Str>>,
+        constructor: &Definition<Loc, Name, ConstructorBody<Loc, Name>>,
     ) {
         self.write_tabs(2);
 
@@ -341,7 +341,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         self.write("}");
     }
 
-    fn print_constructor(&mut self, constructor: &ConstructorBody<Loc, Str>, offset: usize) {
+    fn print_constructor(&mut self, constructor: &ConstructorBody<Loc, Name>, offset: usize) {
         let mut first = true;
         for definition in constructor {
             if !first {
@@ -358,7 +358,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         }
     }
 
-    fn print_type_expression(&mut self, type_expression: &TypeExpression<Loc, Str>) {
+    fn print_type_expression(&mut self, type_expression: &TypeExpression<Loc, Name>) {
         match &type_expression.node {
             ExpressionNode::FunCall { fun, args } => {
                 self.write(fun);
@@ -377,7 +377,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         }
     }
 
-    fn print_expression(&mut self, expression: &Expression<Loc, Str>) {
+    fn print_expression(&mut self, expression: &Expression<Loc, Name>) {
         match &expression.node {
             ExpressionNode::ConstructorCall { name, fields } => {
                 self.write(name);
@@ -412,7 +412,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         }
     }
 
-    fn print_opcall(&mut self, operation: &OpCall<Str, Rec<Expression<Loc, Str>>>) {
+    fn print_opcall(&mut self, operation: &OpCall<Name, Rec<Expression<Loc, Name>>>) {
         match operation {
             OpCall::Literal(literal) => {
                 self.print_literal(literal);
@@ -460,7 +460,7 @@ impl<'a, W: Write> PrettyPrinter<'a, W> {
         }
     }
 
-    fn print_unary(&mut self, op: &UnaryOp<Str>, expr: &Rec<Expression<Loc, Str>>) {
+    fn print_unary(&mut self, op: &UnaryOp<Name>, expr: &Rec<Expression<Loc, Name>>) {
         match op {
             UnaryOp::Access(field) => {
                 self.print_expression(expr);

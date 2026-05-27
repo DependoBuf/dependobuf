@@ -3,7 +3,7 @@ use pretty::{BoxAllocator, BoxDoc, DocAllocator};
 use crate::ast::{Module, Type, TypeKind};
 use crate::kotlin_gen::target as kotlin;
 
-fn generate_class<'a>(t: &Type, alloc: &'a BoxAllocator) -> BoxDoc<'a> {
+fn generate_class<'a>(t: &'a Type, alloc: &'a BoxAllocator) -> BoxDoc<'a> {
     if t.kind == TypeKind::Message {
         assert!(t.constructors.len() == 1);
     }

@@ -46,7 +46,7 @@ impl<'a> Type {
         if !self.is_builtin {
             return None;
         }
-        match self.name.as_str() {
+        match self.name.as_ref() {
             "Bool" => Some("bool"),
             "Int" => Some("i64"),
             "UInt" => Some("u64"),
@@ -60,7 +60,7 @@ impl<'a> Type {
         let (type_module, mut type_namespace) = namespace
             .insert_object_preserve_name(objects::Module::from_object(
                 ObjectId(NodeId::id(self), Tag::String("module")),
-                self.name.to_lowercase().clone(),
+                self.name.to_string().to_lowercase(),
             ))
             .expect("couldn't generate type module");
 
@@ -110,7 +110,7 @@ impl<'a> Type {
 
         let (use_alias_name, _) = namespace.insert_object_auto_name(objects::Type::from_object(
             ObjectId(NodeId::id(self), Tag::String("type")),
-            self.name.clone(),
+            self.name.to_string(),
         ));
 
         alloc
@@ -274,7 +274,7 @@ mod type_dependencies_import {
             match expr {
                 TypeExpression::Type { call, dependencies } => {
                     let ty = call.upgrade().expect("missing type in expression");
-                    let name_deps = if Self::is_primitive_type(&ty.name) {
+                    let name_deps = if Self::is_primitive_type(ty.name.as_ref()) {
                         iter::empty().collect()
                     } else {
                         iter::once(NodeId::id_weak(call)).collect()
@@ -313,7 +313,7 @@ mod type_dependencies_import {
                                 call: type_weak, ..
                             } => {
                                 let ty = type_weak.upgrade().expect("missing type");
-                                if Self::is_primitive_type(&ty.name) {
+                                if Self::is_primitive_type(ty.name.as_ref()) {
                                     HashSet::new()
                                 } else {
                                     iter::once(NodeId::id_weak(type_weak)).collect()
@@ -390,7 +390,7 @@ mod enum_descriptor_mod {
                                                 descriptor_module_namepspace
                                                     .insert_object_preserve_name(
                                                         objects::Variable::from_name(
-                                                            constructor.name.clone(),
+                                                            constructor.name.to_string(),
                                                         ),
                                                     )
                                                     .expect("couldn't insert descriptor variable");
@@ -445,7 +445,9 @@ mod enum_descriptor_mod {
                 .expect("couldn't get generated descriptor module");
 
             let (descriptor_variable, _) = descriptor_cursor
-                .get_generated::<objects::Variable>(objects::ObjectId::from_name(self.name.clone()))
+                .get_generated::<objects::Variable>(objects::ObjectId::from_name(
+                    self.name.to_string(),
+                ))
                 .expect("couldn't get generated descriptor variable");
 
             Some(
@@ -472,7 +474,7 @@ mod type_declaration {
 
             let message_type_object = objects::Type::from_object(
                 ObjectId(NodeId::id(self), Tag::String("type")),
-                self.name.clone(),
+                self.name.to_string(),
             );
             let name = namespace.name_object(&message_type_object);
             let (_, _) = namespace.insert_object(message_type_object.clone(), &name);
@@ -591,7 +593,7 @@ mod type_declaration {
                                             NodeId::id_rc(constructor),
                                             Tag::String("enum_branch"),
                                         ),
-                                        constructor.name.clone(),
+                                        constructor.name.to_string(),
                                     ));
                                 branch_type
                                     .to_doc(ctx)
@@ -824,7 +826,7 @@ mod type_inherent_impl {
             let (constructor_func, mut constructor_namespace) =
                 namespace.insert_object_auto_name(objects::Function::from_object(
                     ObjectId(NodeId::id(self), Tag::None),
-                    self.name.to_lowercase(),
+                    self.name.to_string().to_lowercase(),
                 ));
             let namespace = &mut constructor_namespace;
 
@@ -1312,7 +1314,7 @@ mod type_inherent_impl {
 
                             let (_, mut variant_scope_namespace) = namespace
                                 .insert_object_auto_name(objects::Scope::new(
-                                    objects::ObjectId::from_name(constructor.name.clone()),
+                                    objects::ObjectId::from_name(constructor.name.to_string()),
                                 ));
 
                             body_type
@@ -1326,7 +1328,7 @@ mod type_inherent_impl {
                                     constructor.fields.iter().map(|field| {
                                         variant_scope_namespace
                                             .insert_object_auto_name(objects::Variable::from_name(
-                                                field.name.clone(),
+                                                field.name.to_string(),
                                             ))
                                             .0
                                             .to_doc(ctx)
@@ -1414,7 +1416,7 @@ mod type_inherent_impl {
                     constructor.fields.iter().map(|field| {
                         namespace
                             .insert_object_auto_name(objects::Variable::from_name(
-                                field.name.clone(),
+                                field.name.to_string(),
                             ))
                             .0
                             .to_doc(ctx)
@@ -1455,7 +1457,7 @@ mod type_inherent_impl {
                     let field_ty = field.ty.get_type();
                     let field_var = namespace
                         .get_generated::<objects::Variable>(objects::ObjectId::from_name(
-                            field.name.clone(),
+                            field.name.to_string(),
                         ))
                         .expect("couldn't get generated constructor field")
                         .0
@@ -1690,7 +1692,7 @@ mod type_inherent_impl {
                     let (implicit_var, _) =
                         namespace.insert_object_auto_name(objects::Variable::from_object(
                             ObjectId(NodeId::id_rc(&implicit), Tag::None),
-                            implicit.name.clone(),
+                            implicit.name.to_string(),
                         ));
 
                     alloc
@@ -1777,7 +1779,7 @@ mod type_inherent_impl {
                                         let (_, mut variant_scope_namespace) = namespace
                                             .insert_object_auto_name(objects::Scope::new(
                                                 objects::ObjectId::from_name(
-                                                    constructor.name.clone(),
+                                                    constructor.name.to_string(),
                                                 ),
                                             ));
 
@@ -1985,7 +1987,7 @@ mod type_inherent_impl {
                                         ast::NodeId::id_rc(field),
                                         objects::Tag::None,
                                     ),
-                                    field.name.clone(),
+                                    field.name.to_string(),
                                 ))
                                 .0
                                 .to_doc(ctx),
@@ -2089,7 +2091,7 @@ mod type_inherent_impl {
                         namespace
                             .insert_object_auto_name(objects::Variable::from_object(
                                 objects::ObjectId(ast::NodeId::id_rc(field), objects::Tag::None),
-                                field.name.clone(),
+                                field.name.to_string(),
                             ))
                             .0
                             .to_doc(ctx),
@@ -2480,7 +2482,7 @@ impl<'a> Symbol {
         let name = namespace
             .insert_object_auto_name(objects::Variable::from_object(
                 ObjectId(NodeId::id_rc(&self), Tag::None),
-                self.name.clone(),
+                self.name.to_string(),
             ))
             .0
             .to_doc(ctx);
@@ -2748,7 +2750,7 @@ impl<'a> ValueExpression {
                 let (variable, _) =
                     namespace.insert_object_auto_name(objects::Variable::from_object(
                         objects::ObjectId(ast::NodeId::id_rc(&symbol), objects::Tag::None),
-                        symbol.name.clone(),
+                        symbol.name.to_string(),
                     ));
                 (variable.to_doc(ctx), vec![])
             }

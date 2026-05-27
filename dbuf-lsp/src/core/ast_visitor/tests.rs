@@ -1,4 +1,3 @@
-use crate::core::default_ast::default_parsed_ast;
 use crate::core::workspace::ParsedAst;
 
 use super::Visit;
@@ -7,8 +6,21 @@ use super::Visitor;
 use super::safe_skip::safe_skip;
 use super::visit_ast;
 
+use dbuf_core::cst::convert_to_ast;
+use dbuf_core::cst::parse_to_cst;
+
 fn get_ast() -> ParsedAst {
-    default_parsed_ast()
+    const SAMPLE_TEXT: &str = include_str!("sample.dbuf");
+
+    let (Some(cst), err) = parse_to_cst(SAMPLE_TEXT) else {
+        panic!("cannot parse sample dbuf file");
+    };
+    assert!(
+        err.is_empty(),
+        "some errors during parsing sample dbuf file"
+    );
+
+    convert_to_ast(&cst)
 }
 
 #[derive(Clone)]

@@ -21,7 +21,7 @@ pub fn generate_module(module: &Module) -> String {
 fn generate_type(ty: &ast::Type) -> String {
     let mut s = String::new();
 
-    let module_name = ty.name.to_lowercase();
+    let module_name = ty.name.to_string().to_lowercase();
     let body_name = "Body".to_string();
 
     // namespace enum
@@ -63,7 +63,7 @@ fn fill_body_enum(s: &mut String, ty: &ast::Type, body_name: &str) {
 
     for constructor_rc in &ty.constructors {
         let constructor = constructor_rc.as_ref();
-        let case_name = constructor.name.to_lowercase();
+        let case_name = constructor.name.to_string().to_lowercase();
         write!(s, "        case {case_name}").expect("Writing into String is always ok");
         if !constructor.fields.is_empty() {
             s.push('(');
@@ -107,7 +107,7 @@ fn fill_main_struct(s: &mut String, ty: &ast::Type, body_name: &str) {
 fn fill_constructor_functions(s: &mut String, ty: &ast::Type, body_name: &str) {
     for constructor_rc in &ty.constructors {
         let constructor = constructor_rc.as_ref();
-        let func_name = constructor.name.to_lowercase();
+        let func_name = constructor.name.to_string().to_lowercase();
 
         // Parameters list (implicits first, then fields)
         write!(s, "        public static func {func_name}(")
@@ -207,7 +207,7 @@ fn type_expr_to_swift(expr: &ast::TypeExpression) -> String {
     match expr {
         ast::TypeExpression::Type { call, .. } => {
             let ty = call.upgrade().expect("dangling reference to type");
-            ty.name.clone()
+            ty.name.to_string()
         }
     }
 }
@@ -215,7 +215,7 @@ fn type_expr_to_swift(expr: &ast::TypeExpression) -> String {
 fn value_expr_to_swift(expr: &ast::ValueExpression) -> String {
     match expr {
         ast::ValueExpression::Variable(weak) => {
-            weak.upgrade().map_or("_".into(), |s| s.name.clone())
+            weak.upgrade().map_or("_".into(), |s| s.name.to_string())
         }
         ast::ValueExpression::Constructor {
             call,
@@ -224,7 +224,11 @@ fn value_expr_to_swift(expr: &ast::ValueExpression) -> String {
         } => {
             let ctor = call.upgrade().expect("dangling constructor");
             let ty_name = ctor.result_type.get_type().name.clone();
-            let mut res = format!("{}.{name}(", ty_name, name = ctor.name.to_lowercase());
+            let mut res = format!(
+                "{}.{name}(",
+                ty_name,
+                name = ctor.name.to_string().to_lowercase()
+            );
             let mut first = true;
             for (sym_idx, arg) in arguments.iter().enumerate() {
                 if first {

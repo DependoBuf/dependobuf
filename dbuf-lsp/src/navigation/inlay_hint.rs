@@ -5,7 +5,7 @@ use crate::core::ast_visitor::VisitResult::*;
 use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
 use crate::core::ast_visitor::*;
 use crate::core::workspace::{
-    ElaboratedAst, ElaboratedHelper, File, LocNameHelper, LocationHelper, PositionHelper, Str,
+    ElaboratedAst, ElaboratedHelper, File, LocNameHelper, LocationHelper, Name, PositionHelper,
 };
 
 use dbuf_core::ast::elaborated::TypeExpression;
@@ -36,7 +36,7 @@ impl InlayVisitor<'_> {
         self.ans
     }
 
-    fn get_type_of_field(&self, name: &Str) -> String {
+    fn get_type_of_field(&self, name: &Name) -> String {
         let constructor = self.scope.get_constructor_expr().expect("setted");
         let type_name = self
             .elaborated
@@ -44,7 +44,7 @@ impl InlayVisitor<'_> {
             .expect("valid ast")
             .fields
             .iter()
-            .find(|f| f.0 == name.as_ref())
+            .find(|f| f.0 == name.content)
             .map(
                 |(
                     _,
@@ -55,10 +55,10 @@ impl InlayVisitor<'_> {
                 )| name,
             )
             .expect("valid ast");
-        type_name.to_owned()
+        type_name.to_string()
     }
 
-    fn save_hint(&mut self, name: &Str) {
+    fn save_hint(&mut self, name: &Name) {
         assert!(self.scope.get_constructor_expr().is_some());
 
         let type_name = self.get_type_of_field(name);

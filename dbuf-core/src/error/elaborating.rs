@@ -48,12 +48,20 @@ pub struct ElaboratingStage {
 
 impl ErrorStage for ElaboratingStage {
     fn location(&self) -> crate::location::Location<crate::location::Offset> {
-        unreachable!()
+        unimplemented!("Elaborating stage location stores no location")
     }
 }
 
 impl From<super::Error<ElaboratingStage>> for ElaboratingStage {
     fn from(value: super::Error<ElaboratingStage>) -> Self {
         value.stage
+    }
+}
+
+impl From<Error> for super::ElaboratingError {
+    fn from(value: Error) -> Self {
+        Self {
+            stage: ElaboratingStage { error: value },
+        }
     }
 }

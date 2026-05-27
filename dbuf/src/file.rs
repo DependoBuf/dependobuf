@@ -9,12 +9,14 @@ use dbuf_core::ast::elaborated as e;
 use dbuf_core::ast::parsed as p;
 use dbuf_core::cst as c;
 
+use dbuf_core::elaboration::elaborate;
+
 use crate::file_content::FileContent;
 use crate::reporter::Reporter;
 
 type Cst = c::Tree;
 type Ast = p::Module<Location<Offset>, LocatedName<InternedString, Offset>>;
-type East = e::Module<String>;
+type East = e::Module<InternedString>;
 
 /// Structure representing one file.
 pub struct File<'a> {
@@ -77,10 +79,17 @@ impl<'a> File<'a> {
     }
 
     /// Builds east on file.
-    pub fn process_east(&mut self, _reporter: &mut Reporter) {
-        if let Some(_ast) = self.get_ast() {
-            eprintln!("UNIMPLEMENTED: convertation from parsed module to elaborated");
-            // self.east = (...).into();
+    pub fn process_east(&mut self, reporter: &mut Reporter) {
+        if let Some(ast) = self.get_ast() {
+            self.east = match elaborate(ast) {
+                Ok(east) => {
+                    // DELME: eprintln!("{:#?}", east);
+                    east.into()
+                }
+                Err(err) => {
+                    return reporter.report(&dbuf_core::error::GeneralError::Elaborating(err));
+                }
+            };
         }
     }
 }

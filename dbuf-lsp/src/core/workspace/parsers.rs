@@ -7,11 +7,11 @@ use super::Cst;
 use super::ElaboratedAst;
 use super::ParsedAst;
 
-use crate::core::default_ast::default_elaborated_ast;
 use crate::core::errors::Error;
 
 use dbuf_core::cst::convert_to_ast;
 use dbuf_core::cst::parse_to_cst;
+use dbuf_core::elaboration::elaborate;
 
 /// Builds `CST` based on `text`.
 pub fn get_cst(text: &str) -> (Option<Cst>, Vec<Error>) {
@@ -26,8 +26,9 @@ pub fn get_parsed(cst: &Cst) -> (Option<ParsedAst>, Vec<Error>) {
 }
 
 /// Builds `ElaboratedAst` based on `ParsedAst`.
-pub fn get_elaborated(_past: &ParsedAst) -> (Option<ElaboratedAst>, Vec<Error>) {
-    let res = default_elaborated_ast();
-    // (None, vec![])
-    (Some(res), vec![])
+pub fn get_elaborated(past: &ParsedAst) -> (Option<ElaboratedAst>, Vec<Error>) {
+    match elaborate(past) {
+        Ok(east) => (Some(east), vec![]),
+        Err(err) => (None, vec![err.into()]),
+    }
 }

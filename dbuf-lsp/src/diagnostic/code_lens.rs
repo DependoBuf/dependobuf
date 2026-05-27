@@ -2,7 +2,7 @@ use tower_lsp::lsp_types::*;
 
 use crate::core::ast_visitor::*;
 use crate::core::navigator::{Navigator, Symbol};
-use crate::core::workspace::{File, Loc, LocNameHelper, LocationHelper, Str};
+use crate::core::workspace::{File, Loc, LocNameHelper, LocationHelper, Name};
 
 /// Returns all code lens of file.
 pub fn provide_code_lens(file: &File) -> Option<Vec<CodeLens>> {
@@ -24,7 +24,7 @@ impl CodeLensVisitor<'_> {
         })
     }
 
-    fn calc_reference_count(&self, type_name: &Str) -> u32 {
+    fn calc_reference_count(&self, type_name: &Name) -> u32 {
         let symbol = Symbol::Type {
             type_name: type_name.to_string(),
         };
@@ -32,7 +32,7 @@ impl CodeLensVisitor<'_> {
             .expect("reference count is not huge")
     }
 
-    fn push_type(&mut self, type_name: &Str, _: &Loc) {
+    fn push_type(&mut self, type_name: &Name, _: &Loc) {
         let ref_count = self.calc_reference_count(type_name);
         let title = format!("{ref_count} references");
         let command = Command {

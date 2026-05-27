@@ -1,12 +1,13 @@
 use std::io;
 
+use crate::ast::Str;
 use crate::{ast, format::BoxAllocator, generate::GlobalContext, rust_gen};
 
 /// # Errors
 ///
 /// TODO: explain when `Err` is returned.
 pub fn generate_module<Writer: io::Write>(
-    module: ast::elaborated::Module<String>,
+    module: &ast::elaborated::Module<Str>,
     w: &mut Writer,
 ) -> io::Result<()> {
     let allocator = BoxAllocator;

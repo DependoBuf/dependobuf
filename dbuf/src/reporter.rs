@@ -279,7 +279,11 @@ impl Reportable<()> for ParsingError {
 }
 
 impl Reportable<()> for ElaboratingError {
-    fn report<'a>(&self, _meta: &Metadata<'a>, _extra: &()) -> Report<'a, (&'a str, Range<usize>)> {
-        unimplemented!()
+    fn report<'a>(&self, meta: &Metadata<'a>, _extra: &()) -> Report<'a, (&'a str, Range<usize>)> {
+        let kind = ReportKind::Error;
+        let text = self.error.to_string();
+        let loc = (meta.content.get_name(), 0..1);
+
+        Report::build(kind, loc).with_message(text).finish()
     }
 }

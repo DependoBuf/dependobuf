@@ -31,8 +31,11 @@ pub use file::*;
 pub use location::*;
 pub use string::*;
 
+/// String type
+pub type Str = InternedString;
+
 /// String for `ParsedAst`
-pub type Str = LocatedName<InternedString, Offset>;
+pub type Name = LocatedName<Str, Offset>;
 /// Location for `ParsedAst`
 pub type Loc = Location;
 /// Alias for `cst::Tree`
