@@ -29,14 +29,14 @@ const ALL_HINTS: &[ExpectedHint] = &[
     ExpectedHint::new(22, 18, "Int"),
     ExpectedHint::new(22, 25, "Int"),
     ExpectedHint::new(22, 32, "String"),
-    ExpectedHint::new(47, 33, "M1"),
-    ExpectedHint::new(48, 35, "M1"),
-    ExpectedHint::new(48, 42, "Int"),
-    ExpectedHint::new(48, 49, "Int"),
-    ExpectedHint::new(48, 56, "String"),
-    ExpectedHint::new(53, 10, "Int"),
-    ExpectedHint::new(53, 21, "Int"),
-    ExpectedHint::new(53, 28, "String"),
+    ExpectedHint::new(46, 33, "M1"),
+    ExpectedHint::new(47, 35, "M1"),
+    ExpectedHint::new(47, 42, "Int"),
+    ExpectedHint::new(47, 49, "Int"),
+    ExpectedHint::new(47, 56, "String"),
+    ExpectedHint::new(52, 10, "Int"),
+    ExpectedHint::new(52, 21, "Int"),
+    ExpectedHint::new(52, 28, "String"),
 ];
 
 fn test_range(r: Range) {

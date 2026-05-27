@@ -1,15 +1,21 @@
 [package]
-name = "dbuf-gen"
 edition.workspace = true
+name = "dbuf-gen"
 version.workspace = true
+
+[features]
+rust = []
+kotlin = []
+swift = []
+all = ["rust", "kotlin", "swift"]
 
 [dependencies]
 dbuf-core.workspace = true
 pretty.workspace = true
 
 [dev-dependencies]
-pretty_assertions.workspace = true
 dbuf-rust-runtime.workspace = true
+pretty_assertions.workspace = true
 
 [lints]
 workspace = true

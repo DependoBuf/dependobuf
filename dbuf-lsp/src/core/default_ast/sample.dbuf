@@ -35,19 +35,18 @@ enum Simple (d1 Int) {
         }
     }
     * => {
-        Wild {
-        }
+        Wild {}
     }
 }
 
-message SimpleDepended (d1 Simple 0) {
-}
+message SimpleDepended (d1 Simple 0) {}
 
 message EnumConstructed {
     f1 M1 0 "kek";
-    f2 SimpleDepended Aliased{f1: f1};
-    f3 SimpleDepended Literaled{f1: M1{f1: 0, f2: 1, f3: "kek"}};
-    f4 SimpleDepended Wild{};
+    f2 Simple 0;
+    f3 SimpleDepended Aliased{f1: f1};
+    f4 SimpleDepended Literaled{f1: M1{f1: 0, f2: 1, f3: "kek"}};
+    f5 SimpleDepended Wild{};
 }
 
 enum PatternMatch (d1 M1 0 "kek") {

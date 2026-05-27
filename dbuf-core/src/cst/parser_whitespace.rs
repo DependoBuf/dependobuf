@@ -52,7 +52,11 @@ impl WhiteSpaceConsumption {
 
         let new_line = just(Token::NewLine).map_token().labelled(NewLine);
 
-        let error = just(Token::Err).map_token().labelled(Error);
+        let error = select! {
+            Token::Err(content) => Token::Err(content)
+        }
+        .map_token()
+        .labelled(Error);
 
         let mut ws = any().filter(|_| false).map(|_| unreachable!()).boxed();
         if self.consume_space {

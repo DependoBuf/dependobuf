@@ -85,8 +85,9 @@ pub fn parse_to_cst(text: &str) -> (Option<Tree>, Vec<Error<ParsingStage>>) {
         let token_iter = lexer.map(|(tok, loc)| match tok {
             Ok(tok) => (tok, loc),
             Err(err) => {
+                let data = err.data.content.clone();
                 errors.push(err.into());
-                (Token::Err, loc)
+                (Token::Err(data), loc)
             }
         });
 

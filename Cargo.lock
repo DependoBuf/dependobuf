@@ -314,8 +314,10 @@ dependencies = [
  "ariadne",
  "clap",
  "dbuf-core",
+ "dbuf-format",
  "dbuf-gen",
  "dbuf-lsp",
+ "thiserror",
 ]
 
 [[package]]
@@ -335,6 +337,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "dbuf-format"
+version = "0.1.0"
+dependencies = [
+ "dbuf-core",
+ "pretty",
+]
+
+[[package]]
 name = "dbuf-gen"
 version = "0.1.0"
 dependencies = [
@@ -350,6 +360,7 @@ version = "0.1.0"
 dependencies = [
  "dashmap 6.1.0",
  "dbuf-core",
+ "dbuf-format",
  "pretty",
  "pretty_assertions",
  "strum",
