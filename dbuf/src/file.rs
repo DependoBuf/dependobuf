@@ -82,10 +82,7 @@ impl<'a> File<'a> {
     pub fn process_east(&mut self, reporter: &mut Reporter) {
         if let Some(ast) = self.get_ast() {
             self.east = match elaborate(ast) {
-                Ok(east) => {
-                    // DELME: eprintln!("{:#?}", east);
-                    east.into()
-                }
+                Ok(east) => east.into(),
                 Err(err) => {
                     return reporter.report(&dbuf_core::error::GeneralError::Elaborating(err));
                 }

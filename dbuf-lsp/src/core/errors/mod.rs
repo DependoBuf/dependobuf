@@ -21,7 +21,7 @@ pub use rename_errors::RenameError;
 pub use dbuf_core::error::ElaboratingError;
 pub use dbuf_core::error::ParsingError;
 
-#[derive(EnumDiscriminants)]
+#[derive(EnumDiscriminants, Debug)]
 pub enum Error {
     Format(FormatError),
     Rename(RenameError),
