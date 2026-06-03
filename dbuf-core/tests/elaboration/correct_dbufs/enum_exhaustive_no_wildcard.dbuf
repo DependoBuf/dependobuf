@@ -1,0 +1,26 @@
+enum Color {
+    Red {}
+    Green {}
+    Blue {}
+}
+
+enum A (c Color) {
+    Red{} => {
+        IsRed {}
+    }
+    Green{} => {
+        IsGreen {}
+    }
+    Blue{} => {
+        IsBlue {}
+    }
+}
+
+enum B (b Bool) {
+    true => {
+        IsTrue {}
+    }
+    false => {
+        IsFalse {}
+    }
+}

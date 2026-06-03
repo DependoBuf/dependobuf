@@ -1,0 +1,9 @@
+message Box {
+    val Int;
+}
+
+message IntDep (n Int) {}
+
+message Broken {
+    d IntDep Box{val: 5};
+}

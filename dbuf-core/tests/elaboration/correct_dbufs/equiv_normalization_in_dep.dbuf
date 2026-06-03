@@ -1,0 +1,8 @@
+message IntDep (n Int) {}
+
+message WithXY (x Int) (y Int) (d IntDep (x + y)) {}
+
+message A (x Int) (y Int) {
+    d IntDep (y + x);
+    w WithXY x y d;
+}

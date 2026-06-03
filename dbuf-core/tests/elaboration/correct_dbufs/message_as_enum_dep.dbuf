@@ -1,0 +1,30 @@
+message Tag {
+    active Bool;
+}
+
+enum Tagged (t Tag) {
+    Tag{active: true} => {
+        Active {}
+    }
+    * => {
+        Inactive {}
+    }
+}
+
+message Coord {
+    x Int;
+    y Int;
+}
+
+message IntDep (n Int) {}
+
+enum Quadrant (c Coord) {
+    Coord{x: 0, y: 0} => {
+        Origin {}
+    }
+    * => {
+        Elsewhere {
+            xi IntDep c.x;
+        }
+    }
+}

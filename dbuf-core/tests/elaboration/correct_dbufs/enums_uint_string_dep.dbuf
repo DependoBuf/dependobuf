@@ -1,0 +1,21 @@
+enum A (n UInt) {
+    0u => {
+        Zero {}
+    }
+    * => {
+        Pos {
+            v UInt;
+        }
+    }
+}
+
+enum B (s String) {
+    "x" => {
+        MatchX {}
+    }
+    * => {
+        Other {
+            t String;
+        }
+    }
+}
