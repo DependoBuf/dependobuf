@@ -6,6 +6,7 @@ version.workspace = true
 [dependencies]
 num-traits.workspace = true
 internment.workspace = true
+indexmap.workspace = true
 
 chumsky.workspace = true
 logos.workspace = true

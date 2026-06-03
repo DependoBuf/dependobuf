@@ -51,10 +51,7 @@ impl ElaboratedHelper for ElaboratedAst {
     }
 
     fn get_type(&self, name: &str) -> Option<&Type<Str>> {
-        self.types
-            .iter()
-            .find(|(type_name, _)| type_name == name)
-            .map(|(_, type_definition)| type_definition)
+        self.types.get(name)
     }
     fn get_type_constructor(&self, ty: &Type<Str>, ctr: &str) -> Option<&Constructor<Str>> {
         match &ty.constructor_names {
@@ -70,7 +67,7 @@ impl ElaboratedHelper for ElaboratedAst {
     }
 
     fn has_type(&self, name: &str) -> bool {
-        self.types.iter().any(|t| t.0 == name)
+        self.types.contains_key(name)
     }
 
     fn has_constructor(&self, name: &str) -> bool {

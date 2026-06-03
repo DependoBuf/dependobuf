@@ -4,199 +4,166 @@ expression: elaborated
 ---
 Ok(
     Module {
-        types: [
-            (
-                InternedString {
-                    inner: "BoolDep",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "b_dep",
+        types: {
+            InternedString {
+                inner: "BoolDep",
+            }: Type {
+                dependencies: [
+                    (
+                        InternedString {
+                            inner: "b",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Bool",
                             },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Bool",
-                                },
-                                dependencies: [],
+                            dependencies: [],
+                        },
+                    ),
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "BoolDep",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "IntDep",
+            }: Type {
+                dependencies: [
+                    (
+                        InternedString {
+                            inner: "n",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Int",
                             },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "BoolDep",
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "IntDep",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "n_dep",
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "IntDep",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "StringDep",
+            }: Type {
+                dependencies: [
+                    (
+                        InternedString {
+                            inner: "s",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "String",
                             },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Int",
-                                },
-                                dependencies: [],
+                            dependencies: [],
+                        },
+                    ),
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "StringDep",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "UIntDep",
+            }: Type {
+                dependencies: [
+                    (
+                        InternedString {
+                            inner: "n",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "UInt",
                             },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "IntDep",
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "StringDep",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "s_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "String",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "StringDep",
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "UIntDep",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "n_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "UInt",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "UIntDep",
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "LiteralBoolFalse",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "LiteralBoolFalse",
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "LiteralBoolTrue",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "LiteralBoolTrue",
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "LiteralInt",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "LiteralInt",
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "UIntAsInt",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "UIntAsInt",
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "LiteralString",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "LiteralString",
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "IntAsUInt",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "IntAsUInt",
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "LiteralUInt",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "LiteralUInt",
-                        },
-                    ),
-                },
-            ),
-        ],
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "UIntDep",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "LiteralBoolFalse",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "LiteralBoolFalse",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "LiteralBoolTrue",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "LiteralBoolTrue",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "LiteralInt",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "LiteralInt",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "UIntAsInt",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "UIntAsInt",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "LiteralString",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "LiteralString",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "IntAsUInt",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "IntAsUInt",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "LiteralUInt",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "LiteralUInt",
+                    },
+                ),
+            },
+        },
         constructors: {
             InternedString {
                 inner: "BoolDep",

@@ -4,70 +4,58 @@ expression: elaborated
 ---
 Ok(
     Module {
-        types: [
-            (
-                InternedString {
-                    inner: "Color",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfEnum(
-                        {
-                            InternedString {
-                                inner: "Blue",
-                            },
-                            InternedString {
-                                inner: "Green",
-                            },
-                            InternedString {
-                                inner: "Red",
-                            },
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "Unit",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfEnum(
-                        {
-                            InternedString {
-                                inner: "Only",
-                            },
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "HasColor",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfMessage(
+        types: {
+            InternedString {
+                inner: "Color",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfEnum(
+                    {
                         InternedString {
-                            inner: "HasColor",
+                            inner: "Blue",
                         },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "UseUnit",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfMessage(
                         InternedString {
-                            inner: "UseUnit",
+                            inner: "Green",
                         },
-                    ),
-                },
-            ),
-        ],
+                        InternedString {
+                            inner: "Red",
+                        },
+                    },
+                ),
+            },
+            InternedString {
+                inner: "Unit",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfEnum(
+                    {
+                        InternedString {
+                            inner: "Only",
+                        },
+                    },
+                ),
+            },
+            InternedString {
+                inner: "HasColor",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "HasColor",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "UseUnit",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "UseUnit",
+                    },
+                ),
+            },
+        },
         constructors: {
             InternedString {
                 inner: "Blue",

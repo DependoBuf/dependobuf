@@ -53,6 +53,15 @@ where
         }
     }
 
+    pub fn try_insert_local(&mut self, key: Key, value: Value) -> bool {
+        if let hash_map::Entry::Vacant(e) = self.map.entry(key) {
+            e.insert(value);
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn flat_iter(&'a self) -> FlatIter<'a, Key, Value> {
         FlatIter {
             iter: self.map.iter(),

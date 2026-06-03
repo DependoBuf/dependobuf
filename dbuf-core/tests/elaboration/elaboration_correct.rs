@@ -110,6 +110,66 @@ fn test_string_ops_extended() {
 }
 
 #[test]
+fn test_parametric_enum_as_dep() {
+    insta::glob!("correct_dbufs/parametric_enum_as_dep.dbuf", test_file);
+}
+
+#[test]
+fn test_enums_uint_string_dep() {
+    insta::glob!("correct_dbufs/enums_uint_string_dep.dbuf", test_file);
+}
+
+#[test]
+fn test_enum_exhaustive_no_wildcard() {
+    insta::glob!("correct_dbufs/enum_exhaustive_no_wildcard.dbuf", test_file);
+}
+
+#[test]
+fn test_bool_tag() {
+    insta::glob!("correct_dbufs/bool_tag.dbuf", test_file);
+}
+
+#[test]
+fn test_chained_field_access() {
+    insta::glob!("correct_dbufs/chained_field_access.dbuf", test_file);
+}
+
+#[test]
+fn test_equiv_normalization_in_dep() {
+    insta::glob!("correct_dbufs/equiv_normalization_in_dep.dbuf", test_file);
+}
+
+#[test]
+fn test_enum_dep_on_parametric_enum() {
+    insta::glob!("correct_dbufs/enum_dep_on_parametric_enum.dbuf", test_file);
+}
+
+#[test]
+fn test_pattern_var_multi_field() {
+    insta::glob!("correct_dbufs/pattern_var_multi_field.dbuf", test_file);
+}
+
+#[test]
+fn test_dot_access_ctor_args() {
+    insta::glob!("correct_dbufs/dot_access_ctor_args.dbuf", test_file);
+}
+
+#[test]
+fn test_int_literal_patterns() {
+    insta::glob!("correct_dbufs/int_literal_patterns.dbuf", test_file);
+}
+
+#[test]
+fn test_message_as_enum_dep() {
+    insta::glob!("correct_dbufs/message_as_enum_dep.dbuf", test_file);
+}
+
+#[test]
+fn test_message_constructor_as_dep() {
+    insta::glob!("correct_dbufs/message_constructor_as_dep.dbuf", test_file);
+}
+
+#[test]
 fn test_correct_elaboration() {
     insta::glob!("correct_dbufs/*.dbuf", test_file);
 }

@@ -97,6 +97,7 @@ pub fn make_binary<Str: Clone>(
 pub fn resolve_field_access<Str: Debug + Clone + Hash + Eq + Ord + From<BuiltinType> + Display>(
     module_ctx: &e::Module<Str>,
     operand_type: &e::TypeExpression<Str>,
+    operand_value: &e::ValueExpression<Str>,
     field: &Str,
 ) -> Result<(e::Constructor<Str>, usize, e::TypeExpression<Str>), Error> {
     let e::TypeExpression::TypeExpression {
@@ -104,10 +105,9 @@ pub fn resolve_field_access<Str: Debug + Clone + Hash + Eq + Ord + From<BuiltinT
         dependencies: type_deps,
     } = operand_type;
 
-    let (_, ty) = module_ctx
+    let ty = module_ctx
         .types
-        .iter()
-        .find(|(n, _)| n == type_name)
+        .get(type_name)
         .ok_or_else(|| UnknownType(type_name.to_string()))?;
 
     let ctor_name = match &ty.constructor_names {
@@ -127,10 +127,30 @@ pub fn resolve_field_access<Str: Debug + Clone + Hash + Eq + Ord + From<BuiltinT
         .enumerate()
         .find(|(_, (n, _))| n == field)
         .ok_or_else(|| UnknownField(field.to_string()))?;
-
-    let concrete_field_type = ctor.implicits.iter().zip(type_deps.iter()).fold(
+    let after_implicits = ctor.implicits.iter().zip(type_deps.iter()).fold(
         field_type.clone(),
         |ty, ((implicit_name, _), concrete_val)| subst::subst_type(ty, implicit_name, concrete_val),
+    );
+
+    let (concrete_field_type, _) = ctor.fields[..field_idx].iter().fold(
+        (
+            after_implicits,
+            Vec::<(Str, e::ValueExpression<Str>)>::new(),
+        ),
+        |(ty, mut prev_subs), (field_name, raw_field_type)| {
+            let concrete_prev_type =
+                subst::apply_bindings_to_type(raw_field_type.clone(), &prev_subs);
+            let field_access = e::ValueExpression::OpCall {
+                op_call: o::OpCall::Unary(
+                    o::UnaryOp::Access(field_name.clone()),
+                    e::Rec::new(operand_value.clone()),
+                ),
+                result_type: concrete_prev_type,
+            };
+            let new_ty = subst::subst_type(ty, field_name, &field_access);
+            prev_subs.push((field_name.clone(), field_access));
+            (new_ty, prev_subs)
+        },
     );
 
     Ok((ctor, field_idx, concrete_field_type))

@@ -4,86 +4,77 @@ expression: elaborated
 ---
 Ok(
     Module {
-        types: [
-            (
-                InternedString {
-                    inner: "BoolTag",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "b_dep",
+        types: {
+            InternedString {
+                inner: "BoolTag",
+            }: Type {
+                dependencies: [
+                    (
+                        InternedString {
+                            inner: "b",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Bool",
                             },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Bool",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfEnum(
-                        {
-                            InternedString {
-                                inner: "Anything",
-                            },
-                            InternedString {
-                                inner: "IsTrue",
-                            },
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "Nat",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfEnum(
-                        {
-                            InternedString {
-                                inner: "Suc",
+                ],
+                constructor_names: OfEnum(
+                    {
+                        InternedString {
+                            inner: "Anything",
+                        },
+                        InternedString {
+                            inner: "IsTrue",
+                        },
+                    },
+                ),
+            },
+            InternedString {
+                inner: "Nat",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfEnum(
+                    {
+                        InternedString {
+                            inner: "Suc",
+                        },
+                        InternedString {
+                            inner: "Zero",
+                        },
+                    },
+                ),
+            },
+            InternedString {
+                inner: "NatTag",
+            }: Type {
+                dependencies: [
+                    (
+                        InternedString {
+                            inner: "n",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Nat",
                             },
-                            InternedString {
-                                inner: "Zero",
-                            },
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "NatTag",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "n_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Nat",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfEnum(
-                        {
-                            InternedString {
-                                inner: "AnyNat",
-                            },
-                            InternedString {
-                                inner: "HasPred",
-                            },
+                ],
+                constructor_names: OfEnum(
+                    {
+                        InternedString {
+                            inner: "AnyNat",
                         },
-                    ),
-                },
-            ),
-        ],
+                        InternedString {
+                            inner: "HasPred",
+                        },
+                    },
+                ),
+            },
+        },
         constructors: {
             InternedString {
                 inner: "AnyNat",

@@ -4,123 +4,105 @@ expression: elaborated
 ---
 Ok(
     Module {
-        types: [
-            (
-                InternedString {
-                    inner: "Color",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfEnum(
-                        {
-                            InternedString {
-                                inner: "Blue",
-                            },
-                            InternedString {
-                                inner: "Green",
-                            },
-                            InternedString {
-                                inner: "Red",
-                            },
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "Nat",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfEnum(
-                        {
-                            InternedString {
-                                inner: "Suc",
-                            },
-                            InternedString {
-                                inner: "Zero",
-                            },
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "ColorDep",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "c_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Color",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
+        types: {
+            InternedString {
+                inner: "Color",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfEnum(
+                    {
                         InternedString {
-                            inner: "ColorDep",
+                            inner: "Blue",
                         },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "NatDep",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "n_dep",
+                        InternedString {
+                            inner: "Green",
+                        },
+                        InternedString {
+                            inner: "Red",
+                        },
+                    },
+                ),
+            },
+            InternedString {
+                inner: "Nat",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfEnum(
+                    {
+                        InternedString {
+                            inner: "Suc",
+                        },
+                        InternedString {
+                            inner: "Zero",
+                        },
+                    },
+                ),
+            },
+            InternedString {
+                inner: "ColorDep",
+            }: Type {
+                dependencies: [
+                    (
+                        InternedString {
+                            inner: "c",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Color",
                             },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Nat",
-                                },
-                                dependencies: [],
+                            dependencies: [],
+                        },
+                    ),
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "ColorDep",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "NatDep",
+            }: Type {
+                dependencies: [
+                    (
+                        InternedString {
+                            inner: "n",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Nat",
                             },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "NatDep",
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "UseConstructedColor",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "UseConstructedColor",
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "UseConstructedNat",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "UseConstructedNat",
-                        },
-                    ),
-                },
-            ),
-        ],
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "NatDep",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "UseConstructedColor",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "UseConstructedColor",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "UseConstructedNat",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "UseConstructedNat",
+                    },
+                ),
+            },
+        },
         constructors: {
             InternedString {
                 inner: "Blue",

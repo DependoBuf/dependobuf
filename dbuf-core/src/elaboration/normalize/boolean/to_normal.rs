@@ -59,6 +59,11 @@ fn poly_or(mut lhs: Poly, rhs: Poly) -> Poly {
     if lhs.contains(&Mono::new()) {
         return poly_true();
     }
+
+    if poly_not(lhs.clone()).is_empty() {
+        return poly_true();
+    }
+
     lhs
 }
 

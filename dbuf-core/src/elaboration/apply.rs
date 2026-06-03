@@ -2,6 +2,7 @@ use crate::ast::elaborated as e;
 use crate::elaboration::builtins::BuiltinType;
 use crate::elaboration::{subst, type_of, unify};
 use crate::error::elaborating::Error::{self, ArityMismatch};
+use std::hash::Hash;
 
 /// # Errors
 pub fn application<Str>(
@@ -10,7 +11,7 @@ pub fn application<Str>(
     module: &e::Module<Str>,
 ) -> Result<e::Constructor<Str>, Error>
 where
-    Str: Clone + Eq + Ord + From<BuiltinType> + ToString,
+    Str: Clone + Eq + Ord + From<BuiltinType> + ToString + Hash,
 {
     let e::Constructor {
         implicits,

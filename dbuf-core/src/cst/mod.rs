@@ -52,6 +52,7 @@ pub enum TreeKind {
 
     ConstructedValue,
     ConstructedValueField,
+    ConstructedValueChain,
 
     ExprParen,
     ExprLiteral,

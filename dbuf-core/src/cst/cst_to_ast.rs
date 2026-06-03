@@ -173,7 +173,8 @@ fn convert_definition(
 fn is_expression(expression: &Tree) -> bool {
     matches!(
         expression.kind,
-        TreeKind::ConstructedValue
+        TreeKind::ConstructedValueChain
+            | TreeKind::ConstructedValue
             | TreeKind::ExprParen
             | TreeKind::ExprLiteral
             | TreeKind::ExprIdentifier
@@ -183,10 +184,39 @@ fn is_expression(expression: &Tree) -> bool {
     )
 }
 
+#[allow(clippy::too_many_lines)]
 fn convert_expression(expression: &Tree) -> Expression<LocationAST, NameAST> {
     assert!(is_expression(expression));
 
     let node = match expression.kind {
+        TreeKind::ConstructedValueChain => {
+            let mut child_iter = expression.children.iter();
+            let cv_tree = child_iter
+                .next()
+                .and_then(|c| {
+                    if let Child::Tree(t) = c {
+                        Some(t)
+                    } else {
+                        None
+                    }
+                })
+                .expect("ConstructedValue in ConstructedValueChain");
+            let mut ans = convert_constructed_value(cv_tree);
+            let start = expression.location.start;
+            for child in child_iter {
+                if let Some(name) = to_name(child, LC) {
+                    let length = (name.end() - start).expect("correct location");
+                    ans = Expression {
+                        loc: LocationAST { start, length },
+                        node: ExpressionNode::OpCall(OpCall::Unary(
+                            UnaryOp::Access(name),
+                            ans.into(),
+                        )),
+                    };
+                }
+            }
+            return ans;
+        }
         TreeKind::ConstructedValue => {
             return convert_constructed_value(expression);
         }

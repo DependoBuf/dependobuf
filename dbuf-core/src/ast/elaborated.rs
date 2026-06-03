@@ -1,17 +1,19 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::hash::Hash;
 
 use super::operators::OpCall;
+use indexmap::IndexMap;
 
 /// An elaborated DependoBuf module.
 #[derive(Debug, Clone)]
 pub struct Module<Str> {
-    /// List of elaborated types in topologically sorted order.
-    pub types: Vec<(Str, Type<Str>)>,
+    /// Elaborated types in topologically sorted order.
+    pub types: IndexMap<Str, Type<Str>>,
     /// Collection of elaborated constructors for types.
     pub constructors: BTreeMap<Str, Constructor<Str>>,
 }
 
-impl<Str: Ord + Clone> Module<Str> {
+impl<Str: Ord + Clone + Hash + Eq> Module<Str> {
     #[must_use]
     pub fn merge(&self, b: Self) -> Self {
         let mut types = self.types.clone();
