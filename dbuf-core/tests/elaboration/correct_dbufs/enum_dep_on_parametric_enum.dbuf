@@ -1,0 +1,32 @@
+enum Nat {
+    Zero {}
+    Suc {
+        pred Nat;
+    }
+}
+
+enum Vec (n Nat) {
+    Zero{} => {
+        Nil {}
+    }
+    Suc{pred: p} => {
+        Cons {
+            head Int;
+            tail Vec p;
+        }
+    }
+}
+
+enum A (n Nat) (v Vec n) {
+    Zero{}, Nil{} => {
+        E {}
+    }
+    Suc{pred: p}, Cons{head: h, tail: t} => {
+        F {
+            rest A p t;
+        }
+    }
+    *, * => {
+        G {}
+    }
+}

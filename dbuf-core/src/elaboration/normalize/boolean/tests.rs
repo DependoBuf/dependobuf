@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::normalize;
+use super::{Poly, normalize};
 use crate::ast::elaborated::{TypeExpression, ValueExpression};
 use crate::ast::operators::{BinaryOp, Literal, OpCall, UnaryOp};
 use crate::elaboration::builtins::{BuiltinType, get_builtin};
@@ -99,21 +99,133 @@ fn double_negation() {
 
 #[test]
 fn demorgan_and() {
-    let lhs = normalize(&not(and(var("x"), var("y"))));
-    let rhs = normalize(&or(not(var("x")), not(var("y"))));
-    assert_eq!(lhs.poly.len(), rhs.poly.len());
+    assert_bool_eq(
+        not(and(var("x"), var("y"))),
+        or(not(var("x")), not(var("y"))),
+    );
 }
 
 #[test]
 fn demorgan_or() {
-    let lhs = normalize(&not(or(var("x"), var("y"))));
-    let rhs = normalize(&and(not(var("x")), not(var("y"))));
-    assert_eq!(lhs.poly.len(), rhs.poly.len());
+    assert_bool_eq(
+        not(or(var("x"), var("y"))),
+        and(not(var("x")), not(var("y"))),
+    );
+}
+
+#[track_caller]
+fn assert_bool_eq(lhs: ValueExpression<Str>, rhs: ValueExpression<Str>) {
+    let nf_lhs = normalize(&lhs);
+    let nf_rhs = normalize(&rhs);
+    assert_eq!(
+        nf_lhs.poly, nf_rhs.poly,
+        "boolean expressions not equal: lhs={:?}, rhs={:?}",
+        nf_lhs.poly, nf_rhs.poly,
+    );
+
+    let nf_diff = normalize(&and(lhs, not(rhs)));
+    assert!(
+        nf_diff.poly.is_empty(),
+        "a & !b should be false but got {:?}",
+        nf_diff.poly,
+    );
+}
+
+fn poly_true() -> Poly {
+    [std::collections::BTreeMap::new()].into()
 }
 
 #[test]
-fn distributivity() {
-    let lhs = normalize(&and(var("x"), or(var("y"), var("z"))));
-    let rhs = normalize(&or(and(var("x"), var("y")), and(var("x"), var("z"))));
-    assert_eq!(lhs.poly.len(), rhs.poly.len());
+fn and_commutativity() {
+    assert_bool_eq(and(var("x"), var("y")), and(var("y"), var("x")));
+}
+
+#[test]
+fn or_commutativity() {
+    assert_bool_eq(or(var("x"), var("y")), or(var("y"), var("x")));
+}
+
+#[test]
+fn and_associativity() {
+    assert_bool_eq(
+        and(and(var("x"), var("y")), var("z")),
+        and(var("x"), and(var("y"), var("z"))),
+    );
+}
+
+#[test]
+fn or_associativity() {
+    assert_bool_eq(
+        or(or(var("x"), var("y")), var("z")),
+        or(var("x"), or(var("y"), var("z"))),
+    );
+}
+
+#[test]
+fn idempotence_and() {
+    assert_bool_eq(and(var("x"), var("x")), var("x"));
+}
+
+#[test]
+fn idempotence_or() {
+    assert_bool_eq(or(var("x"), var("x")), var("x"));
+}
+
+#[test]
+fn true_and_x() {
+    assert_bool_eq(and(lit(true), var("x")), var("x"));
+}
+
+#[test]
+fn false_or_x() {
+    assert_bool_eq(or(lit(false), var("x")), var("x"));
+}
+
+#[test]
+fn tautology() {
+    let nf = normalize(&or(var("x"), not(var("x"))));
+    assert_eq!(nf.poly, poly_true());
+}
+
+#[test]
+fn tautology_case_split() {
+    assert_bool_eq(
+        or(or(and(var("a"), var("b")), not(var("a"))), not(var("b"))),
+        lit(true),
+    );
+}
+
+#[test]
+fn tautology_excluded_middle_complex() {
+    assert_bool_eq(
+        or(
+            or(and(var("x"), var("y")), and(var("x"), not(var("y")))),
+            not(var("x")),
+        ),
+        lit(true),
+    );
+}
+
+#[test]
+fn triple_demorgan_and() {
+    assert_bool_eq(
+        not(and(and(var("x"), var("y")), var("z"))),
+        or(or(not(var("x")), not(var("y"))), not(var("z"))),
+    );
+}
+
+#[test]
+fn triple_demorgan_or() {
+    assert_bool_eq(
+        not(or(or(var("x"), var("y")), var("z"))),
+        and(and(not(var("x")), not(var("y"))), not(var("z"))),
+    );
+}
+
+#[test]
+fn distributivity_full_equality() {
+    assert_bool_eq(
+        and(var("x"), or(var("y"), var("z"))),
+        or(and(var("x"), var("y")), and(var("x"), var("z"))),
+    );
 }

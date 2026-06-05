@@ -1,0 +1,36 @@
+enum Sign (n Int) {
+    0 => {
+        Zero {}
+    }
+    * => {
+        NonZero {}
+    }
+}
+
+enum MultiLit (n Int) {
+    0 => {
+        IsZero {}
+    }
+    1 => {
+        IsOne {}
+    }
+    2 => {
+        IsTwo {}
+    }
+    * => {
+        Other {}
+    }
+}
+
+message IntDep (n Int) {}
+
+enum WithField (n Int) {
+    0 => {
+        Base {}
+    }
+    * => {
+        Shifted {
+            d IntDep n;
+        }
+    }
+}

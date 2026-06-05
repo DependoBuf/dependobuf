@@ -1,0 +1,21 @@
+
+enum Nat {
+    Zero {}
+    Suc {
+        pred Nat;
+    }
+}
+
+message NatDep (n Nat) {}
+
+enum A (n Nat) {
+    Suc{pred: p} => {
+        B {
+            f1 NatDep p;
+            f2 NatDep p;
+        }
+    }
+    * => {
+        C {}
+    }
+}

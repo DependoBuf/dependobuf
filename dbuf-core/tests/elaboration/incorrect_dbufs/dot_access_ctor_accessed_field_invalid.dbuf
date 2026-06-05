@@ -1,0 +1,10 @@
+message Inner {
+    a Int;
+    b Bool;
+}
+
+message IntDep (n Int) {}
+
+message A {
+    d IntDep Inner{a: true, b: false}.a;
+}

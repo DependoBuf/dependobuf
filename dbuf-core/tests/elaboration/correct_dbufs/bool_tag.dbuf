@@ -1,0 +1,8 @@
+enum BoolTag (b Bool) {
+    true => {
+        IsTrue {}
+    }
+    * => {
+        Other {}
+    }
+}

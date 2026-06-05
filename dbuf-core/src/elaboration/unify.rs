@@ -7,6 +7,7 @@ use crate::error::elaborating::Error::{
     ArityMismatch, ConflictingBinding, ConstructorMismatch, LiteralMismatch, OperatorTypeMismatch,
     TypeMismatch,
 };
+use std::hash::Hash;
 
 pub type Bindings<Str> = Vec<(Str, e::ValueExpression<Str>)>;
 
@@ -17,7 +18,7 @@ pub fn unify_type<Str>(
     module: &e::Module<Str>,
 ) -> Result<Bindings<Str>, Error>
 where
-    Str: Clone + Eq + Ord + From<BuiltinType> + ToString,
+    Str: Clone + Eq + Ord + Hash + From<BuiltinType> + ToString,
 {
     let e::TypeExpression::TypeExpression {
         name: name_a,
@@ -34,9 +35,8 @@ where
 
     let declared_arity = module
         .types
-        .iter()
-        .find(|(name, _)| name == name_a)
-        .map_or(0, |(_, ty)| ty.dependencies.len());
+        .get(name_a)
+        .map_or(0, |ty| ty.dependencies.len());
 
     if deps_a.len() != declared_arity || deps_b.len() != declared_arity {
         return Err(ArityMismatch {
@@ -45,22 +45,27 @@ where
         });
     }
 
-    unify_args(deps_a, &mut (deps_b.iter().cloned().collect::<Vec<_>>()))
+    unify_args(
+        deps_a,
+        &mut (deps_b.iter().cloned().collect::<Vec<_>>()),
+        module,
+    )
 }
 
 /// # Errors
 pub fn unify_value<Str>(
     a: &e::ValueExpression<Str>,
     b: &e::ValueExpression<Str>,
+    module: &e::Module<Str>,
 ) -> Result<Bindings<Str>, Error>
 where
-    Str: Clone + Eq + From<BuiltinType> + ToString,
+    Str: Clone + Eq + Ord + Hash + From<BuiltinType> + ToString,
 {
     match (a, b) {
         (
-            e::ValueExpression::Variable { name: x, .. },
-            e::ValueExpression::Variable { name: y, .. },
-        ) if x == y => Ok(vec![]),
+            e::ValueExpression::Variable { name: x, ty: ty_x },
+            e::ValueExpression::Variable { name: y, ty: ty_y },
+        ) if x == y => unify_type(ty_x, ty_y, module),
         (
             e::ValueExpression::Variable { name: x, ty: ty_x },
             e::ValueExpression::Variable { name: y, .. },
@@ -96,13 +101,13 @@ where
             }
             let left: Vec<_> = i1.iter().chain(a1.iter()).cloned().collect();
             let mut right: Vec<_> = i2.iter().chain(a2.iter()).cloned().collect();
-            unify_args(&left, &mut right)
+            unify_args(&left, &mut right, module)
         }
 
         (
             e::ValueExpression::OpCall { op_call: op_a, .. },
             e::ValueExpression::OpCall { op_call: op_b, .. },
-        ) => unify_op_call(op_a, op_b),
+        ) => unify_op_call(op_a, op_b, module),
 
         _ => Err(TypeMismatch),
     }
@@ -111,14 +116,15 @@ where
 fn unify_args<Str>(
     left: &[e::ValueExpression<Str>],
     right: &mut [e::ValueExpression<Str>],
+    module: &e::Module<Str>,
 ) -> Result<Bindings<Str>, Error>
 where
-    Str: Clone + Eq + From<BuiltinType> + ToString,
+    Str: Clone + Eq + Ord + Hash + From<BuiltinType> + ToString,
 {
     let mut acc = vec![];
 
     for i in 0..left.len() {
-        let bindings = unify_value(&left[i], &right[i])?;
+        let bindings = unify_value(&left[i], &right[i], module)?;
 
         for arg in &mut right[i + 1..] {
             *arg = subst::apply_bindings(arg.clone(), &bindings);
@@ -133,9 +139,10 @@ where
 fn unify_op_call<Str>(
     a: &o::OpCall<Str, e::Rec<e::ValueExpression<Str>>>,
     b: &o::OpCall<Str, e::Rec<e::ValueExpression<Str>>>,
+    module: &e::Module<Str>,
 ) -> Result<Bindings<Str>, Error>
 where
-    Str: Clone + Eq + From<BuiltinType> + ToString,
+    Str: Clone + Eq + Ord + Hash + From<BuiltinType> + ToString,
 {
     match (a, b) {
         (o::OpCall::Literal(la), o::OpCall::Literal(lb)) => {
@@ -149,7 +156,7 @@ where
             if op_a != op_b {
                 return Err(OperatorTypeMismatch);
             }
-            unify_value(expr_a, expr_b)
+            unify_value(expr_a, expr_b, module)
         }
         (o::OpCall::Binary(op_a, la, ra), o::OpCall::Binary(op_b, lb, rb)) => {
             if op_a != op_b {
@@ -158,6 +165,7 @@ where
             unify_args(
                 &[(**la).clone(), (**ra).clone()],
                 &mut [(**lb).clone(), (**rb).clone()],
+                module,
             )
         }
         _ => Err(OperatorTypeMismatch),
@@ -185,7 +193,7 @@ mod tests {
     use crate::ast::operators::Literal;
     use crate::elaboration::builtins;
     use crate::error::elaborating::Error::{
-        ArityMismatch, ConstructorMismatch, LiteralMismatch, TypeMismatch,
+        ArityMismatch, ConstructorMismatch, LiteralMismatch, OperatorTypeMismatch, TypeMismatch,
     };
     use std::collections::BTreeMap;
 
@@ -230,14 +238,54 @@ mod tests {
 
     fn lit_int(v: i64) -> e::ValueExpression<String> {
         e::ValueExpression::OpCall {
-            op_call: o::OpCall::Literal(crate::ast::operators::Literal::Int(v)),
+            op_call: o::OpCall::Literal(Literal::Int(v)),
             result_type: builtins::get_builtin(&BuiltinType::Int),
         }
     }
 
+    fn neg(val: e::ValueExpression<String>) -> e::ValueExpression<String> {
+        e::ValueExpression::OpCall {
+            op_call: o::OpCall::Unary(o::UnaryOp::Minus, e::Rec::new(val)),
+            result_type: builtins::get_builtin(&BuiltinType::Int),
+        }
+    }
+
+    fn bang(val: e::ValueExpression<String>) -> e::ValueExpression<String> {
+        e::ValueExpression::OpCall {
+            op_call: o::OpCall::Unary(o::UnaryOp::Bang, e::Rec::new(val)),
+            result_type: builtins::get_builtin(&BuiltinType::Bool),
+        }
+    }
+
+    fn bin_op(
+        op: o::BinaryOp,
+        ty: BuiltinType,
+        a: e::ValueExpression<String>,
+        b: e::ValueExpression<String>,
+    ) -> e::ValueExpression<String> {
+        e::ValueExpression::OpCall {
+            op_call: o::OpCall::Binary(op, e::Rec::new(a), e::Rec::new(b)),
+            result_type: builtins::get_builtin(&ty),
+        }
+    }
+
+    fn add_op(
+        a: e::ValueExpression<String>,
+        b: e::ValueExpression<String>,
+    ) -> e::ValueExpression<String> {
+        bin_op(o::BinaryOp::Plus, BuiltinType::Int, a, b)
+    }
+
+    fn sub_op(
+        a: e::ValueExpression<String>,
+        b: e::ValueExpression<String>,
+    ) -> e::ValueExpression<String> {
+        bin_op(o::BinaryOp::Minus, BuiltinType::Int, a, b)
+    }
+
     fn test_module() -> e::Module<String> {
         e::Module {
-            types: vec![
+            types: [
                 (
                     "Nat".to_owned(),
                     e::Type {
@@ -256,33 +304,39 @@ mod tests {
                         ),
                     },
                 ),
-            ],
+            ]
+            .into_iter()
+            .collect(),
             constructors: BTreeMap::new(),
         }
     }
 
     #[test]
     fn same_binds() {
-        assert_eq!(unify_value(&var("x"), &var("x")), Ok(vec![]));
+        let m = test_module();
+        assert_eq!(unify_value(&var("x"), &var("x"), &m), Ok(vec![]));
     }
 
     #[test]
     fn left_binds() {
-        assert_eq!(unify_value(&var("x"), &zero()), Err(TypeMismatch));
+        let m = test_module();
+        assert_eq!(unify_value(&var("x"), &zero(), &m), Err(TypeMismatch));
     }
 
     #[test]
     fn right_binds() {
+        let m = test_module();
         assert_eq!(
-            unify_value(&zero(), &var("y")),
+            unify_value(&zero(), &var("y"), &m),
             Ok(vec![("y".to_owned(), zero())])
         );
     }
 
     #[test]
     fn var_binds() {
+        let m = test_module();
         assert_eq!(
-            unify_value(&var("x"), &var("y")),
+            unify_value(&var("x"), &var("y"), &m),
             Ok(vec![("y".to_owned(), var("x"))])
         );
     }
@@ -301,14 +355,16 @@ mod tests {
 
     #[test]
     fn value_conflicting_bindings() {
+        let m = test_module();
         assert_eq!(
-            unify_value(&pair(zero(), suc(zero())), &pair(var("x"), var("x"))),
+            unify_value(&pair(zero(), suc(zero())), &pair(var("x"), var("x")), &m),
             Err(ConstructorMismatch("Suc".to_owned(), "Zero".to_owned()))
         );
     }
 
     #[test]
     fn value_conflicting_bindings_2() {
+        let m = test_module();
         let tuple = |a, b, c| e::ValueExpression::Constructor {
             name: "Tuple".to_owned(),
             implicits: e::Rec::new([]),
@@ -320,6 +376,7 @@ mod tests {
             unify_value(
                 &tuple(suc(suc(var("x"))), var("y"), suc(suc(zero()))),
                 &tuple(suc(var("z")), suc(suc(suc(zero()))), suc(var("z"))),
+                &m,
             ),
             Err(TypeMismatch)
         );
@@ -327,8 +384,9 @@ mod tests {
 
     #[test]
     fn value_literal_mismatch() {
+        let m = test_module();
         assert_eq!(
-            unify_value(&lit_int(1), &lit_int(2)),
+            unify_value(&lit_int(1), &lit_int(2), &m),
             Err(LiteralMismatch(Literal::Int(1), Literal::Int(2)))
         );
     }
@@ -364,6 +422,102 @@ mod tests {
         assert_eq!(
             unify_type(&vec_ty(zero()), &vec_ty(suc(zero())), &module),
             Err(ConstructorMismatch("Zero".to_owned(), "Suc".to_owned()))
+        );
+    }
+
+    #[test]
+    fn unify_type_no_deps_success() {
+        let module = test_module();
+        assert_eq!(unify_type(&nat_ty(), &nat_ty(), &module), Ok(vec![]));
+    }
+
+    #[test]
+    fn unify_type_with_deps_success() {
+        let module = test_module();
+        assert_eq!(
+            unify_type(&vec_ty(zero()), &vec_ty(var("n")), &module),
+            Ok(vec![("n".to_owned(), zero())])
+        );
+    }
+
+    #[test]
+    fn ctor_unify_success() {
+        let m = test_module();
+        assert_eq!(
+            unify_value(&suc(zero()), &suc(var("x")), &m),
+            Ok(vec![("x".to_owned(), zero())])
+        );
+    }
+
+    #[test]
+    fn ctor_vs_opcall_mismatch() {
+        let m = test_module();
+        assert_eq!(unify_value(&zero(), &lit_int(1), &m), Err(TypeMismatch));
+    }
+
+    #[test]
+    fn opcall_vs_ctor_mismatch() {
+        let m = test_module();
+        assert_eq!(unify_value(&lit_int(1), &zero(), &m), Err(TypeMismatch));
+    }
+
+    #[test]
+    fn same_literal_success() {
+        let m = test_module();
+        assert_eq!(unify_value(&lit_int(42), &lit_int(42), &m), Ok(vec![]));
+    }
+
+    #[test]
+    fn unary_same_op_success() {
+        let m = test_module();
+        assert_eq!(
+            unify_value(&neg(var("x")), &neg(var("y")), &m),
+            Ok(vec![("y".to_owned(), var("x"))])
+        );
+    }
+
+    #[test]
+    fn unary_op_mismatch() {
+        let m = test_module();
+        assert_eq!(
+            unify_value(&neg(zero()), &bang(zero()), &m),
+            Err(OperatorTypeMismatch)
+        );
+    }
+
+    #[test]
+    fn binary_op_mismatch() {
+        let m = test_module();
+        assert_eq!(
+            unify_value(&add_op(zero(), zero()), &sub_op(zero(), zero()), &m),
+            Err(OperatorTypeMismatch)
+        );
+    }
+
+    #[test]
+    fn opcall_kind_mismatch_literal_vs_unary() {
+        let m = test_module();
+        assert_eq!(
+            unify_value(&lit_int(1), &neg(zero()), &m),
+            Err(OperatorTypeMismatch)
+        );
+    }
+
+    #[test]
+    fn opcall_kind_mismatch_unary_vs_binary() {
+        let m = test_module();
+        assert_eq!(
+            unify_value(&neg(zero()), &add_op(zero(), zero()), &m),
+            Err(OperatorTypeMismatch)
+        );
+    }
+
+    #[test]
+    fn binary_op_success() {
+        let m = test_module();
+        assert_eq!(
+            unify_value(&add_op(zero(), var("x")), &add_op(zero(), var("y")), &m),
+            Ok(vec![("y".to_owned(), var("x"))])
         );
     }
 }

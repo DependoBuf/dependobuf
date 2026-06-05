@@ -1,0 +1,11 @@
+message A {
+    b B;
+}
+
+message B {
+    c C;
+}
+
+message C {
+    a A;
+}

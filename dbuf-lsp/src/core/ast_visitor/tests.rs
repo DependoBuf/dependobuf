@@ -1,11 +1,10 @@
-use crate::core::default_ast::default_parsed_ast;
-use crate::core::workspace::ParsedAst;
-
 use super::Visit;
 use super::VisitResult;
 use super::Visitor;
 use super::safe_skip::safe_skip;
 use super::visit_ast;
+use crate::core::default_ast::default_parsed_ast;
+use crate::core::workspace::ParsedAst;
 
 fn get_ast() -> ParsedAst {
     default_parsed_ast()

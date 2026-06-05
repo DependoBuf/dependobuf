@@ -1,6 +1,7 @@
 //! Provides function, that returns Elaborated ast sample.
 //!
 
+use indexmap::IndexMap;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
@@ -109,11 +110,11 @@ fn enum_type(dependencies: Vec<(Str, TypeExpression<Str>)>, constructors: &[&str
 #[expect(clippy::too_many_lines, reason = "temporary code, no need to refactor")]
 pub fn rename_elaborated_ast() -> ElaboratedAst {
     let mut elaborated = ElaboratedAst {
-        types: vec![],
+        types: IndexMap::new(),
         constructors: BTreeMap::new(),
     };
 
-    elaborated.types.push((
+    elaborated.types.insert(
         "M1".to_owned(),
         message_type(
             "M1",
@@ -122,9 +123,9 @@ pub fn rename_elaborated_ast() -> ElaboratedAst {
                 type_context("d2", "String", &[]),
             ],
         ),
-    ));
+    );
 
-    elaborated.types.push((
+    elaborated.types.insert(
         "M2".to_owned(),
         message_type(
             "M2",
@@ -133,40 +134,40 @@ pub fn rename_elaborated_ast() -> ElaboratedAst {
                 type_context("d2", "M1", &[var_expr("d1"), str_literal_expr("kek")]),
             ],
         ),
-    ));
+    );
 
-    elaborated.types.push((
+    elaborated.types.insert(
         "M3".to_owned(),
         message_type("M3", vec![type_context("d1", "String", &[])]),
-    ));
+    );
 
-    elaborated.types.push((
+    elaborated.types.insert(
         "Constructed".to_owned(),
         message_type("Constructed", vec![]),
-    ));
+    );
 
-    elaborated.types.push((
+    elaborated.types.insert(
         "Simple".to_owned(),
         enum_type(
             vec![type_context("d1", "Int", &[])],
             &["Aliased", "Literaled", "Wild"],
         ),
-    ));
+    );
 
-    elaborated.types.push((
+    elaborated.types.insert(
         "SimpleDepended".to_owned(),
         message_type(
             "SimpleDepended",
             vec![type_context("d1", "Simple", &[int_literal_expr(0)])],
         ),
-    ));
+    );
 
-    elaborated.types.push((
+    elaborated.types.insert(
         "EnumConstructed".to_owned(),
         message_type("EnumConstructed", vec![]),
-    ));
+    );
 
-    elaborated.types.push((
+    elaborated.types.insert(
         "PatternMatch".to_owned(),
         enum_type(
             vec![type_context(
@@ -176,7 +177,7 @@ pub fn rename_elaborated_ast() -> ElaboratedAst {
             )],
             &["PatternMatched"],
         ),
-    ));
+    );
 
     elaborated.constructors.insert(
         "M1".to_owned(),

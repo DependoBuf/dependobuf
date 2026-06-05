@@ -1,0 +1,606 @@
+---
+source: dbuf-core/tests/elaboration/elaboration_correct.rs
+expression: elaborated
+---
+Ok(
+    Module {
+        types: {
+            InternedString {
+                inner: "Nat",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfEnum(
+                    {
+                        InternedString {
+                            inner: "Suc",
+                        },
+                        InternedString {
+                            inner: "Zero",
+                        },
+                    },
+                ),
+            },
+            InternedString {
+                inner: "Vec",
+            }: Type {
+                dependencies: [
+                    (
+                        InternedString {
+                            inner: "n",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Nat",
+                            },
+                            dependencies: [],
+                        },
+                    ),
+                ],
+                constructor_names: OfEnum(
+                    {
+                        InternedString {
+                            inner: "Cons",
+                        },
+                        InternedString {
+                            inner: "Nil",
+                        },
+                    },
+                ),
+            },
+            InternedString {
+                inner: "A",
+            }: Type {
+                dependencies: [
+                    (
+                        InternedString {
+                            inner: "n",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Nat",
+                            },
+                            dependencies: [],
+                        },
+                    ),
+                    (
+                        InternedString {
+                            inner: "v",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Vec",
+                            },
+                            dependencies: [
+                                Variable {
+                                    name: InternedString {
+                                        inner: "n",
+                                    },
+                                    ty: TypeExpression {
+                                        name: InternedString {
+                                            inner: "Nat",
+                                        },
+                                        dependencies: [],
+                                    },
+                                },
+                            ],
+                        },
+                    ),
+                ],
+                constructor_names: OfEnum(
+                    {
+                        InternedString {
+                            inner: "E",
+                        },
+                        InternedString {
+                            inner: "F",
+                        },
+                        InternedString {
+                            inner: "G",
+                        },
+                    },
+                ),
+            },
+        },
+        constructors: {
+            InternedString {
+                inner: "Cons",
+            }: Constructor {
+                implicits: [
+                    (
+                        InternedString {
+                            inner: "p",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Nat",
+                            },
+                            dependencies: [],
+                        },
+                    ),
+                ],
+                fields: [
+                    (
+                        InternedString {
+                            inner: "head",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Int",
+                            },
+                            dependencies: [],
+                        },
+                    ),
+                    (
+                        InternedString {
+                            inner: "tail",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Vec",
+                            },
+                            dependencies: [
+                                Variable {
+                                    name: InternedString {
+                                        inner: "p",
+                                    },
+                                    ty: TypeExpression {
+                                        name: InternedString {
+                                            inner: "Nat",
+                                        },
+                                        dependencies: [],
+                                    },
+                                },
+                            ],
+                        },
+                    ),
+                ],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "Vec",
+                    },
+                    dependencies: [
+                        Constructor {
+                            name: InternedString {
+                                inner: "Suc",
+                            },
+                            implicits: [],
+                            arguments: [
+                                Variable {
+                                    name: InternedString {
+                                        inner: "p",
+                                    },
+                                    ty: TypeExpression {
+                                        name: InternedString {
+                                            inner: "Nat",
+                                        },
+                                        dependencies: [],
+                                    },
+                                },
+                            ],
+                            result_type: TypeExpression {
+                                name: InternedString {
+                                    inner: "Nat",
+                                },
+                                dependencies: [],
+                            },
+                        },
+                    ],
+                },
+            },
+            InternedString {
+                inner: "E",
+            }: Constructor {
+                implicits: [],
+                fields: [],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "A",
+                    },
+                    dependencies: [
+                        Constructor {
+                            name: InternedString {
+                                inner: "Zero",
+                            },
+                            implicits: [],
+                            arguments: [],
+                            result_type: TypeExpression {
+                                name: InternedString {
+                                    inner: "Nat",
+                                },
+                                dependencies: [],
+                            },
+                        },
+                        Constructor {
+                            name: InternedString {
+                                inner: "Nil",
+                            },
+                            implicits: [],
+                            arguments: [],
+                            result_type: TypeExpression {
+                                name: InternedString {
+                                    inner: "Vec",
+                                },
+                                dependencies: [
+                                    Constructor {
+                                        name: InternedString {
+                                            inner: "Zero",
+                                        },
+                                        implicits: [],
+                                        arguments: [],
+                                        result_type: TypeExpression {
+                                            name: InternedString {
+                                                inner: "Nat",
+                                            },
+                                            dependencies: [],
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                },
+            },
+            InternedString {
+                inner: "F",
+            }: Constructor {
+                implicits: [
+                    (
+                        InternedString {
+                            inner: "h",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Int",
+                            },
+                            dependencies: [],
+                        },
+                    ),
+                    (
+                        InternedString {
+                            inner: "p",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Nat",
+                            },
+                            dependencies: [],
+                        },
+                    ),
+                    (
+                        InternedString {
+                            inner: "t",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Vec",
+                            },
+                            dependencies: [
+                                Variable {
+                                    name: InternedString {
+                                        inner: "p",
+                                    },
+                                    ty: TypeExpression {
+                                        name: InternedString {
+                                            inner: "Nat",
+                                        },
+                                        dependencies: [],
+                                    },
+                                },
+                            ],
+                        },
+                    ),
+                ],
+                fields: [
+                    (
+                        InternedString {
+                            inner: "rest",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "A",
+                            },
+                            dependencies: [
+                                Variable {
+                                    name: InternedString {
+                                        inner: "p",
+                                    },
+                                    ty: TypeExpression {
+                                        name: InternedString {
+                                            inner: "Nat",
+                                        },
+                                        dependencies: [],
+                                    },
+                                },
+                                Variable {
+                                    name: InternedString {
+                                        inner: "t",
+                                    },
+                                    ty: TypeExpression {
+                                        name: InternedString {
+                                            inner: "Vec",
+                                        },
+                                        dependencies: [
+                                            Variable {
+                                                name: InternedString {
+                                                    inner: "p",
+                                                },
+                                                ty: TypeExpression {
+                                                    name: InternedString {
+                                                        inner: "Nat",
+                                                    },
+                                                    dependencies: [],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    ),
+                ],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "A",
+                    },
+                    dependencies: [
+                        Constructor {
+                            name: InternedString {
+                                inner: "Suc",
+                            },
+                            implicits: [],
+                            arguments: [
+                                Variable {
+                                    name: InternedString {
+                                        inner: "p",
+                                    },
+                                    ty: TypeExpression {
+                                        name: InternedString {
+                                            inner: "Nat",
+                                        },
+                                        dependencies: [],
+                                    },
+                                },
+                            ],
+                            result_type: TypeExpression {
+                                name: InternedString {
+                                    inner: "Nat",
+                                },
+                                dependencies: [],
+                            },
+                        },
+                        Constructor {
+                            name: InternedString {
+                                inner: "Cons",
+                            },
+                            implicits: [
+                                Variable {
+                                    name: InternedString {
+                                        inner: "p",
+                                    },
+                                    ty: TypeExpression {
+                                        name: InternedString {
+                                            inner: "Nat",
+                                        },
+                                        dependencies: [],
+                                    },
+                                },
+                            ],
+                            arguments: [
+                                Variable {
+                                    name: InternedString {
+                                        inner: "h",
+                                    },
+                                    ty: TypeExpression {
+                                        name: InternedString {
+                                            inner: "Int",
+                                        },
+                                        dependencies: [],
+                                    },
+                                },
+                                Variable {
+                                    name: InternedString {
+                                        inner: "t",
+                                    },
+                                    ty: TypeExpression {
+                                        name: InternedString {
+                                            inner: "Vec",
+                                        },
+                                        dependencies: [
+                                            Variable {
+                                                name: InternedString {
+                                                    inner: "p",
+                                                },
+                                                ty: TypeExpression {
+                                                    name: InternedString {
+                                                        inner: "Nat",
+                                                    },
+                                                    dependencies: [],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                            result_type: TypeExpression {
+                                name: InternedString {
+                                    inner: "Vec",
+                                },
+                                dependencies: [
+                                    Constructor {
+                                        name: InternedString {
+                                            inner: "Suc",
+                                        },
+                                        implicits: [],
+                                        arguments: [
+                                            Variable {
+                                                name: InternedString {
+                                                    inner: "p",
+                                                },
+                                                ty: TypeExpression {
+                                                    name: InternedString {
+                                                        inner: "Nat",
+                                                    },
+                                                    dependencies: [],
+                                                },
+                                            },
+                                        ],
+                                        result_type: TypeExpression {
+                                            name: InternedString {
+                                                inner: "Nat",
+                                            },
+                                            dependencies: [],
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                },
+            },
+            InternedString {
+                inner: "G",
+            }: Constructor {
+                implicits: [
+                    (
+                        InternedString {
+                            inner: "n",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Nat",
+                            },
+                            dependencies: [],
+                        },
+                    ),
+                    (
+                        InternedString {
+                            inner: "v",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Vec",
+                            },
+                            dependencies: [
+                                Variable {
+                                    name: InternedString {
+                                        inner: "n",
+                                    },
+                                    ty: TypeExpression {
+                                        name: InternedString {
+                                            inner: "Nat",
+                                        },
+                                        dependencies: [],
+                                    },
+                                },
+                            ],
+                        },
+                    ),
+                ],
+                fields: [],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "A",
+                    },
+                    dependencies: [
+                        Variable {
+                            name: InternedString {
+                                inner: "n",
+                            },
+                            ty: TypeExpression {
+                                name: InternedString {
+                                    inner: "Nat",
+                                },
+                                dependencies: [],
+                            },
+                        },
+                        Variable {
+                            name: InternedString {
+                                inner: "v",
+                            },
+                            ty: TypeExpression {
+                                name: InternedString {
+                                    inner: "Vec",
+                                },
+                                dependencies: [
+                                    Variable {
+                                        name: InternedString {
+                                            inner: "n",
+                                        },
+                                        ty: TypeExpression {
+                                            name: InternedString {
+                                                inner: "Nat",
+                                            },
+                                            dependencies: [],
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                },
+            },
+            InternedString {
+                inner: "Nil",
+            }: Constructor {
+                implicits: [],
+                fields: [],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "Vec",
+                    },
+                    dependencies: [
+                        Constructor {
+                            name: InternedString {
+                                inner: "Zero",
+                            },
+                            implicits: [],
+                            arguments: [],
+                            result_type: TypeExpression {
+                                name: InternedString {
+                                    inner: "Nat",
+                                },
+                                dependencies: [],
+                            },
+                        },
+                    ],
+                },
+            },
+            InternedString {
+                inner: "Suc",
+            }: Constructor {
+                implicits: [],
+                fields: [
+                    (
+                        InternedString {
+                            inner: "pred",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Nat",
+                            },
+                            dependencies: [],
+                        },
+                    ),
+                ],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "Nat",
+                    },
+                    dependencies: [],
+                },
+            },
+            InternedString {
+                inner: "Zero",
+            }: Constructor {
+                implicits: [],
+                fields: [],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "Nat",
+                    },
+                    dependencies: [],
+                },
+            },
+        },
+    },
+)

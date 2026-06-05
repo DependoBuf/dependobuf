@@ -4,132 +4,117 @@ expression: elaborated
 ---
 Ok(
     Module {
-        types: [
-            (
-                InternedString {
-                    inner: "IntDep",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "n_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Int",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
+        types: {
+            InternedString {
+                inner: "IntDep",
+            }: Type {
+                dependencies: [
+                    (
                         InternedString {
-                            inner: "IntDep",
+                            inner: "n",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Int",
+                            },
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "FieldOnField",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfMessage(
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "IntDep",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "FieldOnField",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "FieldOnField",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "IntDepDep",
+            }: Type {
+                dependencies: [
+                    (
                         InternedString {
-                            inner: "FieldOnField",
+                            inner: "n",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Int",
+                            },
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "IntDepDep",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "n_dep",
+                    (
+                        InternedString {
+                            inner: "id",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "IntDep",
                             },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Int",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                        (
-                            InternedString {
-                                inner: "id_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "IntDep",
-                                },
-                                dependencies: [
-                                    Variable {
-                                        name: InternedString {
-                                            inner: "n_dep",
-                                        },
-                                        ty: TypeExpression {
-                                            name: InternedString {
-                                                inner: "Int",
-                                            },
-                                            dependencies: [],
-                                        },
+                            dependencies: [
+                                Variable {
+                                    name: InternedString {
+                                        inner: "n",
                                     },
-                                ],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "IntDepDep",
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "TwoFieldsOnOne",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "TwoFieldsOnOne",
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "DepAndField",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "base_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Int",
+                                    ty: TypeExpression {
+                                        name: InternedString {
+                                            inner: "Int",
+                                        },
+                                        dependencies: [],
+                                    },
                                 },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "DepAndField",
+                            ],
                         },
                     ),
-                },
-            ),
-        ],
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "IntDepDep",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "TwoFieldsOnOne",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "TwoFieldsOnOne",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "DepAndField",
+            }: Type {
+                dependencies: [
+                    (
+                        InternedString {
+                            inner: "base",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Int",
+                            },
+                            dependencies: [],
+                        },
+                    ),
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "DepAndField",
+                    },
+                ),
+            },
+        },
         constructors: {
             InternedString {
                 inner: "DepAndField",

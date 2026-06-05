@@ -4,80 +4,74 @@ expression: elaborated
 ---
 Ok(
     Module {
-        types: [
-            (
-                InternedString {
-                    inner: "StringDep",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "s_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "String",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
+        types: {
+            InternedString {
+                inner: "StringDep",
+            }: Type {
+                dependencies: [
+                    (
                         InternedString {
-                            inner: "StringDep",
+                            inner: "s",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "String",
+                            },
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "StringChain",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "s1_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "String",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                        (
-                            InternedString {
-                                inner: "s2_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "String",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                        (
-                            InternedString {
-                                inner: "s3_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "String",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "StringDep",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "StringChain",
+            }: Type {
+                dependencies: [
+                    (
                         InternedString {
-                            inner: "StringChain",
+                            inner: "s1",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "String",
+                            },
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-        ],
+                    (
+                        InternedString {
+                            inner: "s2",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "String",
+                            },
+                            dependencies: [],
+                        },
+                    ),
+                    (
+                        InternedString {
+                            inner: "s3",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "String",
+                            },
+                            dependencies: [],
+                        },
+                    ),
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "StringChain",
+                    },
+                ),
+            },
+        },
         constructors: {
             InternedString {
                 inner: "StringChain",

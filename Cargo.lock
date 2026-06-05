@@ -325,6 +325,7 @@ name = "dbuf-core"
 version = "0.1.0"
 dependencies = [
  "chumsky",
+ "indexmap",
  "insta",
  "internment",
  "logos",
@@ -350,6 +351,7 @@ version = "0.1.0"
 dependencies = [
  "dbuf-core",
  "dbuf-rust-runtime",
+ "indexmap",
  "pretty",
  "pretty_assertions",
 ]
@@ -361,6 +363,7 @@ dependencies = [
  "dashmap 6.1.0",
  "dbuf-core",
  "dbuf-format",
+ "indexmap",
  "pretty",
  "pretty_assertions",
  "strum",
@@ -572,6 +575,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hashbrown"
+version = "0.17.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
+
+[[package]]
 name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -688,6 +697,16 @@ checksum = "3acae9609540aa318d1bc588455225fb2085b9ed0c4f6bd0d9d5bcd86f1a0344"
 dependencies = [
  "icu_normalizer",
  "icu_properties",
+]
+
+[[package]]
+name = "indexmap"
+version = "2.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d466e9454f08e4a911e14806c24e16fba1b4c121d1ea474396f396069cf949d9"
+dependencies = [
+ "equivalent",
+ "hashbrown 0.17.1",
 ]
 
 [[package]]

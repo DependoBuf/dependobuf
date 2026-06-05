@@ -1,5 +1,6 @@
 use crate::arena::InternedString;
 use crate::ast::elaborated as e;
+use indexmap::IndexMap;
 use std::collections::{BTreeMap, BTreeSet};
 use std::hash::Hash;
 
@@ -68,7 +69,7 @@ pub fn builtins_module<Str: Eq + Hash + From<BuiltinType> + Clone>() -> e::Modul
                     },
                 )
             })
-            .collect(),
+            .collect::<IndexMap<_, _>>(),
         constructors: BTreeMap::new(),
     }
 }

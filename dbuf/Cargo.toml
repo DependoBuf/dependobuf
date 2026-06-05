@@ -15,9 +15,9 @@ all = ["lsp", "format", "rust", "kotlin", "swift"]
 
 [dependencies]
 dbuf-core.workspace = true
-dbuf-format = {workspace = true, optional = true}
-dbuf-gen = {workspace = true, optional = true}
-dbuf-lsp = {workspace = true, optional = true}
+dbuf-format = { workspace = true, optional = true }
+dbuf-gen = { workspace = true, optional = true }
+dbuf-lsp = { workspace = true, optional = true }
 
 ariadne.workspace = true
 clap.workspace = true
