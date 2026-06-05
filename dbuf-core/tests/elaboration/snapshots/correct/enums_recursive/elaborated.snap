@@ -4,94 +4,82 @@ expression: elaborated
 ---
 Ok(
     Module {
-        types: [
-            (
-                InternedString {
-                    inner: "Nat",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfEnum(
-                        {
-                            InternedString {
-                                inner: "Suc",
-                            },
-                            InternedString {
-                                inner: "Zero",
-                            },
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "NatDep",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "n_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Nat",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
+        types: {
+            InternedString {
+                inner: "Nat",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfEnum(
+                    {
                         InternedString {
-                            inner: "NatDep",
+                            inner: "Suc",
                         },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "Vec",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "n_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Nat",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfEnum(
-                        {
-                            InternedString {
-                                inner: "Cons",
-                            },
-                            InternedString {
-                                inner: "Nil",
-                            },
-                        },
-                    ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "UseNat",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfMessage(
                         InternedString {
-                            inner: "UseNat",
+                            inner: "Zero",
+                        },
+                    },
+                ),
+            },
+            InternedString {
+                inner: "NatDep",
+            }: Type {
+                dependencies: [
+                    (
+                        InternedString {
+                            inner: "n",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Nat",
+                            },
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-        ],
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "NatDep",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "Vec",
+            }: Type {
+                dependencies: [
+                    (
+                        InternedString {
+                            inner: "n",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Nat",
+                            },
+                            dependencies: [],
+                        },
+                    ),
+                ],
+                constructor_names: OfEnum(
+                    {
+                        InternedString {
+                            inner: "Cons",
+                        },
+                        InternedString {
+                            inner: "Nil",
+                        },
+                    },
+                ),
+            },
+            InternedString {
+                inner: "UseNat",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "UseNat",
+                    },
+                ),
+            },
+        },
         constructors: {
             InternedString {
                 inner: "Cons",

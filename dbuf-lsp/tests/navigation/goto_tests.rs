@@ -246,13 +246,11 @@ fn test_self_jump() {
 }
 
 #[test]
-#[should_panic(expected = "")] /* FIXME: actually shouldn't panic */
 fn test_jumps() {
     JUMPS.iter().for_each(check_jump);
 }
 
 #[test]
-#[should_panic(expected = "")] /* FIXME: actually shouldn't panic */
 fn test_type_definition_jumps() {
     JUMPS.iter().for_each(check_type_definition_jump);
 }

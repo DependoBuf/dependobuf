@@ -1,0 +1,13 @@
+message Inner {
+    v Int;
+}
+
+message Outer {
+    inner Inner;
+}
+
+message IntDep (n Int) {}
+
+message A (o Outer) {
+    d IntDep o.inner.v;
+}

@@ -12,10 +12,11 @@ all = ["rust", "kotlin", "swift"]
 [dependencies]
 dbuf-core.workspace = true
 pretty.workspace = true
+indexmap.workspace = true
 
 [dev-dependencies]
-dbuf-rust-runtime.workspace = true
 pretty_assertions.workspace = true
+dbuf-rust-runtime.workspace = true
 
 [lints]
 workspace = true

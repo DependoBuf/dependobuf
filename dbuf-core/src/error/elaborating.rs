@@ -5,6 +5,7 @@ use super::ErrorStage;
 use crate::arena::InternedString;
 use crate::ast::elaborated;
 use crate::ast::operators::Literal;
+use crate::location::{Location, Offset};
 use thiserror::Error;
 
 /// Errors that can occur during type elaboration.
@@ -32,10 +33,10 @@ pub enum Error {
     LiteralMismatch(Literal, Literal),
     #[error("conflicting binding for {0}")]
     ConflictingBinding(String),
-    #[error("cycle in type dependencies")]
-    Cycle(Vec<String>),
-    #[error("no initial constructor for: {}", .0.join(", "))]
-    NoInitialConstructor(Vec<String>),
+    #[error("cycle in type dependencies: {}", .0.iter().map(|(n, _)| n.as_str()).collect::<Vec<_>>().join(" -> "))]
+    Cycle(Vec<(String, Location<Offset>)>),
+    #[error("no initial constructor for: {}", .0.iter().map(|(n, _)| n.as_str()).collect::<Vec<_>>().join(", "))]
+    NoInitialConstructor(Vec<(String, Location<Offset>)>),
     #[error("type hole should have type {0:?}")]
     TypeHole(elaborated::TypeExpression<InternedString>),
 }
@@ -44,24 +45,17 @@ pub enum Error {
 #[error("elaborating error: {error}")]
 pub struct ElaboratingStage {
     pub error: Error,
+    pub loc: Option<Location<Offset>>,
 }
 
 impl ErrorStage for ElaboratingStage {
-    fn location(&self) -> crate::location::Location<crate::location::Offset> {
-        unimplemented!("Elaborating stage location stores no location")
+    fn location(&self) -> Location<Offset> {
+        self.loc.unwrap_or_default()
     }
 }
 
 impl From<super::Error<ElaboratingStage>> for ElaboratingStage {
     fn from(value: super::Error<ElaboratingStage>) -> Self {
         value.stage
-    }
-}
-
-impl From<Error> for super::ElaboratingError {
-    fn from(value: Error) -> Self {
-        Self {
-            stage: ElaboratingStage { error: value },
-        }
     }
 }

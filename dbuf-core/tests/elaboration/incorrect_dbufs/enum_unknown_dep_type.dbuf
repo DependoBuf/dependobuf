@@ -1,0 +1,5 @@
+enum Broken (n Unknown) {
+    * => {
+        A {}
+    }
+}

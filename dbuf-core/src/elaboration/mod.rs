@@ -1,16 +1,16 @@
 use crate::arena::InternedString;
 use crate::ast::{elaborated as e, operators as o, parsed as p};
 use crate::error::ElaboratingError;
-use crate::error::elaborating::Error;
+use crate::error::elaborating::{ElaboratingStage, Error};
 use crate::location::{LocatedName, Location, Offset};
 
 pub mod apply;
 pub mod builtins;
 pub mod context;
 pub mod graph;
+pub mod map_ast;
 pub mod normalize;
 pub mod operators;
-pub mod rename;
 pub mod subst;
 pub mod typecheck;
 pub mod unify;
@@ -39,11 +39,22 @@ impl From<&o::UnaryOp<Name>> for o::UnaryOp<Str> {
 
 /// # Errors
 pub fn elaborate(module: &p::Module<Loc, Name>) -> Result<Mod, ElaboratingError> {
-    let sorted = graph::topological_sort(module)?;
+    let sorted = graph::topological_sort(module).map_err(|error| {
+        let loc = match &error {
+            Error::Cycle(entries) => entries.first().map(|(_, loc)| *loc),
+            _ => None,
+        };
+        ElaboratingStage { error, loc }
+    })?;
 
     let missing = graph::check_initial_constructors(module);
     if !missing.is_empty() {
-        return Err(Error::NoInitialConstructor(missing).into());
+        let loc = missing.first().map(|(_, loc)| *loc);
+        return Err(ElaboratingStage {
+            error: Error::NoInitialConstructor(missing),
+            loc,
+        }
+        .into());
     }
 
     Ok(typecheck::elaborate_sorted(&sorted)?)

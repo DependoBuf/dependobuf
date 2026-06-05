@@ -3,17 +3,18 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use crate::ast::parsed as p;
 use crate::ast::parsed::definition::Definition;
 use crate::error::elaborating::Error;
-use crate::error::elaborating::Error::Cycle;
+use crate::location::{Location, Offset};
 
 type ModuleRef<'a, Loc, Str> = Vec<&'a Definition<Loc, Str, p::TypeDeclaration<Loc, Str>>>;
 
 /// Topologically sorts declarations in a parsed module
 /// # Errors
-///  Returns `Err` containing one cycle if the graph has a cycle
+///  Returns `Err` containing one cycle names and locations
 pub fn topological_sort<'a, Loc, Str>(
     module: &'a p::Module<Loc, Str>,
 ) -> Result<ModuleRef<'a, Loc, Str>, Error>
 where
+    Loc: Into<Location<Offset>> + Copy,
     Str: Ord + Clone + ToString,
 {
     let declared: BTreeSet<String> = module.iter().map(|def| def.name.to_string()).collect();
@@ -93,14 +94,27 @@ where
     if sorted.len() == module.len() {
         Ok(sorted)
     } else {
-        Err(find_cycle(&deps))
+        let cycle_names = find_cycle(&deps);
+        let cycle = cycle_names
+            .into_iter()
+            .map(|name| {
+                let loc = by_name
+                    .get(&name)
+                    .map_or_else(Location::default, |def| def.loc.into());
+                (name, loc)
+            })
+            .collect();
+        Err(Error::Cycle(cycle))
     }
 }
 
-/// Returns the names of types that have no initial constructor
+/// Returns the names and locations of types that have no initial constructor
 #[must_use]
-pub fn check_initial_constructors<Loc, Str>(module: &p::Module<Loc, Str>) -> Vec<String>
+pub fn check_initial_constructors<Loc, Str>(
+    module: &p::Module<Loc, Str>,
+) -> Vec<(String, Location<Offset>)>
 where
+    Loc: Into<Location<Offset>> + Copy,
     Str: ToString,
 {
     module
@@ -117,7 +131,7 @@ where
                 })
             }),
         })
-        .map(|def| def.name.to_string())
+        .map(|def| (def.name.to_string(), def.loc.into()))
         .collect()
 }
 
@@ -138,7 +152,7 @@ fn add_ref<Loc, Str: ToString>(expr: &p::Expression<Loc, Str>, refs: &mut BTreeS
     }
 }
 
-fn find_cycle(deps: &BTreeMap<String, BTreeSet<String>>) -> Error {
+fn find_cycle(deps: &BTreeMap<String, BTreeSet<String>>) -> Vec<String> {
     let mut visited = BTreeSet::new();
     let mut in_progress = BTreeSet::new();
     let mut path = Vec::new();
@@ -151,10 +165,10 @@ fn find_cycle(deps: &BTreeMap<String, BTreeSet<String>>) -> Error {
             &mut in_progress,
             &mut path,
         ) {
-            return Cycle(cycle);
+            return cycle;
         }
     }
-    Cycle(vec![])
+    vec![]
 }
 
 fn dfs<'a>(
@@ -193,13 +207,14 @@ mod tests {
     use super::*;
     use crate::ast::parsed::{ExpressionNode, TypeDeclaration, TypeDefinition};
     use crate::error::elaborating::Error::Cycle;
+    use crate::location::{Location, Offset};
 
-    type Loc = ();
+    type Loc = Location<Offset>;
     type Str = String;
 
     fn fun_call(name: &str) -> p::TypeExpression<Loc, Str> {
         p::Expression {
-            loc: (),
+            loc: Loc::default(),
             node: ExpressionNode::FunCall {
                 fun: name.to_string(),
                 args: Arc::from(vec![].into_boxed_slice()),
@@ -216,7 +231,7 @@ mod tests {
             .iter()
             .enumerate()
             .map(|(i, ty)| Definition {
-                loc: (),
+                loc: Loc::default(),
                 name: format!("d{i}"),
                 data: fun_call(ty),
             })
@@ -225,13 +240,13 @@ mod tests {
             .iter()
             .enumerate()
             .map(|(i, ty)| Definition {
-                loc: (),
+                loc: Loc::default(),
                 name: format!("f{i}"),
                 data: fun_call(ty),
             })
             .collect();
         Definition {
-            loc: (),
+            loc: Loc::default(),
             name: name.to_string(),
             data: TypeDeclaration {
                 dependencies,
@@ -301,8 +316,8 @@ mod tests {
         let Cycle(cycle) = topological_sort(&module).unwrap_err() else {
             panic!("expected Cycle");
         };
-        assert!(cycle.contains(&"A".to_string()));
-        assert!(cycle.contains(&"B".to_string()));
+        assert!(cycle.iter().any(|(n, _)| n == "A"));
+        assert!(cycle.iter().any(|(n, _)| n == "B"));
     }
 
     #[test]
@@ -336,13 +351,13 @@ mod tests {
                         .iter()
                         .enumerate()
                         .map(|(fi, ty)| Definition {
-                            loc: (),
+                            loc: Loc::default(),
                             name: format!("f{fi}"),
                             data: fun_call(ty),
                         })
                         .collect();
                     Definition {
-                        loc: (),
+                        loc: Loc::default(),
                         name: format!("C{ci}"),
                         data: fields,
                     }
@@ -350,7 +365,7 @@ mod tests {
                 .collect(),
         };
         Definition {
-            loc: (),
+            loc: Loc::default(),
             name: name.to_string(),
             data: TypeDeclaration {
                 dependencies: vec![],
@@ -376,7 +391,7 @@ mod tests {
         let module = vec![make_decl("Inf", &[], &["Inf"])];
         let errs = check_initial_constructors(&module);
         assert_eq!(errs.len(), 1);
-        assert_eq!(errs[0], "Inf");
+        assert_eq!(errs[0].0, "Inf");
     }
 
     #[test]
@@ -397,7 +412,7 @@ mod tests {
         let module = vec![make_enum_decl("Bad", &[&["Bad"]])];
         let errs = check_initial_constructors(&module);
         assert_eq!(errs.len(), 1);
-        assert_eq!(errs[0], "Bad");
+        assert_eq!(errs[0].0, "Bad");
     }
 
     #[test]
@@ -408,8 +423,8 @@ mod tests {
             make_enum_decl("Bad2", &[&["Bad2"]]),
         ];
         let errs = check_initial_constructors(&module);
-        assert!(errs.contains(&"Bad1".to_string()));
-        assert!(errs.contains(&"Bad2".to_string()));
-        assert!(!errs.contains(&"Good".to_string()));
+        assert!(errs.iter().any(|(n, _)| n == "Bad1"));
+        assert!(errs.iter().any(|(n, _)| n == "Bad2"));
+        assert!(!errs.iter().any(|(n, _)| n == "Good"));
     }
 }

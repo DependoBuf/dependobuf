@@ -1,0 +1,17 @@
+message Inner {
+    x Int;
+}
+
+message InnerDep (m Inner) {}
+
+message UseLiteral {
+    d InnerDep Inner{x: 42};
+}
+
+message UseVar (n Int) {
+    d InnerDep Inner{x: n};
+}
+
+message UseExpr (n Int) {
+    d InnerDep Inner{x: (n + 1)};
+}

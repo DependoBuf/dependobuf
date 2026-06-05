@@ -29,6 +29,7 @@ num-traits = "0.2"
 strum = "0.27"
 strum_macros = "0.27"
 thiserror = "2.0.12"
+indexmap = "2"
 tokio = {version = "1.45.0", features = ["full"]}
 tower-lsp = "0.20.0"
 unescape = "0.1.0"

@@ -4,96 +4,84 @@ expression: elaborated
 ---
 Ok(
     Module {
-        types: [
-            (
-                InternedString {
-                    inner: "IntDep",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "n_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Int",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
+        types: {
+            InternedString {
+                inner: "IntDep",
+            }: Type {
+                dependencies: [
+                    (
                         InternedString {
-                            inner: "IntDep",
+                            inner: "n",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Int",
+                            },
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "Record",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfMessage(
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "IntDep",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "Record",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "Record",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "StringDep",
+            }: Type {
+                dependencies: [
+                    (
                         InternedString {
-                            inner: "Record",
+                            inner: "s",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "String",
+                            },
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "StringDep",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "s_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "String",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "StringDep",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "UseRecord",
+            }: Type {
+                dependencies: [
+                    (
                         InternedString {
-                            inner: "StringDep",
+                            inner: "r",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Record",
+                            },
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "UseRecord",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "r_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Record",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "UseRecord",
-                        },
-                    ),
-                },
-            ),
-        ],
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "UseRecord",
+                    },
+                ),
+            },
+        },
         constructors: {
             InternedString {
                 inner: "IntDep",

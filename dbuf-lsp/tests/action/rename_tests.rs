@@ -681,7 +681,6 @@ fn rename_dependency_message_declaration() {
 }
 
 #[test]
-#[should_panic(expected = "")] /* FIXME: actually shouldn't panic */
 fn rename_dependency_message_dependency() {
     const TEXT: &str = r"
       |message IntD (i Int) {}
@@ -696,7 +695,6 @@ fn rename_dependency_message_dependency() {
 }
 
 #[test]
-#[should_panic(expected = "")] /* FIXME: actually shouldn't panic  */
 fn rename_dependency_message_fields() {
     const TEXT: &str = r"
       |message IntD (i Int) {}
@@ -714,7 +712,6 @@ fn rename_dependency_message_fields() {
 }
 
 #[test]
-#[should_panic(expected = "")] /* FIXME: actually shouldn't panic */
 fn rename_dependency_message_constructor_use() {
     const TEXT: &str = r"
       |message Struct {
@@ -736,7 +733,6 @@ fn rename_dependency_message_constructor_use() {
 }
 
 #[test]
-#[should_panic(expected = "")] /* FIXME: actually shouldn't panic */
 fn rename_dependency_message_all() {
     const TEXT: &str = r"
       |message Struct {
@@ -778,7 +774,6 @@ fn rename_dependency_enum_declaration() {
 }
 
 #[test]
-#[should_panic(expected = "")] /* FIXME: actually shouldn't panic */
 fn rename_dependency_enum_dependency() {
     const TEXT: &str = r"
       |message IntD (i Int) {}
@@ -797,7 +792,6 @@ fn rename_dependency_enum_dependency() {
 }
 
 #[test]
-#[should_panic(expected = "")] /* FIXME: actually shouldn't panic */
 fn rename_dependency_enum_fields() {
     const TEXT: &str = r"
       |message IntD (i Int) {}
@@ -819,7 +813,6 @@ fn rename_dependency_enum_fields() {
 }
 
 #[test]
-#[should_panic(expected = "")] /* FIXME: actually shouldn't panic */
 fn rename_dependency_enum_constructor_use() {
     const TEXT: &str = r"
       |message Struct {
@@ -841,7 +834,6 @@ fn rename_dependency_enum_constructor_use() {
 }
 
 #[test]
-#[should_panic(expected = "")] /* FIXME: actually shouldn't panic */
 fn rename_dependency_enum_all() {
     const TEXT: &str = r"
       |message Struct {

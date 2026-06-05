@@ -1,0 +1,253 @@
+---
+source: dbuf-core/tests/elaboration/elaboration_correct.rs
+expression: elaborated
+---
+Ok(
+    Module {
+        types: {
+            InternedString {
+                inner: "B",
+            }: Type {
+                dependencies: [
+                    (
+                        InternedString {
+                            inner: "b",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Bool",
+                            },
+                            dependencies: [],
+                        },
+                    ),
+                ],
+                constructor_names: OfEnum(
+                    {
+                        InternedString {
+                            inner: "IsFalse",
+                        },
+                        InternedString {
+                            inner: "IsTrue",
+                        },
+                    },
+                ),
+            },
+            InternedString {
+                inner: "Color",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfEnum(
+                    {
+                        InternedString {
+                            inner: "Blue",
+                        },
+                        InternedString {
+                            inner: "Green",
+                        },
+                        InternedString {
+                            inner: "Red",
+                        },
+                    },
+                ),
+            },
+            InternedString {
+                inner: "A",
+            }: Type {
+                dependencies: [
+                    (
+                        InternedString {
+                            inner: "c",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Color",
+                            },
+                            dependencies: [],
+                        },
+                    ),
+                ],
+                constructor_names: OfEnum(
+                    {
+                        InternedString {
+                            inner: "IsBlue",
+                        },
+                        InternedString {
+                            inner: "IsGreen",
+                        },
+                        InternedString {
+                            inner: "IsRed",
+                        },
+                    },
+                ),
+            },
+        },
+        constructors: {
+            InternedString {
+                inner: "Blue",
+            }: Constructor {
+                implicits: [],
+                fields: [],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "Color",
+                    },
+                    dependencies: [],
+                },
+            },
+            InternedString {
+                inner: "Green",
+            }: Constructor {
+                implicits: [],
+                fields: [],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "Color",
+                    },
+                    dependencies: [],
+                },
+            },
+            InternedString {
+                inner: "IsBlue",
+            }: Constructor {
+                implicits: [],
+                fields: [],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "A",
+                    },
+                    dependencies: [
+                        Constructor {
+                            name: InternedString {
+                                inner: "Blue",
+                            },
+                            implicits: [],
+                            arguments: [],
+                            result_type: TypeExpression {
+                                name: InternedString {
+                                    inner: "Color",
+                                },
+                                dependencies: [],
+                            },
+                        },
+                    ],
+                },
+            },
+            InternedString {
+                inner: "IsFalse",
+            }: Constructor {
+                implicits: [],
+                fields: [],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "B",
+                    },
+                    dependencies: [
+                        OpCall {
+                            op_call: Literal(
+                                Bool(
+                                    false,
+                                ),
+                            ),
+                            result_type: TypeExpression {
+                                name: InternedString {
+                                    inner: "Bool",
+                                },
+                                dependencies: [],
+                            },
+                        },
+                    ],
+                },
+            },
+            InternedString {
+                inner: "IsGreen",
+            }: Constructor {
+                implicits: [],
+                fields: [],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "A",
+                    },
+                    dependencies: [
+                        Constructor {
+                            name: InternedString {
+                                inner: "Green",
+                            },
+                            implicits: [],
+                            arguments: [],
+                            result_type: TypeExpression {
+                                name: InternedString {
+                                    inner: "Color",
+                                },
+                                dependencies: [],
+                            },
+                        },
+                    ],
+                },
+            },
+            InternedString {
+                inner: "IsRed",
+            }: Constructor {
+                implicits: [],
+                fields: [],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "A",
+                    },
+                    dependencies: [
+                        Constructor {
+                            name: InternedString {
+                                inner: "Red",
+                            },
+                            implicits: [],
+                            arguments: [],
+                            result_type: TypeExpression {
+                                name: InternedString {
+                                    inner: "Color",
+                                },
+                                dependencies: [],
+                            },
+                        },
+                    ],
+                },
+            },
+            InternedString {
+                inner: "IsTrue",
+            }: Constructor {
+                implicits: [],
+                fields: [],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "B",
+                    },
+                    dependencies: [
+                        OpCall {
+                            op_call: Literal(
+                                Bool(
+                                    true,
+                                ),
+                            ),
+                            result_type: TypeExpression {
+                                name: InternedString {
+                                    inner: "Bool",
+                                },
+                                dependencies: [],
+                            },
+                        },
+                    ],
+                },
+            },
+            InternedString {
+                inner: "Red",
+            }: Constructor {
+                implicits: [],
+                fields: [],
+                result_type: TypeExpression {
+                    name: InternedString {
+                        inner: "Color",
+                    },
+                    dependencies: [],
+                },
+            },
+        },
+    },
+)

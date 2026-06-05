@@ -9,6 +9,18 @@ Err(
                 expected: 2,
                 found: 1,
             },
+            loc: Some(
+                Location {
+                    start: Offset {
+                        lines: 30,
+                        columns: 4,
+                    },
+                    length: Offset {
+                        lines: 0,
+                        columns: 1,
+                    },
+                },
+            ),
         },
     },
 )

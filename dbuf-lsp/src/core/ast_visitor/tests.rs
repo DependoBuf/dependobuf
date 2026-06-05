@@ -1,10 +1,9 @@
-use crate::core::workspace::ParsedAst;
-
 use super::Visit;
 use super::VisitResult;
 use super::Visitor;
 use super::safe_skip::safe_skip;
 use super::visit_ast;
+use crate::core::workspace::ParsedAst;
 
 use dbuf_core::cst::convert_to_ast;
 use dbuf_core::cst::parse_to_cst;

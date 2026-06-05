@@ -4,171 +4,150 @@ expression: elaborated
 ---
 Ok(
     Module {
-        types: [
-            (
-                InternedString {
-                    inner: "BoolDep",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "b_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Bool",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
+        types: {
+            InternedString {
+                inner: "BoolDep",
+            }: Type {
+                dependencies: [
+                    (
                         InternedString {
-                            inner: "BoolDep",
+                            inner: "b",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Bool",
+                            },
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "IntDep",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "n_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Int",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "BoolDep",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "IntDep",
+            }: Type {
+                dependencies: [
+                    (
                         InternedString {
-                            inner: "IntDep",
+                            inner: "n",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Int",
+                            },
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "DoubleBang",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "b_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Bool",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "IntDep",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "DoubleBang",
+            }: Type {
+                dependencies: [
+                    (
                         InternedString {
-                            inner: "DoubleBang",
+                            inner: "b",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Bool",
+                            },
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "UnaryBang",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "b_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Bool",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "DoubleBang",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "UnaryBang",
+            }: Type {
+                dependencies: [
+                    (
                         InternedString {
-                            inner: "UnaryBang",
+                            inner: "b",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Bool",
+                            },
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "DoubleMinus",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "x_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Int",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "UnaryBang",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "DoubleMinus",
+            }: Type {
+                dependencies: [
+                    (
                         InternedString {
-                            inner: "DoubleMinus",
+                            inner: "x",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Int",
+                            },
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "MinusOnLiteral",
-                },
-                Type {
-                    dependencies: [],
-                    constructor_names: OfMessage(
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "DoubleMinus",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "MinusOnLiteral",
+            }: Type {
+                dependencies: [],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "MinusOnLiteral",
+                    },
+                ),
+            },
+            InternedString {
+                inner: "UnaryMinus",
+            }: Type {
+                dependencies: [
+                    (
                         InternedString {
-                            inner: "MinusOnLiteral",
+                            inner: "x",
+                        },
+                        TypeExpression {
+                            name: InternedString {
+                                inner: "Int",
+                            },
+                            dependencies: [],
                         },
                     ),
-                },
-            ),
-            (
-                InternedString {
-                    inner: "UnaryMinus",
-                },
-                Type {
-                    dependencies: [
-                        (
-                            InternedString {
-                                inner: "x_dep",
-                            },
-                            TypeExpression {
-                                name: InternedString {
-                                    inner: "Int",
-                                },
-                                dependencies: [],
-                            },
-                        ),
-                    ],
-                    constructor_names: OfMessage(
-                        InternedString {
-                            inner: "UnaryMinus",
-                        },
-                    ),
-                },
-            ),
-        ],
+                ],
+                constructor_names: OfMessage(
+                    InternedString {
+                        inner: "UnaryMinus",
+                    },
+                ),
+            },
+        },
         constructors: {
             InternedString {
                 inner: "BoolDep",

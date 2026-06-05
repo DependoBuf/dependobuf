@@ -1,0 +1,8 @@
+enum Broken (n Int) {
+    true => {
+        A {}
+    }
+    * => {
+        B {}
+    }
+}

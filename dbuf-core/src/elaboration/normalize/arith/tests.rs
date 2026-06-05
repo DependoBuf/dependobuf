@@ -163,6 +163,84 @@ fn product() {
 }
 
 #[test]
+fn add_commutativity() {
+    assert_poly_eq(add(var("a"), var("b")), add(var("b"), var("a")));
+}
+
+#[test]
+fn mul_associativity() {
+    assert_poly_eq(
+        mul(mul(var("a"), var("b")), var("c")),
+        mul(var("a"), mul(var("b"), var("c"))),
+    );
+}
+
+#[test]
+fn sub_anticommutativity() {
+    assert_poly_eq(sub(var("a"), var("b")), neg(sub(var("b"), var("a"))));
+}
+
+#[test]
+fn mul_distributes_over_sub() {
+    assert_poly_eq(
+        mul(var("a"), sub(var("b"), var("c"))),
+        sub(mul(var("a"), var("b")), mul(var("a"), var("c"))),
+    );
+}
+
+#[test]
+fn add_identity() {
+    assert_poly_eq(add(var("x"), lit(0)), var("x"));
+}
+
+#[test]
+fn mul_identity() {
+    assert_poly_eq(mul(var("x"), lit(1)), var("x"));
+}
+
+#[test]
+fn mul_zero() {
+    assert_poly_eq(mul(var("x"), lit(0)), lit(0));
+}
+
+#[test]
+fn sub_identity() {
+    assert_poly_eq(sub(var("x"), lit(0)), var("x"));
+}
+
+#[test]
+fn neg_distributes_over_add() {
+    assert_poly_eq(
+        neg(add(var("a"), var("b"))),
+        add(neg(var("a")), neg(var("b"))),
+    );
+}
+
+#[test]
+fn neg_distributes_over_mul() {
+    assert_poly_eq(neg(mul(var("a"), var("b"))), mul(neg(var("a")), var("b")));
+}
+
+#[test]
+fn square_of_difference() {
+    assert_poly_eq(
+        sq(sub(var("x"), var("y"))),
+        sub(
+            add(sq(var("x")), sq(var("y"))),
+            mul(lit(2), mul(var("x"), var("y"))),
+        ),
+    );
+}
+
+#[test]
+fn constant_folding() {
+    let nf = normalize::<Str, i64>(&add(mul(lit(2), lit(3)), lit(1)));
+    assert!(nf.vars.is_empty());
+    assert_eq!(poly_coeff(&nf, &mono(&[])), 7);
+    assert_eq!(nf.poly.len(), 1);
+}
+
+#[test]
 fn complex_product() {
     let x2 = sq(var("x"));
     let y2 = sq(var("y"));

@@ -268,7 +268,14 @@ where
     let cv = constructed_value_parser();
     let hole = typed_hole_parser();
 
-    let arguments = choice((paren_expr, chain, literal, cv, hole));
+    let dot = just(Token::Dot).map_token();
+    let constructed_value_chain = cv
+        .clone()
+        .map_child()
+        .then(dot.then(var_ident.clone()).repeated().collect::<Vec<_>>())
+        .map_tree(TreeKind::ConstructedValueChain);
+
+    let arguments = choice((paren_expr, chain, literal, constructed_value_chain, hole));
     let commented_arguments = ws.clone().then(arguments).repeated().collect::<Vec<_>>();
 
     var_ident

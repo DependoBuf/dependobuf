@@ -7,6 +7,7 @@ use dbuf_core::cst::Token;
 use dbuf_core::location::Location;
 use dbuf_core::location::Offset;
 
+use dbuf_core::error::elaborating;
 use dbuf_core::error::parsing::*;
 use dbuf_core::error::*;
 
@@ -280,10 +281,43 @@ impl Reportable<()> for ParsingError {
 
 impl Reportable<()> for ElaboratingError {
     fn report<'a>(&self, meta: &Metadata<'a>, _extra: &()) -> Report<'a, (&'a str, Range<usize>)> {
-        let kind = ReportKind::Error;
-        let text = self.error.to_string();
-        let loc = (meta.content.get_name(), 0..1);
+        let message = self.stage.error.to_string();
+        let primary_span = meta.convert_location(&self.stage.loc.unwrap_or_default());
+        let primary_loc = (meta.content.get_name(), primary_span);
 
-        Report::build(kind, loc).with_message(text).finish()
+        let mut report =
+            Report::build(ReportKind::Error, primary_loc.clone()).with_message(&message);
+
+        match &self.stage.error {
+            elaborating::Error::Cycle(entries) => {
+                for (name, loc) in entries {
+                    let span = meta.convert_location(loc);
+                    report = report.with_label(
+                        Label::new((meta.content.get_name(), span))
+                            .with_color(Color::Red)
+                            .with_message(format!("{name} is part of the cycle")),
+                    );
+                }
+            }
+            elaborating::Error::NoInitialConstructor(entries) => {
+                for (name, loc) in entries {
+                    let span = meta.convert_location(loc);
+                    report = report.with_label(
+                        Label::new((meta.content.get_name(), span))
+                            .with_color(Color::Red)
+                            .with_message(format!("{name} has no initial constructor")),
+                    );
+                }
+            }
+            _ => {
+                report = report.with_label(
+                    Label::new(primary_loc)
+                        .with_color(Color::Red)
+                        .with_message(&message),
+                );
+            }
+        }
+
+        report.finish()
     }
 }

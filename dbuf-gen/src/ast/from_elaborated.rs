@@ -161,7 +161,7 @@ impl Constructor {
                     constructors: type_context.constructors,
                 };
                 let symbol = Rc::new(Symbol::from_elaborated(partial_context, name.clone(), expr));
-                assert!(all_params.try_insert(name.clone(), symbol.clone()), "codegen expects valid elaborated ast: two constructor constructor params (among dependencies and implicits) can not have same name");
+                assert!(all_params.try_insert_local(name.clone(), symbol.clone()), "codegen expects valid elaborated ast: two constructor implicits can not have same name");
                 symbol
             })
             .collect();

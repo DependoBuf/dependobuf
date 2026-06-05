@@ -1,9 +1,10 @@
 use dbuf_core::arena::InternedString;
 use dbuf_core::ast::elaborated as e;
+use indexmap::IndexMap;
 
 pub fn empty() -> e::Module<InternedString> {
     e::Module {
-        types: vec![],
+        types: IndexMap::new(),
         constructors: vec![].into_iter().collect(),
     }
 }
@@ -22,7 +23,9 @@ pub fn nat() -> e::Module<InternedString> {
                         .collect(),
                 ),
             },
-        )],
+        )]
+        .into_iter()
+        .collect(),
         constructors: vec![
             (
                 "Zero".to_owned().into(),
@@ -78,7 +81,9 @@ pub fn vec() -> e::Module<InternedString> {
                         .collect(),
                 ),
             },
-        )],
+        )]
+        .into_iter()
+        .collect(),
         constructors: vec![
             (
                 "Nil".to_owned().into(),
@@ -171,7 +176,9 @@ pub fn user() -> e::Module<InternedString> {
                 )],
                 constructor_names: e::ConstructorNames::OfMessage("User".to_owned().into()),
             },
-        )],
+        )]
+        .into_iter()
+        .collect(),
         constructors: vec![(
             "User".to_owned().into(),
             e::Constructor {
@@ -229,7 +236,9 @@ pub fn inventory() -> e::Module<InternedString> {
                 )],
                 constructor_names: e::ConstructorNames::OfMessage("Inventory".to_owned().into()),
             },
-        )],
+        )]
+        .into_iter()
+        .collect(),
         constructors: vec![(
             "Inventory".to_owned().into(),
             e::Constructor {
@@ -287,7 +296,9 @@ pub fn builtin_message() -> e::Module<InternedString> {
                 dependencies: vec![],
                 constructor_names: e::ConstructorNames::OfMessage("Builtins".to_owned().into()),
             },
-        )],
+        )]
+        .into_iter()
+        .collect(),
         constructors: vec![(
             "Builtins".to_owned().into(),
             e::Constructor {
@@ -338,7 +349,6 @@ pub fn get_basic_module() -> e::Module<InternedString> {
     create_module(vec![nat()])
 }
 
-#[allow(clippy::too_many_lines, reason = "??? (131/100)")]
 #[must_use]
 pub fn get_nat_vec_module() -> e::Module<InternedString> {
     create_module(vec![nat(), vec()])

@@ -8,7 +8,6 @@ use tower_lsp::lsp_types::Position;
 use super::get_handler;
 
 #[test]
-#[should_panic(expected = "")] /* FIXME: actually shouldn't panic */
 fn test_fuzzing() {
     let h = get_handler();
 
