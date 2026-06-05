@@ -5,7 +5,7 @@
 
 use super::location::LocationHelper;
 
-use super::{Loc, Str};
+use super::{Loc, Name};
 use tower_lsp::lsp_types;
 
 /// Helpers for `dbuf-core::LocatedName`.
@@ -18,7 +18,7 @@ pub trait LocNameHelper {
     }
 }
 
-impl LocNameHelper for Str {
+impl LocNameHelper for Name {
     fn get_location(&self) -> Loc {
         Loc::new(self.start, self.end())
     }

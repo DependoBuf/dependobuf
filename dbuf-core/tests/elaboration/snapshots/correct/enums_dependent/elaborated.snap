@@ -1,25 +1,26 @@
 ---
 source: dbuf-core/tests/elaboration/elaboration_correct.rs
-assertion_line: 21
 expression: elaborated
 ---
 Err(
-    ElaboratingStage {
-        error: ArityMismatch {
-            expected: 2,
-            found: 1,
-        },
-        loc: Some(
-            Location {
-                start: Offset {
-                    lines: 30,
-                    columns: 4,
-                },
-                length: Offset {
-                    lines: 0,
-                    columns: 1,
-                },
+    Error {
+        stage: ElaboratingStage {
+            error: ArityMismatch {
+                expected: 2,
+                found: 1,
             },
-        ),
+            loc: Some(
+                Location {
+                    start: Offset {
+                        lines: 30,
+                        columns: 4,
+                    },
+                    length: Offset {
+                        lines: 0,
+                        columns: 1,
+                    },
+                },
+            ),
+        },
     },
 )

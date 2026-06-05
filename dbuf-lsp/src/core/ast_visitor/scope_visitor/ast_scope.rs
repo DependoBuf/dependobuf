@@ -6,6 +6,7 @@ use dbuf_core::ast::elaborated::*;
 
 use crate::core::workspace::ElaboratedAst;
 use crate::core::workspace::ElaboratedHelper;
+use crate::core::workspace::Str;
 
 /// Scope control for parsed ast. Contains current
 /// type name and constructor name with their
@@ -23,17 +24,17 @@ pub struct AstScope<'a> {
     /// 0: name of type
     ///
     /// 1: representation in elaborated ast of type.
-    ty: Option<(&'a str, Option<&'a Type<String>>)>,
+    ty: Option<(&'a str, Option<&'a Type<Str>>)>,
 
     /// current scope constructor.
     ///
     /// 0: name of constructor
     ///
     /// 1: representation in elaborated ast of constructor.
-    constructor: Option<(&'a str, Option<&'a Constructor<String>>)>,
+    constructor: Option<(&'a str, Option<&'a Constructor<Str>>)>,
 
-    cache_ty: Option<(&'a str, Option<&'a Type<String>>)>,
-    cache_constructor: Option<(&'a str, Option<&'a Constructor<String>>)>,
+    cache_ty: Option<(&'a str, Option<&'a Type<Str>>)>,
+    cache_constructor: Option<(&'a str, Option<&'a Constructor<Str>>)>,
 }
 
 impl<'a> AstScope<'a> {
@@ -82,7 +83,7 @@ impl<'a> AstScope<'a> {
     /// returns its type name.
     fn try_switch_to(
         variable: &str,
-        variants: &'a [(String, TypeExpression<String>)],
+        variants: &'a [(Str, TypeExpression<Str>)],
     ) -> Option<&'a str> {
         if let Some((
             _,
@@ -90,9 +91,9 @@ impl<'a> AstScope<'a> {
                 name,
                 dependencies: _,
             },
-        )) = variants.iter().rev().find(|v| v.0 == variable)
+        )) = variants.iter().rev().find(|v| v.0.as_ref() == variable)
         {
-            Some(name)
+            Some(name.as_ref())
         } else {
             None
         }

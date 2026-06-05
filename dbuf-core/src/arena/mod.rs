@@ -18,6 +18,14 @@ impl From<String> for InternedString {
     }
 }
 
+impl From<&str> for InternedString {
+    fn from(value: &str) -> Self {
+        Self {
+            inner: ArcIntern::from_ref(value),
+        }
+    }
+}
+
 impl AsRef<str> for InternedString {
     fn as_ref(&self) -> &str {
         self.inner.as_ref()

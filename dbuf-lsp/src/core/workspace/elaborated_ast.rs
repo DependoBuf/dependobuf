@@ -7,7 +7,7 @@ use dbuf_core::ast::elaborated::*;
 
 use crate::core::dbuf_language::get_builtin_types;
 
-pub type Str = String;
+use super::Str;
 
 pub type ElaboratedAst = Module<Str>;
 
@@ -41,7 +41,7 @@ pub trait ElaboratedHelper {
 
 impl ElaboratedHelper for ElaboratedAst {
     fn get_constructor_type(&self, constructor_name: &str) -> Option<&str> {
-        self.constructors.get(constructor_name).map(|ctr| {
+        self.constructors.get(&constructor_name.into()).map(|ctr| {
             let TypeExpression::TypeExpression {
                 name,
                 dependencies: _,
@@ -51,15 +51,15 @@ impl ElaboratedHelper for ElaboratedAst {
     }
 
     fn get_type(&self, name: &str) -> Option<&Type<Str>> {
-        self.types.get(name)
+        self.types.get(&Str::from(name))
     }
     fn get_type_constructor(&self, ty: &Type<Str>, ctr: &str) -> Option<&Constructor<Str>> {
         match &ty.constructor_names {
-            ConstructorNames::OfMessage(name) => {
-                (name == ctr).then(|| self.get_constructor(ctr)).flatten()
-            }
+            ConstructorNames::OfMessage(name) => (name.as_ref() == ctr)
+                .then(|| self.get_constructor(ctr))
+                .flatten(),
             ConstructorNames::OfEnum(ctrs) => ctrs
-                .get(ctr)
+                .get(&ctr.into())
                 .is_some()
                 .then(|| self.get_constructor(ctr))
                 .flatten(),
@@ -67,11 +67,11 @@ impl ElaboratedHelper for ElaboratedAst {
     }
 
     fn has_type(&self, name: &str) -> bool {
-        self.types.contains_key(name)
+        self.types.contains_key(&Str::from(name))
     }
 
     fn has_constructor(&self, name: &str) -> bool {
-        self.constructors.keys().any(|ctr| name == ctr)
+        self.constructors.keys().any(|ctr| ctr.as_ref() == name)
     }
 
     fn has_type_or_constructor(&self, name: &str) -> bool {
@@ -79,7 +79,7 @@ impl ElaboratedHelper for ElaboratedAst {
     }
 
     fn get_constructor(&self, name: &str) -> Option<&Constructor<Str>> {
-        self.constructors.get(name)
+        self.constructors.get(&name.into())
     }
 
     fn is_builtin_type(&self, type_name: &str) -> bool {
@@ -95,16 +95,16 @@ impl ElaboratedHelper for ElaboratedAst {
 
     fn is_type_dependency(&self, type_name: &str, name: &str) -> bool {
         self.get_type(type_name)
-            .is_some_and(|t| t.dependencies.iter().any(|d| d.0 == name))
+            .is_some_and(|t| t.dependencies.iter().any(|d| d.0.as_ref() == name))
     }
 
     fn is_constructor_field(&self, constructor_name: &str, name: &str) -> bool {
         self.get_constructor(constructor_name)
-            .is_some_and(|c| c.fields.iter().any(|f| f.0 == name))
+            .is_some_and(|c| c.fields.iter().any(|f| f.0.as_ref() == name))
     }
 
     fn is_constructor_implicit(&self, constructor_name: &str, name: &str) -> bool {
         self.get_constructor(constructor_name)
-            .is_some_and(|c| c.implicits.iter().any(|f| f.0 == name))
+            .is_some_and(|c| c.implicits.iter().any(|f| f.0.as_ref() == name))
     }
 }

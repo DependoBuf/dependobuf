@@ -9,7 +9,7 @@ use crate::core::ast_visitor::*;
 use crate::core::dbuf_language::get_builtin_types;
 use crate::core::workspace::LocNameHelper;
 use crate::core::workspace::LocationHelper;
-use crate::core::workspace::Str;
+use crate::core::workspace::Name;
 
 use crate::core::navigator::Navigator;
 use crate::core::navigator::Symbol;
@@ -75,7 +75,7 @@ struct FindTypeVisitor<'a> {
 }
 
 impl FindTypeVisitor<'_> {
-    fn check_type(&self, t: &Str) -> VisitResult<Range> {
+    fn check_type(&self, t: &Name) -> VisitResult<Range> {
         if t.as_ref() == self.type_name {
             Stop(t.get_location().to_lsp())
         } else {
@@ -102,7 +102,7 @@ struct FindDependencyVisitor<'a> {
 }
 
 impl FindDependencyVisitor<'_> {
-    fn check_type(&self, t: &Str) -> VisitResult<Range> {
+    fn check_type(&self, t: &Name) -> VisitResult<Range> {
         if t.as_ref() == self.type_name {
             Continue
         } else {
@@ -110,7 +110,7 @@ impl FindDependencyVisitor<'_> {
         }
     }
 
-    fn check_dependency(&self, d: &Str) -> VisitResult<Range> {
+    fn check_dependency(&self, d: &Name) -> VisitResult<Range> {
         if d.as_ref() == self.dependency {
             Stop(d.get_location().to_lsp())
         } else {
@@ -139,7 +139,7 @@ struct FindFieldVisitor<'a> {
 }
 
 impl FindFieldVisitor<'_> {
-    fn check_type(&self, t: &Str) -> VisitResult<Range> {
+    fn check_type(&self, t: &Name) -> VisitResult<Range> {
         if t.as_ref() == self.type_name {
             Continue
         } else {
@@ -147,7 +147,7 @@ impl FindFieldVisitor<'_> {
         }
     }
 
-    fn check_constructor(&self, c: &Str) -> VisitResult<Range> {
+    fn check_constructor(&self, c: &Name) -> VisitResult<Range> {
         if c.as_ref() == self.constructor {
             Continue
         } else {
@@ -155,7 +155,7 @@ impl FindFieldVisitor<'_> {
         }
     }
 
-    fn check_field(&self, f: &Str) -> VisitResult<Range> {
+    fn check_field(&self, f: &Name) -> VisitResult<Range> {
         if f.as_ref() == self.field {
             Stop(f.get_location().to_lsp())
         } else {
@@ -186,7 +186,7 @@ struct FindAliasVisitor<'a> {
 }
 
 impl FindAliasVisitor<'_> {
-    fn check_type(&self, t: &Str) -> VisitResult<Range> {
+    fn check_type(&self, t: &Name) -> VisitResult<Range> {
         if t.as_ref() == self.type_name {
             Continue
         } else {
@@ -203,7 +203,7 @@ impl FindAliasVisitor<'_> {
         }
     }
 
-    fn check_alias(&self, a: &Str) -> VisitResult<Range> {
+    fn check_alias(&self, a: &Name) -> VisitResult<Range> {
         if a.as_ref() == self.alias {
             Stop(a.get_location().to_lsp())
         } else {
@@ -234,7 +234,7 @@ struct FindConstructorVisitor<'a> {
 }
 
 impl FindConstructorVisitor<'_> {
-    fn check_type(&self, t: &Str) -> VisitResult<Range> {
+    fn check_type(&self, t: &Name) -> VisitResult<Range> {
         if t.as_ref() == self.type_name {
             Continue
         } else {
@@ -242,7 +242,7 @@ impl FindConstructorVisitor<'_> {
         }
     }
 
-    fn check_constructor(&self, c: &Str) -> VisitResult<Range> {
+    fn check_constructor(&self, c: &Name) -> VisitResult<Range> {
         if c.as_ref() == self.constructor {
             Stop(c.get_location().to_lsp())
         } else {

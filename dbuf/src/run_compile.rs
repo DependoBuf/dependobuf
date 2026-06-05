@@ -5,8 +5,9 @@ use std::path;
 use std::process::exit;
 use std::sync::LazyLock;
 
+use dbuf_core::arena::InternedString;
 use dbuf_core::ast::elaborated as e;
-type ElaboratedModule = e::Module<String>;
+type ElaboratedModule = e::Module<InternedString>;
 
 use super::file::File;
 use super::reporter::Reporter;
@@ -124,8 +125,7 @@ mod kotlin_gen_impl {
 
     /// impl of kotlin code generation.
     pub fn run(module: &ElaboratedModule) -> String {
-        // FIXME: stop clonning module.
-        kotlin_gen::generate_module(module.clone())
+        kotlin_gen::generate_module(module)
     }
 }
 
@@ -137,8 +137,9 @@ mod rust_gen_impl {
     /// impl of rust code generation.
     pub fn run(module: &ElaboratedModule) -> String {
         let mut writer = Vec::new();
-        // FIXME: stop clonning module.
-        assert!(codegen::generate_module(module.clone(), &mut writer).is_ok());
+        // FIXME
+        let res = codegen::generate_module(module, &mut writer);
+        assert!(res.is_ok());
         String::from_utf8(writer).expect("generated code must be correct utf8")
     }
 }
@@ -150,7 +151,6 @@ mod swift_gen_impl {
 
     /// impl of swift code generation.
     pub fn run(module: &ElaboratedModule) -> String {
-        // FIXME: stop clonning module.
-        swift_gen::generate_module(module.clone())
+        swift_gen::generate_module(module)
     }
 }

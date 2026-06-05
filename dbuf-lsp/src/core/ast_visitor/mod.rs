@@ -22,7 +22,7 @@ use dbuf_core::ast::parsed::*;
 
 use tracing::warn;
 
-use super::workspace::{Loc, LocationHelper, PositionHelper, Str};
+use super::workspace::{Loc, LocationHelper, Name, PositionHelper};
 
 use super::workspace::LocNameHelper;
 use super::workspace::ParsedAst;
@@ -34,7 +34,7 @@ use super::workspace::Position;
 #[derive(Debug)]
 pub struct Constructor<'a> {
     /// Name of constructor
-    pub name: &'a Str,
+    pub name: &'a Name,
     /// Indicating if constructor constructs message
     pub of_message: bool,
     /// Location of whole constructor
@@ -69,7 +69,7 @@ pub enum Visit<'a> {
     /// 0: type name.
     ///
     /// 1: location of whole type.
-    Type(&'a Str, &'a Loc),
+    Type(&'a Name, &'a Loc),
     /// Type dependency.
     ///
     /// Can be skipped (to next dependency).
@@ -77,7 +77,7 @@ pub enum Visit<'a> {
     /// 0: dependency name.
     ///
     /// 1: location of whole dependency.
-    Dependency(&'a Str, &'a Loc),
+    Dependency(&'a Name, &'a Loc),
     /// New branch in enum.
     ///
     /// Can be skipped (to next enum branch).
@@ -87,7 +87,7 @@ pub enum Visit<'a> {
     /// No skip allowed.
     ///
     /// 0: alias.
-    PatternAlias(&'a Str),
+    PatternAlias(&'a Name),
     /// Constructor call in pattern.
     ///
     /// Can be skipped (to next pattern).
@@ -95,13 +95,13 @@ pub enum Visit<'a> {
     /// 0: constructor name.
     ///
     /// 1: location of whole call.
-    PatternCall(&'a Str, &'a Loc),
+    PatternCall(&'a Name, &'a Loc),
     /// Constructor field name.
     ///
     /// Can be skipped (to next call argument).
     ///
     /// 0: field name.
-    PatternCallArgument(&'a Str),
+    PatternCallArgument(&'a Name),
     /// Call end.
     ///
     /// No skip allowed.
@@ -140,7 +140,7 @@ pub enum Visit<'a> {
     /// 0: field name.
     ///
     /// 1: location of whole field.
-    Filed(&'a Str, &'a Loc),
+    Filed(&'a Name, &'a Loc),
     /// Type expression.
     ///
     /// Can be skipped (to next dependency/field).
@@ -148,7 +148,7 @@ pub enum Visit<'a> {
     /// 0: type name.
     ///
     /// 1: location of whole expression.
-    TypeExpression(&'a Str, &'a Loc),
+    TypeExpression(&'a Name, &'a Loc),
     /// Expression.
     ///
     /// Can be skipped (to next expression).
@@ -164,7 +164,7 @@ pub enum Visit<'a> {
     /// No skip allowed.
     ///
     /// 0: access.
-    AccessChain(&'a Str),
+    AccessChain(&'a Name),
     /// Dot in access chain.
     ///
     /// No skip allowed.
@@ -181,19 +181,19 @@ pub enum Visit<'a> {
     ///
     /// No skip allowed.
     ///
-    AccessChainLast(&'a Str),
+    AccessChainLast(&'a Name),
     /// Constuctor call in expression.
     ///
     /// Can be skipped (to next expression).
     ///
     /// 0: constructor name.
-    ConstructorExpr(&'a Str),
+    ConstructorExpr(&'a Name),
     /// Constructor field name.
     ///
     /// Can be skipped (to next argument).
     ///
     /// 0: constructor field name.
-    ConstructorExprArgument(&'a Str),
+    ConstructorExprArgument(&'a Name),
     /// Constructor call end.
     ///
     /// No skip allowed.
@@ -203,7 +203,7 @@ pub enum Visit<'a> {
     /// No skip allowed.
     ///
     /// 0: access
-    VarAccess(&'a Str),
+    VarAccess(&'a Name),
     /// Operator.
     ///
     /// No skip allowed.
@@ -235,7 +235,7 @@ impl<'a> From<Constructor<'a>> for Visit<'a> {
 }
 
 impl<'a> Visit<'a> {
-    fn message_constructor(name: &'a Str, loc: &'a Loc) -> Visit<'a> {
+    fn message_constructor(name: &'a Name, loc: &'a Loc) -> Visit<'a> {
         Constructor {
             name,
             of_message: true,
@@ -243,7 +243,7 @@ impl<'a> Visit<'a> {
         }
         .into()
     }
-    fn enum_constructor(name: &'a Str, loc: &'a Loc) -> Visit<'a> {
+    fn enum_constructor(name: &'a Name, loc: &'a Loc) -> Visit<'a> {
         Constructor {
             name,
             of_message: false,
@@ -325,8 +325,8 @@ fn get_keyword<'a>(keyword: &'static str, line: usize) -> Visit<'a> {
 }
 
 fn visit_type_declaration<'a, V: Visitor<'a>>(
-    td: &'a TypeDeclaration<Loc, Str>,
-    type_name: &'a Str,
+    td: &'a TypeDeclaration<Loc, Name>,
+    type_name: &'a Name,
     type_loc: &'a Loc,
     visitor: &mut V,
 ) -> Stop<V::StopResult> {
@@ -380,7 +380,7 @@ fn visit_type_declaration<'a, V: Visitor<'a>>(
 }
 
 fn visit_pattern<'a, V: Visitor<'a>>(
-    p: &'a Pattern<Loc, Str>,
+    p: &'a Pattern<Loc, Name>,
     visitor: &mut V,
 ) -> Stop<V::StopResult> {
     match &p.node {
@@ -415,7 +415,7 @@ fn visit_pattern<'a, V: Visitor<'a>>(
 }
 
 fn visit_pattern_call_arguments<'a, V: Visitor<'a>>(
-    p: &'a Definitions<Loc, Str, Pattern<Loc, Str>>,
+    p: &'a Definitions<Loc, Name, Pattern<Loc, Name>>,
     visitor: &mut V,
 ) -> Stop<V::StopResult> {
     for p in p {
@@ -451,7 +451,7 @@ fn visit_pattern_literal<'a, V: Visitor<'a>>(
 }
 
 fn visit_constructor<'a, V: Visitor<'a>>(
-    c: &'a ConstructorBody<Loc, Str>,
+    c: &'a ConstructorBody<Loc, Name>,
     visitor: &mut V,
 ) -> Stop<V::StopResult> {
     for field in c {
@@ -469,7 +469,7 @@ fn visit_constructor<'a, V: Visitor<'a>>(
 }
 
 fn visit_type_expression<'a, V: Visitor<'a>>(
-    te: &'a TypeExpression<Loc, Str>,
+    te: &'a TypeExpression<Loc, Name>,
     visitor: &mut V,
 ) -> Stop<V::StopResult> {
     if let ExpressionNode::FunCall { fun, args } = &te.node {
@@ -499,7 +499,7 @@ fn visit_type_expression<'a, V: Visitor<'a>>(
 }
 
 fn visit_expression<'a, V: Visitor<'a>>(
-    e: &'a Expression<Loc, Str>,
+    e: &'a Expression<Loc, Name>,
     visitor: &mut V,
 ) -> Stop<V::StopResult> {
     match &e.node {
@@ -589,7 +589,7 @@ fn visit_expression<'a, V: Visitor<'a>>(
 }
 
 fn visit_access_chain<'a, V: Visitor<'a>>(
-    e: &'a Expression<Loc, Str>,
+    e: &'a Expression<Loc, Name>,
     visitor: &mut V,
 ) -> Stop<V::StopResult> {
     match &e.node {
@@ -628,7 +628,7 @@ fn visit_access_chain<'a, V: Visitor<'a>>(
 }
 
 // TODO: better find location
-fn get_operator(e: &Expression<Loc, Str>) -> (&'static str, Loc) {
+fn get_operator(e: &Expression<Loc, Name>) -> (&'static str, Loc) {
     match &e.node {
         ExpressionNode::OpCall(OpCall::Binary(BinaryOp::Plus, lhs, _)) => {
             let start = lhs.loc.get_end();

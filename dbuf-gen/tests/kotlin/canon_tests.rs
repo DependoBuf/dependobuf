@@ -4,8 +4,8 @@ use pretty_assertions::assert_eq;
 
 #[test]
 fn basic() {
-    let module = common::to_string_module(common::get_basic_module());
-    let code = kotlin_gen::generate_module(module);
+    let module = common::get_basic_module();
+    let code = kotlin_gen::generate_module(&module);
 
     println!("{code}");
     let expected = include_str!("./canon/basic.kt");
@@ -14,8 +14,8 @@ fn basic() {
 
 #[test]
 fn nat_vec() {
-    let module = common::to_string_module(common::get_nat_vec_module());
-    let code = kotlin_gen::generate_module(module);
+    let module = common::get_nat_vec_module();
+    let code = kotlin_gen::generate_module(&module);
 
     println!("{code}");
     let expected = include_str!("./canon/nat_vec.kt");

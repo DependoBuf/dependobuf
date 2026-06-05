@@ -1,5 +1,6 @@
 use crate::arena::InternedString;
 use crate::ast::{elaborated as e, operators as o, parsed as p};
+use crate::error::ElaboratingError;
 use crate::error::elaborating::{ElaboratingStage, Error};
 use crate::location::{LocatedName, Location, Offset};
 
@@ -37,7 +38,7 @@ impl From<&o::UnaryOp<Name>> for o::UnaryOp<Str> {
 }
 
 /// # Errors
-pub fn elaborate(module: &p::Module<Loc, Name>) -> Result<Mod, ElaboratingStage> {
+pub fn elaborate(module: &p::Module<Loc, Name>) -> Result<Mod, ElaboratingError> {
     let sorted = graph::topological_sort(module).map_err(|error| {
         let loc = match &error {
             Error::Cycle(entries) => entries.first().map(|(_, loc)| *loc),
@@ -52,10 +53,11 @@ pub fn elaborate(module: &p::Module<Loc, Name>) -> Result<Mod, ElaboratingStage>
         return Err(ElaboratingStage {
             error: Error::NoInitialConstructor(missing),
             loc,
-        });
+        }
+        .into());
     }
 
-    typecheck::elaborate_sorted(&sorted)
+    Ok(typecheck::elaborate_sorted(&sorted)?)
 }
 
 fn type_of<Str: Clone>(expr: &e::ValueExpression<Str>) -> e::TypeExpression<Str> {

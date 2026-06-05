@@ -4,7 +4,9 @@
 use dbuf_core::ast::elaborated::ConstructorNames;
 use tower_lsp::lsp_types::Position;
 
-use crate::core::workspace::{ElaboratedAst, ElaboratedHelper, LocNameHelper, LocationHelper, Str};
+use crate::core::workspace::{
+    ElaboratedAst, ElaboratedHelper, LocNameHelper, LocationHelper, Name,
+};
 
 use crate::core::ast_visitor::VisitResult::*;
 use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
@@ -32,7 +34,7 @@ pub fn get_symbol_impl(navigator: &Navigator, pos: Position) -> Symbol {
 }
 
 impl GetImpl<'_> {
-    fn get_type(&self, type_name: &Str) -> Symbol {
+    fn get_type(&self, type_name: &Name) -> Symbol {
         assert!(type_name.contains(self.target));
 
         Symbol::Type {
@@ -40,7 +42,7 @@ impl GetImpl<'_> {
         }
     }
 
-    fn get_dependency(&self, dependency: &Str) -> Symbol {
+    fn get_dependency(&self, dependency: &Name) -> Symbol {
         assert!(dependency.contains(self.target));
 
         let ty_name = self.scope.get_type().expect("since should be set");
@@ -51,7 +53,7 @@ impl GetImpl<'_> {
         }
     }
 
-    fn get_field(&self, field: &Str) -> Symbol {
+    fn get_field(&self, field: &Name) -> Symbol {
         assert!(field.contains(self.target));
 
         let type_name = self
@@ -72,7 +74,7 @@ impl GetImpl<'_> {
         }
     }
 
-    fn get_alias(&self, alias: &Str) -> Symbol {
+    fn get_alias(&self, alias: &Name) -> Symbol {
         assert!(alias.contains(self.target));
 
         let type_name = self
@@ -89,7 +91,7 @@ impl GetImpl<'_> {
         }
     }
 
-    fn get_argument(&self, argument: &Str) -> Symbol {
+    fn get_argument(&self, argument: &Name) -> Symbol {
         assert!(argument.contains(self.target));
 
         let constructor = self
@@ -107,7 +109,7 @@ impl GetImpl<'_> {
         }
     }
 
-    fn get_constructor(&self, constructor: &Str, of_message: bool) -> Symbol {
+    fn get_constructor(&self, constructor: &Name, of_message: bool) -> Symbol {
         assert!(constructor.contains(self.target));
 
         if of_message {
@@ -127,7 +129,7 @@ impl GetImpl<'_> {
         }
     }
 
-    fn get_constructor_call(&self, constructor: &Str) -> Symbol {
+    fn get_constructor_call(&self, constructor: &Name) -> Symbol {
         assert!(constructor.contains(self.target));
 
         let Some(type_name) = self.elaborated.get_constructor_type(constructor.as_ref()) else {
@@ -149,7 +151,7 @@ impl GetImpl<'_> {
         }
     }
 
-    fn get_access(&self, access: &Str) -> Symbol {
+    fn get_access(&self, access: &Name) -> Symbol {
         assert!(access.contains(self.target));
 
         // Variable should be one of: dependency, field, alias

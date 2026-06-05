@@ -1,4 +1,6 @@
 mod format_tests;
+// mod rename_tests;
+
 mod rename_tests;
 
 use tower_lsp::lsp_types::InitializeParams;

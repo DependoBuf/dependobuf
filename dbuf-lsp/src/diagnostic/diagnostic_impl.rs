@@ -9,8 +9,11 @@ use crate::core::workspace::Loc;
 use crate::core::workspace::LocationHelper;
 
 use crate::core::errors::Error;
+use dbuf_core::error::ElaboratingError;
+use dbuf_core::error::Error as CoreError;
 use dbuf_core::error::ErrorStage;
 use dbuf_core::error::ParsingError;
+use dbuf_core::error::elaborating as e;
 use dbuf_core::error::parsing::*;
 
 use std::fmt::Write as _;
@@ -24,16 +27,25 @@ pub(super) fn provide_diagnostic(f: &File) -> Vec<Diagnostic> {
         match e {
             Error::Format(_format_error) => (),
             Error::Rename(_rename_error) => (),
-            Error::Parsing(error) => ans.push(convert_parsing_error(error, uri)),
-            Error::ElaboratingError(_error) => todo!(),
+            Error::Parsing(error) => ans.push(error.convert(uri)),
+            Error::ElaboratingError(error) => ans.push(error.convert(uri)),
         }
     }
     ans
 }
 
-fn convert_parsing_error(err: &ParsingError, uri: &Url) -> Diagnostic {
-    let at = err.location();
-    err.build(err).finish(at, uri)
+trait Convertable {
+    fn convert(&self, uri: &Url) -> Diagnostic;
+}
+
+impl<S: ErrorStage> Convertable for CoreError<S>
+where
+    CoreError<S>: Buildable<()>,
+{
+    fn convert(&self, uri: &Url) -> Diagnostic {
+        let at = self.location();
+        self.build(&()).finish(at, uri)
+    }
 }
 
 struct ErrorBuilder {
@@ -42,13 +54,13 @@ struct ErrorBuilder {
     related_info: Vec<(String, Loc)>,
 }
 
-trait Buildable {
-    fn build(&self, err: &ParsingError) -> ErrorBuilder;
+trait Buildable<Parent> {
+    fn build(&self, parent: &Parent) -> ErrorBuilder;
 }
 
-impl Buildable for BadCallChain {
-    fn build(&self, err: &ParsingError) -> ErrorBuilder {
-        assert!(matches!(err.extra, Some(ErrorExtra::BadCallChain(_))));
+impl Buildable<ParsingError> for BadCallChain {
+    fn build(&self, parent: &ParsingError) -> ErrorBuilder {
+        assert!(matches!(parent.extra, Some(ErrorExtra::BadCallChain(_))));
 
         let message = "Call chain ends with dot".to_owned();
 
@@ -64,9 +76,9 @@ impl Buildable for BadCallChain {
     }
 }
 
-impl Buildable for MissingComma {
-    fn build(&self, err: &ParsingError) -> ErrorBuilder {
-        assert!(matches!(err.extra, Some(ErrorExtra::MissingComma(_))));
+impl Buildable<ParsingError> for MissingComma {
+    fn build(&self, parent: &ParsingError) -> ErrorBuilder {
+        assert!(matches!(parent.extra, Some(ErrorExtra::MissingComma(_))));
 
         let message = "Line missing ending semicolon".to_owned();
 
@@ -82,9 +94,9 @@ impl Buildable for MissingComma {
     }
 }
 
-impl Buildable for TypedHole {
-    fn build(&self, err: &ParsingError) -> ErrorBuilder {
-        assert!(matches!(err.extra, Some(ErrorExtra::TypedHole(_))));
+impl Buildable<ParsingError> for TypedHole {
+    fn build(&self, parent: &ParsingError) -> ErrorBuilder {
+        assert!(matches!(parent.extra, Some(ErrorExtra::TypedHole(_))));
 
         let message = "Unresolved type hole found".to_owned();
         let related_info = vec![];
@@ -97,9 +109,9 @@ impl Buildable for TypedHole {
     }
 }
 
-impl Buildable for ParserLexingError {
-    fn build(&self, err: &ParsingError) -> ErrorBuilder {
-        assert!(matches!(err.extra, Some(ErrorExtra::LexingError(_))));
+impl Buildable<ParsingError> for ParserLexingError {
+    fn build(&self, parent: &ParsingError) -> ErrorBuilder {
+        assert!(matches!(parent.extra, Some(ErrorExtra::LexingError(_))));
 
         let message = format!("Lexing error: {}", self.0);
         let related_info = vec![];
@@ -112,20 +124,20 @@ impl Buildable for ParserLexingError {
     }
 }
 
-impl Buildable for () {
-    fn build(&self, err: &ParsingError) -> ErrorBuilder {
-        assert!(err.extra.is_none());
+impl Buildable<ParsingError> for () {
+    fn build(&self, parent: &ParsingError) -> ErrorBuilder {
+        assert!(parent.extra.is_none());
 
-        let found_str = if let Some(t) = &err.found {
+        let found_str = if let Some(t) = &parent.found {
             format!("Unexpected token {t}.")
         } else {
             "Unexpected token.".to_owned()
         };
 
         let mut expected_str = String::new();
-        if !&err.expected.is_empty() {
+        if !&parent.expected.is_empty() {
             expected_str += " Expected:";
-            for expect in &err.expected {
+            for expect in &parent.expected {
                 let _ = write!(expected_str, " '{expect}");
             }
             expected_str += ".";
@@ -142,14 +154,44 @@ impl Buildable for () {
     }
 }
 
-impl Buildable for ParsingError {
-    fn build(&self, err: &ParsingError) -> ErrorBuilder {
-        match &err.extra {
-            Some(ErrorExtra::BadCallChain(e)) => e.build(err),
-            Some(ErrorExtra::MissingComma(e)) => e.build(err),
-            Some(ErrorExtra::TypedHole(e)) => e.build(err),
-            Some(ErrorExtra::LexingError(e)) => e.build(err),
-            None => ().build(err),
+impl Buildable<()> for ParsingError {
+    fn build(&self, &(): &()) -> ErrorBuilder {
+        match &self.extra {
+            Some(ErrorExtra::BadCallChain(e)) => e.build(self),
+            Some(ErrorExtra::MissingComma(e)) => e.build(self),
+            Some(ErrorExtra::TypedHole(e)) => e.build(self),
+            Some(ErrorExtra::LexingError(e)) => e.build(self),
+            None => ().build(self),
+        }
+    }
+}
+
+impl Buildable<()> for ElaboratingError {
+    fn build(&self, &(): &()) -> ErrorBuilder {
+        let message = self.stage.error.to_string();
+
+        let mut related_info = vec![];
+
+        match &self.stage.error {
+            e::Error::Cycle(entries) => {
+                related_info = entries
+                    .iter()
+                    .map(|(name, loc)| (format!("{name} is part of the cycle"), *loc))
+                    .collect();
+            }
+            e::Error::NoInitialConstructor(entries) => {
+                related_info = entries
+                    .iter()
+                    .map(|(name, loc)| (format!("{name} has no initial constructor"), *loc))
+                    .collect();
+            }
+            _ => {}
+        }
+
+        ErrorBuilder {
+            severity: DiagnosticSeverity::ERROR,
+            message,
+            related_info,
         }
     }
 }

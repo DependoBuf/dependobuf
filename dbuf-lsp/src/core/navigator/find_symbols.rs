@@ -5,7 +5,7 @@
 
 use tower_lsp::lsp_types::Range;
 
-use crate::core::workspace::{LocNameHelper, LocationHelper, Str};
+use crate::core::workspace::{LocNameHelper, LocationHelper, Name};
 
 use crate::core::ast_visitor::scope_visitor::ScopeVisitor;
 use crate::core::ast_visitor::*;
@@ -32,7 +32,7 @@ pub fn find_symbols_impl(navigator: &Navigator, symbol: &Symbol) -> Vec<Range> {
 }
 
 impl FindImpl<'_> {
-    fn correct_symbol(&self, str: &Str) -> bool {
+    fn correct_symbol(&self, str: &Name) -> bool {
         match &self.target {
             Symbol::Type { type_name } => type_name == str.as_ref(),
             Symbol::Dependency {
@@ -65,7 +65,7 @@ impl FindImpl<'_> {
         }
     }
 
-    fn correct_argument_symbol(&self, str: &Str) -> bool {
+    fn correct_argument_symbol(&self, str: &Name) -> bool {
         match &self.target {
             Symbol::Field {
                 type_name: _,
@@ -76,7 +76,7 @@ impl FindImpl<'_> {
         }
     }
 
-    fn push(&mut self, str: &Str) {
+    fn push(&mut self, str: &Name) {
         self.ans.push(str.get_location().to_lsp());
     }
 }

@@ -1,7 +1,7 @@
 use tower_lsp::lsp_types::*;
 
 use crate::core::ast_visitor::*;
-use crate::core::workspace::{File, Loc, LocNameHelper, LocationHelper, Str};
+use crate::core::workspace::{File, Loc, LocNameHelper, LocationHelper, Name};
 
 /// Returns all document symbols of file.
 pub fn provide_document_symbols(file: &File) -> Option<Vec<DocumentSymbol>> {
@@ -62,7 +62,7 @@ struct Builder<S: BuilderState> {
 }
 
 impl Builder<Empty> {
-    fn push_struct(self, type_name: &Str, loc: &Loc) -> Builder<Struct> {
+    fn push_struct(self, type_name: &Name, loc: &Loc) -> Builder<Struct> {
         let s = get_symbol(
             type_name.to_string(),
             SymbolKind::NULL,
@@ -103,7 +103,7 @@ impl Builder<Struct> {
 }
 
 impl Builder<Message> {
-    fn push_field(mut self, field_name: &Str, loc: &Loc) -> Builder<Message> {
+    fn push_field(mut self, field_name: &Name, loc: &Loc) -> Builder<Message> {
         let s = get_symbol(
             field_name.to_string(),
             SymbolKind::FIELD,
@@ -130,7 +130,7 @@ impl Builder<Message> {
 }
 
 impl Builder<Enum> {
-    fn push_constructor(self, cons_name: &Str, loc: &Loc) -> Builder<Constructor> {
+    fn push_constructor(self, cons_name: &Name, loc: &Loc) -> Builder<Constructor> {
         let s = get_symbol(
             cons_name.to_string(),
             SymbolKind::ENUM_MEMBER,
@@ -157,7 +157,7 @@ impl Builder<Enum> {
 }
 
 impl Builder<Constructor> {
-    fn push_field(mut self, field_name: &Str, loc: &Loc) -> Builder<Constructor> {
+    fn push_field(mut self, field_name: &Name, loc: &Loc) -> Builder<Constructor> {
         let s = get_symbol(
             field_name.to_string(),
             SymbolKind::FIELD,
@@ -264,7 +264,7 @@ impl SymbolVisitor {
         empty_builder.collect()
     }
 
-    fn push_type_symbol(&mut self, type_name: &Str, loc: &Loc) {
+    fn push_type_symbol(&mut self, type_name: &Name, loc: &Loc) {
         let builder = std::mem::take(&mut self.builder);
 
         let empty_builder = match builder {
@@ -279,7 +279,7 @@ impl SymbolVisitor {
         self.builder = empty_builder.push_struct(type_name, loc).into();
     }
 
-    fn push_field(&mut self, field_name: &Str, loc: &Loc) {
+    fn push_field(&mut self, field_name: &Name, loc: &Loc) {
         let builder = std::mem::take(&mut self.builder);
 
         self.builder = match builder {
@@ -295,7 +295,7 @@ impl SymbolVisitor {
         };
     }
 
-    fn push_constructor(&mut self, cons_name: &Str, loc: &Loc) {
+    fn push_constructor(&mut self, cons_name: &Name, loc: &Loc) {
         let builder = std::mem::take(&mut self.builder);
 
         let enum_builder = match builder {

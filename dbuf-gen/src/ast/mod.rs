@@ -1,6 +1,7 @@
 pub mod from_elaborated;
 mod node_id;
 
+pub use dbuf_core::arena::InternedString;
 pub use dbuf_core::ast::{
     elaborated,
     operators::{BinaryOp, Literal},
@@ -11,7 +12,7 @@ use node_id::Node;
 
 use std::rc::{Rc, Weak};
 
-type Str = String; // Temporary
+pub type Str = InternedString;
 
 pub struct Module {
     pub types: Vec<Rc<Type>>,

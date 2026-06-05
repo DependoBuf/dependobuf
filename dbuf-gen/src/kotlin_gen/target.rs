@@ -2,20 +2,21 @@ use core::panic;
 
 use pretty::{BoxAllocator, BoxDoc, DocAllocator, DocBuilder};
 
+use crate::ast::Str;
 use crate::{ast, format};
 
 pub struct Field(ast::Symbol);
 
 /// Kotlin's sealed class resembles enum in rust
 pub struct SealedClass {
-    pub name: String,
+    pub name: Str,
     pub fields: Vec<Field>,
     pub constructors: Vec<InnerClass>,
 }
 
 /// Inner class of a sealed class resembles enum constructor in rust
 pub struct InnerClass {
-    pub name: String,
+    pub name: Str,
     pub fields: Vec<Field>,
     pub parent_params: Vec<Field>,
     pub result_type: ast::TypeExpression,
@@ -60,7 +61,7 @@ fn compile_value_expression<'a>(
                     ast::UnaryOp::Access { to: _, field } => {
                         let field_name = field.upgrade().expect("value to be present").name.clone();
 
-                        arg.append(".").append(field_name)
+                        arg.append(".").append(field_name.to_string())
                     }
                 }
             }
@@ -78,9 +79,9 @@ fn compile_value_expression<'a>(
             let ty = constructor.result_type.get_type();
 
             let class_name = alloc
-                .text(ty.name.clone())
+                .text(ty.name.to_string())
                 .append(".")
-                .append(constructor.name.clone());
+                .append(constructor.name.to_string());
 
             let parameters = alloc.intersperse(
                 arguments
@@ -93,7 +94,7 @@ fn compile_value_expression<'a>(
         }
         ast::ValueExpression::Variable(symbol) => {
             let name = symbol.upgrade().expect("Value to be present").name.clone();
-            alloc.text(name)
+            alloc.text(name.to_string())
         }
     }
 }
@@ -129,7 +130,11 @@ impl SealedClass {
                         .append(";")
                         .append(alloc.hardline())
                 };
-                alloc.concat(fields.iter().map(|field| build_assignment(&field.0.name)))
+                alloc.concat(
+                    fields
+                        .iter()
+                        .map(|field| build_assignment(&field.0.name.to_string())),
+                )
             };
 
             alloc
@@ -152,7 +157,7 @@ impl SealedClass {
             alloc.concat(
                 constructors
                     .iter()
-                    .map(|inner_class| inner_class.generate(&self.name, alloc)),
+                    .map(|inner_class| inner_class.generate(self.name.as_ref(), alloc)),
             )
         };
 
@@ -176,7 +181,7 @@ impl SealedClass {
         };
 
         build_class(
-            &self.name,
+            &self.name.to_string(),
             build_class_body(
                 build_field_declarations(&self.fields),
                 build_constructor(&self.fields),
@@ -234,7 +239,11 @@ impl InnerClass {
                             .append(";")
                             .append(alloc.hardline())
                     };
-                    alloc.concat(fields.iter().map(|field| build_assignment(&field.0.name)))
+                    alloc.concat(
+                        fields
+                            .iter()
+                            .map(|field| build_assignment(&field.0.name.to_string())),
+                    )
                 };
 
                 alloc
@@ -280,7 +289,7 @@ impl InnerClass {
         };
 
         build_class(
-            &self.name,
+            &self.name.to_string(),
             build_class_body(
                 build_field_declarations(&self.fields),
                 build_constructor(&self.fields, &self.parent_params, &self.result_type),
@@ -296,10 +305,10 @@ impl Field {
     }
     pub fn generate<'a>(&self, alloc: &'a BoxAllocator) -> BoxDoc<'a> {
         alloc
-            .text(self.0.name.clone())
+            .text(self.0.name.to_string())
             .append(":")
             .append(alloc.space())
-            .append(self.0.ty.get_type().name.clone())
+            .append(self.0.ty.get_type().name.to_string())
             .into_doc()
     }
 }

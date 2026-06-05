@@ -5,6 +5,6 @@
 use dbuf_core::ast::parsed;
 
 use super::Loc;
-use super::Str;
+use super::Name;
 
-pub type ParsedAst = parsed::Module<Loc, Str>;
+pub type ParsedAst = parsed::Module<Loc, Name>;

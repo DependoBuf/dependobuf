@@ -185,16 +185,16 @@ impl ConflictChecker<'_> {
             return false;
         };
 
-        if t.dependencies.iter().any(|d| d.0 == r.get()) {
+        if t.dependencies.iter().any(|d| d.0.as_ref() == r.get()) {
             return true;
         }
         match &t.constructor_names {
             ConstructorNames::OfMessage(ctr) => {
-                let ctr = self.ast.get_constructor(ctr).expect("valid ast");
+                let ctr = self.ast.get_constructor(ctr.as_ref()).expect("valid ast");
                 Self::constructor_has_resourse(ctr, r)
             }
             ConstructorNames::OfEnum(ctrs) => ctrs.iter().any(|ctr| {
-                let ctr = self.ast.get_constructor(ctr).expect("valid ast");
+                let ctr = self.ast.get_constructor(ctr.as_ref()).expect("valid ast");
                 Self::constructor_has_resourse(ctr, r)
             }),
         }

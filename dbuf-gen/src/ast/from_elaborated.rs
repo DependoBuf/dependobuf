@@ -31,45 +31,45 @@ type ElaboratedConstructor = elaborated::Constructor<Str>;
 
 #[derive(Clone, Copy)]
 struct ASTContext<'a> {
-    known_types: &'a Scope<'a, String, Weak<Type>>,
-    variables: &'a Scope<'a, String, Rc<Symbol>>,
-    constructors: &'a Scope<'a, String, Rc<Constructor>>,
+    known_types: &'a Scope<'a, Str, Weak<Type>>,
+    variables: &'a Scope<'a, Str, Rc<Symbol>>,
+    constructors: &'a Scope<'a, Str, Rc<Constructor>>,
 }
 
 const BUILTIN_NAMES: &[&str] = &["Bool", "Int", "UInt", "String"];
 
 impl Module {
-    pub(crate) fn from_elaborated(mut module: ElaboratedModule) -> Self {
-        let mut all_constructors = Scope::<String, Rc<Constructor>>::empty();
+    pub(crate) fn from_elaborated(module: &ElaboratedModule) -> Self {
+        let mut all_constructors = Scope::<Str, Rc<Constructor>>::empty();
         let mut types = Vec::with_capacity(module.types.len());
-        let mut known_types = Scope::<String, Weak<Type>>::empty();
+        let mut known_types = Scope::<Str, Weak<Type>>::empty();
 
         let builtins: Vec<Rc<Type>> = BUILTIN_NAMES
             .iter()
             .map(|&name| {
                 let ty = Rc::new(Type {
-                    name: name.to_owned(),
+                    name: Str::from(name),
                     dependencies: vec![],
                     constructors: vec![],
                     kind: TypeKind::Enum,
                     is_builtin: true,
                 });
                 assert!(
-                    known_types.try_insert(name.to_owned(), Rc::downgrade(&ty)),
+                    known_types.try_insert(Str::from(name), Rc::downgrade(&ty)),
                     "builtin '{name}' inserted twice"
                 );
                 ty
             })
             .collect();
 
-        for (name, ty) in module.types {
+        for (name, ty) in &module.types {
             // all this scope constructs Rc<Type> and can be become Type::from_elaborated
             // but I do not really want this, because I do not feel like it will simplify logic
-            let mut variables = Scope::<String, Rc<Symbol>>::empty();
+            let mut variables = Scope::<Str, Rc<Symbol>>::empty();
 
             let dependencies = ty
                 .dependencies
-                .into_iter()
+                .iter()
                 .map(|(name, expr)| {
                     let context = ASTContext {
                         known_types: &known_types,
@@ -78,7 +78,7 @@ impl Module {
                     };
 
                     let symbol = Rc::new(Symbol::from_elaborated(context, name.clone(), expr));
-                    assert!(variables.try_insert(name, symbol.clone()));
+                    assert!(variables.try_insert(name.clone(), symbol.clone()));
                     symbol
                 })
                 .collect();
@@ -92,10 +92,10 @@ impl Module {
                     "codegen expects valid elaborated ast: two types can not have same name"
                 );
 
-                let (constructors, kind) = match ty.constructor_names {
+                let (constructors, kind) = match &ty.constructor_names {
                     ConstructorNames::OfMessage(name) => (vec![name], TypeKind::Message),
                     ConstructorNames::OfEnum(constructors) => {
-                        (constructors.into_iter().collect(), TypeKind::Enum)
+                        (constructors.iter().collect(), TypeKind::Enum)
                     }
                 };
 
@@ -110,11 +110,10 @@ impl Module {
 
                         let elaborated_constructor = module
                             .constructors
-                            // removing here because each constructor is unique to the type and to the whole module
-                            .remove(&constructor_name)
+                            .get(constructor_name)
                             .expect("codegen expects valid elaborated ast: unknown constructor");
 
-                        let constructor = Constructor::from_elaborated(context, constructor_name, elaborated_constructor, me.clone());
+                        let constructor = Constructor::from_elaborated(context, constructor_name.clone(), elaborated_constructor, me.clone());
 
                         let constructor = Rc::new(constructor);
                         assert!(all_constructors.try_insert(constructor.name.clone(), constructor.clone()), "codegen expects valid elaborated ast: two constructors can not have same name");
@@ -123,7 +122,7 @@ impl Module {
                     .collect();
 
                 Type {
-                    name,
+                    name: name.clone(),
                     dependencies,
                     constructors,
                     kind,
@@ -148,13 +147,13 @@ impl Constructor {
             implicits,
             fields,
             result_type,
-        }: ElaboratedConstructor,
+        }: &ElaboratedConstructor,
         this: Weak<Type>,
     ) -> Constructor {
         let mut all_params = Scope::nested_in(type_context.variables);
 
         let implicits: Vec<_> = implicits
-            .into_iter()
+            .iter()
             .map(|(name, expr)| {
                 let partial_context = ASTContext {
                     known_types: type_context.known_types,
@@ -162,13 +161,13 @@ impl Constructor {
                     constructors: type_context.constructors,
                 };
                 let symbol = Rc::new(Symbol::from_elaborated(partial_context, name.clone(), expr));
-                assert!(all_params.try_insert_local(name, symbol.clone()), "codegen expects valid elaborated ast: two constructor implicits can not have same name");
+                assert!(all_params.try_insert_local(name.clone(), symbol.clone()), "codegen expects valid elaborated ast: two constructor implicits can not have same name");
                 symbol
             })
             .collect();
 
         let fields: Vec<_> = fields
-            .into_iter()
+            .iter()
             .map(|(name, expr)| {
                 let field_context = ASTContext {
                     known_types: type_context.known_types,
@@ -176,7 +175,7 @@ impl Constructor {
                     constructors: type_context.constructors,
                 };
                 let symbol = Rc::new(Symbol::from_elaborated(field_context, name.clone(), expr));
-                all_params.try_insert(name, symbol.clone());
+                all_params.try_insert(name.clone(), symbol.clone());
                 symbol
             })
             .collect();
@@ -199,7 +198,6 @@ impl Constructor {
                     call: this,
                     dependencies: dependencies
                         .iter()
-                        .cloned()
                         .map(|expr| ValueExpression::from_elaborated(constructor_context, expr))
                         .collect(),
                 }
@@ -216,14 +214,14 @@ impl Constructor {
 }
 
 impl ValueExpression {
-    fn from_elaborated(context: ASTContext<'_>, expr: ElaboratedValueExpression) -> Self {
+    fn from_elaborated(context: ASTContext<'_>, expr: &ElaboratedValueExpression) -> Self {
         match expr {
             ElaboratedValueExpression::OpCall {
                 op_call,
                 result_type: _,
             } => {
                 let op_call = match op_call {
-                    operators::OpCall::Literal(literal) => OpCall::Literal(literal),
+                    operators::OpCall::Literal(literal) => OpCall::Literal(literal.clone()),
                     // TODO: UnaryOp::Access must be Symbol, not string. But in order to locate this symbol I need to traverse
                     // message fields tree and find it. This can be done nicely when proper scope visibility determiner will be implemented
                     // for now tho this is NOT HUGE problem as fields mostly are generated quite trivially.
@@ -266,7 +264,7 @@ impl ValueExpression {
                                 let field = ty.constructors[0]
                                     .fields
                                     .iter()
-                                    .find(|field| field.name == name)
+                                    .find(|field| field.name == *name)
                                     .expect("couldn't find field to access");
                                 UnaryOp::Access {
                                     to: Rc::downgrade(&ty),
@@ -278,13 +276,13 @@ impl ValueExpression {
                         };
                         OpCall::Unary(
                             unary_op,
-                            Box::new(ValueExpression::from_elaborated(context, (*expr).clone())),
+                            Box::new(ValueExpression::from_elaborated(context, expr)),
                         )
                     }
                     operators::OpCall::Binary(binary_op, lhs, rhs) => OpCall::Binary(
-                        binary_op,
-                        Box::new(Self::from_elaborated(context, (*lhs).clone())),
-                        Box::new(Self::from_elaborated(context, (*rhs).clone())),
+                        *binary_op,
+                        Box::new(Self::from_elaborated(context, lhs)),
+                        Box::new(Self::from_elaborated(context, rhs)),
                     ),
                 };
                 ValueExpression::OpCall(op_call)
@@ -299,18 +297,16 @@ impl ValueExpression {
                 // verified that all types are valid then constructors of those types must also be valid
                 let call = context
                     .constructors
-                    .get(&name)
+                    .get(name)
                     .expect("codegen expects valid elaborated ast: call to unknown constructor");
 
                 let implicits = implicits
                     .iter()
-                    .cloned()
                     .map(|expr| ValueExpression::from_elaborated(context, expr))
                     .collect();
 
                 let arguments = arguments
                     .iter()
-                    .cloned()
                     .map(|expr| ValueExpression::from_elaborated(context, expr))
                     .collect();
 
@@ -322,7 +318,7 @@ impl ValueExpression {
             }
             ElaboratedValueExpression::Variable { name, ty: _ } => {
                 let symbol =
-                    Rc::downgrade(context.variables.get(&name).expect(
+                    Rc::downgrade(context.variables.get(name).expect(
                         "codegen expects valid elaborated ast: non-introduced variable use",
                     ));
                 ValueExpression::Variable(symbol)
@@ -332,17 +328,16 @@ impl ValueExpression {
 }
 
 impl TypeExpression {
-    fn from_elaborated(context: ASTContext<'_>, expr: ElaboratedTypeExpression) -> Self {
+    fn from_elaborated(context: ASTContext<'_>, expr: &ElaboratedTypeExpression) -> Self {
         match expr {
             ElaboratedTypeExpression::TypeExpression { name, dependencies } => {
                 // types in module must be in top sorted order (top sort over types and theirs dependencies)
                 // we iterate over them in the same order
                 // we can encounter type expression only in dependencies (either when calling or declaring)
                 // in both cases top sort ensures following check
-                let call = context.known_types.get(&name).expect("codegen expects valid elaborated ast: expression contains call to unknown type");
+                let call = context.known_types.get(name).expect("codegen expects valid elaborated ast: expression contains call to unknown type");
                 let dependencies = dependencies
                     .iter()
-                    .cloned()
                     .map(|expr| ValueExpression::from_elaborated(context, expr))
                     .collect();
 
@@ -359,7 +354,7 @@ impl Symbol {
     fn from_elaborated(
         context: ASTContext<'_>,
         name: Str,
-        type_expr: ElaboratedTypeExpression,
+        type_expr: &ElaboratedTypeExpression,
     ) -> Self {
         Symbol {
             name,

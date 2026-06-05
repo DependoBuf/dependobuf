@@ -2,10 +2,6 @@ use dbuf_core::arena::InternedString;
 use dbuf_core::ast::elaborated as e;
 use indexmap::IndexMap;
 
-pub fn to_string_module(module: e::Module<InternedString>) -> e::Module<String> {
-    dbuf_core::elaboration::map_ast::map_module(module, &|s: InternedString| s.as_ref().to_owned())
-}
-
 pub fn empty() -> e::Module<InternedString> {
     e::Module {
         types: IndexMap::new(),
