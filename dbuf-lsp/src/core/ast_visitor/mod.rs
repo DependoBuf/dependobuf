@@ -263,6 +263,8 @@ pub enum VisitResult<T> {
     Stop(T),
 }
 
+pub use VisitResult::*;
+
 /// Visitor - the one, who can parse Visit tokens.
 ///
 /// 'a is lifetime of parsed ast reference.
