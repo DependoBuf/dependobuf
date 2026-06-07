@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 use tower_lsp::lsp_types::{
-    CompletionContext, CompletionItem, CompletionItemLabelDetails, CompletionResponse,
-    CompletionTriggerKind, Position,
+    CompletionContext, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
+    CompletionResponse, CompletionTriggerKind, Position,
 };
 use tracing::span::EnteredSpan;
 use tracing::{Level, span, trace};
@@ -55,7 +55,7 @@ impl Definition {
                 detail: None,
                 description: Some(self.ty.to_string()),
             }),
-            kind: None,
+            kind: Some(CompletionItemKind::FIELD),
             detail: Some(self.ty.to_string()),
             documentation: None,
             deprecated: None,
