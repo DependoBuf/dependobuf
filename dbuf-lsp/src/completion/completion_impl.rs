@@ -269,12 +269,12 @@ impl<'a> Visitor<'a> for DataCollectorVisitor {
             Visit::Type(_, _) => self.on_type(),
             Visit::Dependency(name, _) => self.on_dependency_name(name),
             Visit::Branch => {}
-            Visit::PatternAlias(_) => return Skip,
+            Visit::PatternAlias(_) => {}
             Visit::PatternCall(_, _) => return Skip,
             Visit::PatternCallArgument(_) => return Skip,
-            Visit::PatternCallStop => return Skip,
-            Visit::PatternLiteral(_, _) => return Skip,
-            Visit::PatternUnderscore(_) => return Skip,
+            Visit::PatternCallStop => {}
+            Visit::PatternLiteral(_, _) => {}
+            Visit::PatternUnderscore(_) => {}
             Visit::Constructor(constructor) => self.on_constructor(constructor.name),
             Visit::Field(name, _) => self.on_field_name(name),
             Visit::TypeExpression(ty, _) => {
@@ -283,15 +283,15 @@ impl<'a> Visitor<'a> for DataCollectorVisitor {
             }
             Visit::Expression(_) => return Skip,
             Visit::AccessChainStart => return Skip,
-            Visit::AccessChain(_) => return Skip,
-            Visit::AccessDot(_) => return Skip,
-            Visit::AccessChainLast(_) => return Skip,
+            Visit::AccessChain(_) => {}
+            Visit::AccessDot(_) => {}
+            Visit::AccessChainLast(_) => {}
             Visit::ConstructorExpr(_) => return Skip,
             Visit::ConstructorExprArgument(_) => return Skip,
-            Visit::ConstructorExprStop => return Skip,
-            Visit::VarAccess(_) => return Skip,
-            Visit::Operator(_, _) => return Skip,
-            Visit::Literal(_, _) => return Skip,
+            Visit::ConstructorExprStop => {}
+            Visit::VarAccess(_) => {}
+            Visit::Operator(_, _) => {}
+            Visit::Literal(_, _) => {}
         }
 
         Continue
