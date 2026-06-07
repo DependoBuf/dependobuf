@@ -2,11 +2,11 @@
 //! Requests are using real-time updating parsed ast.
 //!
 //! Module should help with such requests:
+//! * (✓) `textDocument/completion`
 //!
 //! Also it might be good idea to handle such requests:
 //!
 //! Perhaps, next time:
-//! * `textDocument/completion`
 //! * `textDocument/signatureHelp`
 //! * `completionItem/resolve`
 //!
@@ -55,7 +55,7 @@ impl handler_box::Handler for Handler {
 impl Handler {
     // `textDocument/completion` implementation.
     ///
-    /// Currently builds simple east based on cst, that checks nothing
+    /// Currently builds simple east based on ast, that checks nothing
     /// but stores fields of constructors. Then based on it provides
     /// completion.
     ///
