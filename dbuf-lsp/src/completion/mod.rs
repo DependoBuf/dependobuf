@@ -69,55 +69,6 @@ impl Handler {
         document: &Url,
         context: Option<CompletionContext>,
     ) -> Result<Option<CompletionResponse>> {
-        /*
-        let c1 = CompletionItem {
-            label: "abc".to_string(),
-            label_details: Some(CompletionItemLabelDetails {
-                detail: Some("Signature".to_string()),
-                description: Some("qualified_name".to_string()),
-            }),
-            kind: None,
-            detail: Some("Details".to_string()),
-            documentation: Some(Documentation::String(
-                "That is a documentation of abc".to_string(),
-            )),
-            deprecated: None,
-            preselect: None,
-            sort_text: None,
-            filter_text: None,
-            insert_text: None,
-            insert_text_format: None,
-            insert_text_mode: None,
-            text_edit: None,
-            additional_text_edits: None,
-            command: None,
-            commit_characters: Some(vec![".".to_string()]),
-            data: None,
-            tags: None,
-        };
-
-        let c2 = CompletionItem {
-            label: "def".to_string(),
-            label_details: None,
-            kind: None,
-            detail: None,
-            documentation: None,
-            deprecated: None,
-            preselect: None,
-            sort_text: None,
-            filter_text: None,
-            insert_text: None,
-            insert_text_format: None,
-            insert_text_mode: None,
-            text_edit: None,
-            additional_text_edits: None,
-            command: None,
-            commit_characters: Some(vec![".".to_string()]),
-            data: None,
-            tags: None,
-        };
-        */
-
         let file = access.read(document);
         Ok(completion_impl::run_completion(pos, &file, context))
     }
