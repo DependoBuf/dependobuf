@@ -140,7 +140,7 @@ pub enum Visit<'a> {
     /// 0: field name.
     ///
     /// 1: location of whole field.
-    Filed(&'a Name, &'a Loc),
+    Field(&'a Name, &'a Loc),
     /// Type expression.
     ///
     /// Can be skipped (to next dependency/field).
@@ -262,6 +262,8 @@ pub enum VisitResult<T> {
     Skip,
     Stop(T),
 }
+
+pub use VisitResult::*;
 
 /// Visitor - the one, who can parse Visit tokens.
 ///
@@ -455,7 +457,7 @@ fn visit_constructor<'a, V: Visitor<'a>>(
     visitor: &mut V,
 ) -> Stop<V::StopResult> {
     for field in c {
-        let res = visitor.visit(Visit::Filed(&field.name, &field.loc));
+        let res = visitor.visit(Visit::Field(&field.name, &field.loc));
         match res {
             VisitResult::Continue => {}
             VisitResult::Skip => continue,
@@ -563,6 +565,14 @@ fn visit_expression<'a, V: Visitor<'a>>(
 
             for expr in fields {
                 let res = visitor.visit(Visit::ConstructorExprArgument(&expr.name)); // TOOD
+                match res {
+                    VisitResult::Continue => {}
+                    VisitResult::Skip => continue,
+                    VisitResult::Stop(r) => return stop(r),
+                }
+
+                let res = visitor.visit(Visit::Expression(&expr.loc));
+
                 match res {
                     VisitResult::Continue => {}
                     VisitResult::Skip => continue,

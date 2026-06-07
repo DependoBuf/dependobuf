@@ -328,7 +328,7 @@ impl<'a> Visitor<'a> for SymbolVisitor {
                     self.push_constructor(c.name, c.loc);
                 }
             }
-            Visit::Filed(field_name, location) => self.push_field(field_name, location),
+            Visit::Field(field_name, location) => self.push_field(field_name, location),
             Visit::TypeExpression(_, _) => return VisitResult::Skip,
             Visit::Expression(_) => return VisitResult::Skip,
             Visit::AccessChainStart => return VisitResult::Skip,

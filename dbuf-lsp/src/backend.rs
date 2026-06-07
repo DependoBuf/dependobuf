@@ -74,7 +74,8 @@ impl LanguageServer for Backend {
             current_capabilities.document_formatting_provider;
         capabilities.rename_provider = current_capabilities.rename_provider;
 
-        let _current_capabilities = self.completion_handler.init(&init);
+        let current_capabilities = self.completion_handler.init(&init);
+        capabilities.completion_provider = current_capabilities.completion_provider;
 
         let current_capabilities = self.diagnostic_handler.init(&init);
         capabilities.document_symbol_provider = current_capabilities.document_symbol_provider;
@@ -333,6 +334,22 @@ impl LanguageServer for Backend {
 
         self.action_handler
             .rename(&self.workspace, &params.new_name, pos, &uri)
+    }
+
+    #[instrument(skip_all, fields(file, pos.line, pos.character), level="warn")]
+    async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
+        let doc_pos = params.text_document_position;
+        let pos = doc_pos.position;
+        let uri = doc_pos.text_document.uri;
+
+        tracing::Span::current().record("file", uri.to_string());
+        tracing::Span::current().record("pos.line", pos.line);
+        tracing::Span::current().record("pos.character", pos.character);
+
+        info!("compeltion request");
+
+        self.completion_handler
+            .completion(&self.workspace, pos, &uri, params.context)
     }
 }
 

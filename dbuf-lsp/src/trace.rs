@@ -38,7 +38,7 @@ pub fn setup_tracing(tx: mpsc::UnboundedSender<String>) {
 
     tracing_subscriber::fmt()
         .with_writer(move || ChannelWriter { tx: tx.clone() })
-        .with_max_level(tracing::Level::TRACE)
+        .with_max_level(tracing::Level::INFO)
         .with_env_filter(env_filter)
         .with_ansi(false)
         .init();

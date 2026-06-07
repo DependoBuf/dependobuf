@@ -15,7 +15,7 @@ pub fn safe_skip<T>(visit: &Visit<'_>) -> VisitResult<T> {
         Visit::PatternLiteral(_literal, _locationn) => VisitResult::Continue,
         Visit::PatternUnderscore(_location) => VisitResult::Continue,
         Visit::Constructor(_constructor) => VisitResult::Skip,
-        Visit::Filed(_loc_string, _locationn) => VisitResult::Skip,
+        Visit::Field(_loc_string, _locationn) => VisitResult::Skip,
         Visit::TypeExpression(_loc_string, _locationn) => VisitResult::Skip,
         Visit::Expression(_location) => VisitResult::Skip,
         Visit::AccessChainStart => VisitResult::Skip,

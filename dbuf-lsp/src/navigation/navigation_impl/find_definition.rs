@@ -173,7 +173,7 @@ impl<'a> Visitor<'a> for FindFieldVisitor<'a> {
             Visit::Type(t, _) => self.check_type(t),
             Visit::Branch => Continue,
             Visit::Constructor(c) => self.check_constructor(c.name),
-            Visit::Filed(f, _) => self.check_field(f),
+            Visit::Field(f, _) => self.check_field(f),
             _ => safe_skip(&visit),
         }
     }

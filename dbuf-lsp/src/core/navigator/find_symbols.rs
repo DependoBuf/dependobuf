@@ -94,7 +94,7 @@ impl<'a> Visitor<'a> for FindImpl<'a> {
             Visit::Constructor(cons) if !cons.of_message && self.correct_symbol(cons.name) => {
                 self.push(cons.name);
             }
-            Visit::Filed(str, _) if self.correct_symbol(str) => self.push(str),
+            Visit::Field(str, _) if self.correct_symbol(str) => self.push(str),
             Visit::TypeExpression(str, _) if self.correct_symbol(str) => self.push(str),
             Visit::AccessChain(str) if self.correct_symbol(str) => self.push(str),
             Visit::AccessChainLast(str) if self.correct_symbol(str) => self.push(str),
