@@ -246,7 +246,7 @@ impl<'a> Visitor<'a> for SemanticTokenVisitor<'a> {
                     self.push_string(ctr.name.get_location(), Token::EnumConstructor, true);
                 }
             }
-            Visit::Filed(field_name, _) => {
+            Visit::Field(field_name, _) => {
                 self.push_string(field_name.get_location(), Token::Property, true);
             }
             Visit::TypeExpression(type_name, _) => {

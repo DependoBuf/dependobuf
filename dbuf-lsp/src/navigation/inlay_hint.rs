@@ -90,7 +90,7 @@ impl<'a> Visitor<'a> for InlayVisitor<'a> {
             Visit::Constructor(constructor) if !constructor.loc.intersects(self.range) => {
                 return Skip;
             }
-            Visit::Filed(_, location) if !location.intersects(self.range) => return Skip,
+            Visit::Field(_, location) if !location.intersects(self.range) => return Skip,
             Visit::TypeExpression(_, location) if !location.intersects(self.range) => return Skip,
             Visit::Expression(location) if !location.intersects(self.range) => return Skip,
             _ => {}

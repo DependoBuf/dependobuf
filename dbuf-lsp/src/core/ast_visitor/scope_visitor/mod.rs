@@ -94,7 +94,7 @@ impl<'a> Visitor<'a> for ScopeVisitor<'a> {
             Visit::PatternLiteral(_, _) => {}
             Visit::PatternUnderscore(_) => {}
             Visit::Constructor(cons) => self.scope.enter_in_constructor(cons.name.as_ref()),
-            Visit::Filed(_, _) => {}
+            Visit::Field(_, _) => {}
             Visit::TypeExpression(_, _) => {}
             Visit::Expression(_) => {}
             Visit::AccessChainStart => self.scope.save_state(),

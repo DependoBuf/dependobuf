@@ -213,8 +213,8 @@ impl<'a> Visitor<'a> for GetImpl<'a> {
             Visit::Constructor(constructor) if constructor.name.contains(self.target) => {
                 Stop(self.get_constructor(constructor.name, constructor.of_message))
             }
-            Visit::Filed(_, loc) if !loc.contains(self.target) => Skip,
-            Visit::Filed(field, _) if field.contains(self.target) => Stop(self.get_field(field)),
+            Visit::Field(_, loc) if !loc.contains(self.target) => Skip,
+            Visit::Field(field, _) if field.contains(self.target) => Stop(self.get_field(field)),
             Visit::TypeExpression(_, loc) if !loc.contains(self.target) => Skip,
             Visit::TypeExpression(type_name, _) if type_name.contains(self.target) => {
                 Stop(self.get_type(type_name))
