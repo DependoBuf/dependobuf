@@ -364,6 +364,7 @@ dependencies = [
  "dbuf-core",
  "dbuf-format",
  "indexmap",
+ "insta",
  "pretty",
  "pretty_assertions",
  "strum",

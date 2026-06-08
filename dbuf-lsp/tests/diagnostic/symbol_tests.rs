@@ -1,5 +1,6 @@
 //! Tests for `textDocument/documentSymbol`.
 //!
+use insta::{Settings, assert_debug_snapshot};
 
 use crate::common::*;
 
@@ -19,10 +20,18 @@ fn test_document_symbol() {
     assert!(r.is_some(), "document symbol is generated");
     let r = r.unwrap();
 
-    if let DocumentSymbolResponse::Nested(n) = r {
-        assert!(n.len() > 7, "not enough document symbols");
-        assert!(n.len() < 13, "too many document symbols");
-    } else {
+    let DocumentSymbolResponse::Nested(n) = r else {
         panic!("document symbols generated not nested");
-    }
+    };
+
+    assert!(n.len() > 7, "not enough document symbols");
+    assert!(n.len() < 13, "too many document symbols");
+
+    let mut settings = Settings::new();
+    settings.set_snapshot_path("snapshots");
+    settings.set_prepend_module_to_snapshot(false);
+    settings.set_snapshot_suffix("");
+    settings.bind(move || {
+        assert_debug_snapshot!("correct_symbols", n);
+    });
 }
