@@ -1,4 +1,18 @@
 #![cfg(any(feature = "rust", feature = "kotlin", feature = "swift"))]
+#![cfg_attr(
+    not(feature = "rust"),
+    allow(
+        dead_code,
+        reason = "some code using only in rust feature (FIXME: separate crates by code usage)"
+    )
+)]
+#![cfg_attr(
+    not(feature = "rust"),
+    allow(
+        unused_imports,
+        reason = "some code using only in rust feature (FIXME: separate crates by cde usage)"
+    )
+)]
 
 mod ast;
 mod format;
