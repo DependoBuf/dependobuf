@@ -1,4 +1,4 @@
-//! Module contains all rename tests.
+//! Tests for `textDocument/prepareRename` and for `textDocument/rename`.
 use std::fmt::Write;
 
 use tower_lsp::lsp_types::*;
@@ -7,6 +7,8 @@ use crate::common::*;
 
 use super::HandlerType;
 use super::get_handler;
+
+use pretty_assertions::assert_eq;
 
 /// Scenario of test.
 struct Scenario {
@@ -100,7 +102,7 @@ impl Scenario {
         Some(())
     }
 
-    /// Run test on file expecting every cursor location to produce all ranges.
+    /// Run test on file, expecting every cursor location to produce all ranges.
     /// For each locations runs rename twice: without prepare and with, expecting
     /// to have similar results.
     #[track_caller]

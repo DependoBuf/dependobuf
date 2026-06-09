@@ -1,11 +1,9 @@
-mod goto_tests;
-mod hover_tests;
-mod inlay_tests;
+mod completion_tests;
 
 use tower_lsp::lsp_types::InitializeParams;
 
+use dbuf_lsp::completion::Handler;
 use dbuf_lsp::handler_box::HandlerBox;
-use dbuf_lsp::navigation::Handler;
 
 type HandlerType = HandlerBox<Handler>;
 

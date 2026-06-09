@@ -1,256 +1,613 @@
 //! Tests for `textDocument/definition` and `textDocument/typeDefinition`.
-//!
+use tower_lsp::lsp_types::*;
 
 use crate::common::*;
 
-use std::collections::HashMap;
-use std::sync::LazyLock;
-
-use tower_lsp::lsp_types::{GotoDefinitionResponse, Position, Range};
-
+use super::HandlerType;
 use super::get_handler;
 
-fn get_range(line: u32, character: u32, len: u32) -> Range {
-    Range {
-        start: Position { line, character },
-        end: Position {
-            line,
-            character: character + len,
-        },
+use pretty_assertions::assert_eq;
+
+/// Scenario of test.
+struct Scenario {
+    /// Testing workspace.
+    workspace: WorkspaceAccess,
+    /// Testing handler.
+    handler: HandlerType,
+}
+
+impl Default for Scenario {
+    fn default() -> Self {
+        let workspace = empty_workspace();
+        let handler = get_handler();
+        Self { workspace, handler }
     }
 }
 
-fn get_definition_length(name: &str) -> u32 {
-    let length = name.rfind(':').map_or(name.len(), |p| name.len() - p - 1);
-    u32::try_from(length).unwrap()
-}
+impl Scenario {
+    /// Run test of file. Check based on number of provided locations:
+    ///   * 0 locations - expect every cursor to not produce goto,
+    ///   * 1 locations - expeect every cursor to jump to that location.
+    #[track_caller]
+    fn check_goto(&self, file: &FileMetadata) {
+        assert!(
+            !file.cursors().is_empty(),
+            "File cursors shouldn't be empty for file:\n{file:#?}"
+        );
+        assert!(
+            file.locations().len() < 2,
+            "Invalid location number for file. Expect 1 or 0: \n{file:#?}"
+        );
 
-fn get_definition(name: &'static str, line: u32, character: u32) -> (&'static str, Range) {
-    (
-        name,
-        get_range(line, character, get_definition_length(name)),
-    )
-}
+        let url = get_url(file);
+        workspace_with_open_file(&self.workspace, file);
+        check_file(&self.workspace, file);
 
-static DEFINITIONS: LazyLock<HashMap<&'static str, Range>> = LazyLock::new(|| {
-    HashMap::from([
-        get_definition("M1", 0, 8),
-        get_definition("M1:d1", 0, 12),
-        get_definition("M1:d2", 0, 21),
-        get_definition("M1:f1", 1, 4),
-        get_definition("M1:f2", 2, 4),
-        get_definition("M1:f3", 3, 4),
-        get_definition("M2", 6, 8),
-        get_definition("M2:d1", 6, 12),
-        get_definition("M2:d2", 6, 21),
-        get_definition("M2:f1", 7, 4),
-        get_definition("M2:f2", 8, 4),
-        get_definition("M2:f3", 9, 4),
-        get_definition("M2:f4", 10, 4),
-        get_definition("M3", 13, 8),
-        get_definition("M3:d1", 13, 12),
-        get_definition("M3:f1", 14, 4),
-        get_definition("M3:f2", 15, 4),
-        get_definition("M3:f3", 16, 4),
-        get_definition("M3:f4", 17, 4),
-        get_definition("M3:f5", 18, 4),
-        get_definition("Constructed", 21, 8),
-        get_definition("Constructed:f1", 22, 4),
-        get_definition("Simple", 25, 5),
-        get_definition("Simple:d1", 25, 13),
-        get_definition("Simple:alias", 26, 4),
-        get_definition("Aliased", 27, 8),
-        get_definition("Aliased:f1", 28, 12),
-        get_definition("Literaled", 32, 8),
-        get_definition("Literaled:f1", 33, 12),
-        get_definition("Wild", 37, 8),
-        get_definition("SimpleDepended", 41, 8),
-        get_definition("SimpleDepended:d1", 41, 24),
-        get_definition("EnumConstructed", 43, 8),
-        get_definition("EnumConstructed:f1", 44, 4),
-        get_definition("EnumConstructed:f2", 45, 4),
-        get_definition("EnumConstructed:f3", 46, 4),
-        get_definition("EnumConstructed:f4", 47, 4),
-        get_definition("EnumConstructed:f5", 48, 4),
-        get_definition("PatternMatch", 51, 5),
-        get_definition("PatternMatch:d1", 51, 19),
-        get_definition("PatternMatch:alias", 52, 11),
-        get_definition("PatternMatched", 53, 8),
-        get_definition("PatternMatched:f1", 54, 12),
-    ])
-});
+        for pos in file.cursors() {
+            let result = self.handler.goto_definition(&self.workspace, *pos, &url);
 
-#[derive(Debug)]
-struct JumpingPoint {
-    from: Position,
-    to: &'static str,
-    type_name: &'static str,
-}
+            let Ok(result) = result else {
+                panic!(
+                    "Server error while processing goto jump at {pos:?}:\n{file:#?}\nError: {result:#?}"
+                );
+            };
 
-const fn get_jump(
-    l_from: u32,
-    c_from: u32,
-    to: &'static str,
-    type_name: &'static str,
-) -> JumpingPoint {
-    JumpingPoint {
-        from: Position {
-            line: l_from,
-            character: c_from,
-        },
-        to,
-        type_name,
-    }
-}
-const JUMPS: &[JumpingPoint] = &[
-    get_jump(6, 24, "M1", "M1"),
-    get_jump(6, 27, "M2:d1", ""),
-    get_jump(9, 7, "M1", "M1"),
-    get_jump(9, 10, "M2:d1", ""),
-    get_jump(9, 13, "M2:f2", ""),
-    get_jump(10, 7, "M1", "M1"),
-    get_jump(10, 10, "M2:f3", "M1"),
-    get_jump(10, 13, "M1:f1", ""),
-    get_jump(16, 7, "M1", "M1"),
-    get_jump(16, 10, "M3:f1", ""),
-    get_jump(17, 7, "M2", "M2"),
-    get_jump(17, 10, "M3:f1", ""),
-    get_jump(17, 13, "M3:f3", "M1"),
-    get_jump(18, 7, "M1", "M1"),
-    get_jump(18, 10, "M3:f4", "M2"),
-    get_jump(18, 13, "M2:f4", "M1"),
-    get_jump(18, 16, "M1:f2", ""),
-    get_jump(18, 19, "M3:f4", "M2"),
-    get_jump(18, 22, "M2:f3", "M1"),
-    get_jump(18, 25, "M1:f3", ""),
-    get_jump(22, 7, "M2", "M2"),
-    get_jump(22, 12, "M1", "M1"),
-    get_jump(22, 15, "M1:f1", ""),
-    get_jump(22, 22, "M1:f2", ""),
-    get_jump(22, 29, "M1:f3", ""),
-    get_jump(28, 15, "M1", "M1"),
-    get_jump(28, 18, "Simple:alias", ""),
-    get_jump(33, 15, "M1", "M1"),
-    get_jump(41, 27, "Simple", "Simple"),
-    get_jump(44, 7, "M1", "M1"),
-    get_jump(45, 7, "Simple", "Simple"),
-    get_jump(46, 7, "SimpleDepended", "SimpleDepended"),
-    get_jump(46, 22, "Aliased", "Simple"),
-    get_jump(46, 30, "Aliased:f1", "M1"),
-    get_jump(46, 34, "EnumConstructed:f1", "M1"),
-    get_jump(47, 7, "SimpleDepended", "SimpleDepended"),
-    get_jump(47, 22, "Literaled", "Simple"),
-    get_jump(47, 32, "Literaled:f1", "M1"),
-    get_jump(47, 36, "M1", "M1"),
-    get_jump(47, 39, "M1:f1", ""),
-    get_jump(47, 46, "M1:f2", ""),
-    get_jump(47, 53, "M1:f3", ""),
-    get_jump(48, 7, "SimpleDepended", "SimpleDepended"),
-    get_jump(48, 22, "Wild", "Simple"),
-    get_jump(51, 22, "M1", "M1"),
-    get_jump(52, 4, "M1", "M1"),
-    get_jump(52, 7, "M1:f1", ""),
-    get_jump(52, 18, "M1:f2", ""),
-    get_jump(52, 25, "M1:f3", ""),
-    get_jump(54, 15, "M1", "M1"),
-    get_jump(54, 18, "PatternMatch:alias", ""),
-];
-
-fn check_jump(j: &JumpingPoint) {
-    let h = get_handler();
-    let size = get_definition_length(j.to);
-
-    for i in 0..=size {
-        let mut p = j.from;
-        p.character += i;
-
-        let r = h.goto_definition(&TEST_WORKSPACE, p, &TEST_URL);
-
-        assert!(r.is_ok(), "goto definition raise no error");
-        let r = r.unwrap();
-
-        assert!(r.is_some(), "{j:?} is correct jump");
-        let r = r.unwrap();
-
-        if let GotoDefinitionResponse::Scalar(l) = r {
-            let range = l.range;
-
-            let expect = DEFINITIONS.get(j.to);
-
-            assert!(expect.is_some(), "definition {:?} not found", j.to);
-            let expect = expect.unwrap();
+            let Some(resp) = result else {
+                if file.locations().is_empty() {
+                    continue;
+                }
+                panic!(
+                    "Expected to have goto location, but got nothing after processing goto jump at {pos:?}:\n{file:#?}"
+                );
+            };
 
             assert!(
-                range == *expect,
-                "incorrect jump {p:?}:\n{j:#?}:\n  expect:\n{:#?},\n  got:\n{:#?}",
-                *expect,
-                range
+                !file.locations().is_empty(),
+                "Expected to have no jump at {pos:?}, but got {resp:#?} while processing goto jump to file:\n{file:#?}"
             );
-        } else {
-            panic!("goto returned not scalar at jump {j:?}");
+
+            let GotoDefinitionResponse::Scalar(resp) = resp else {
+                panic!(
+                    "Expected Scalar format for response, but got other while processing goto jump at {pos:?}:\n{file:#?}\nRespone: {resp:#?}"
+                );
+            };
+
+            assert_eq!(
+                resp.uri, url,
+                "Jump to other file, that is not expected while processing goto jump at {pos:?}:\n{file:#?}"
+            );
+
+            let expected = file.locations().first().unwrap();
+
+            assert_eq!(
+                resp.range, *expected,
+                "Wrong jump location while processing goto jump at {pos:?}:\n{file:#?}"
+            );
         }
+
+        workspace_with_close_file(&self.workspace, file);
     }
-}
 
-fn check_type_definition_jump(j: &JumpingPoint) {
-    let h = get_handler();
-    let size = get_definition_length(j.to);
+    /// Run test of file. Check based on number of provided locations:
+    ///   * 0 locations - expect every cursor to not produce goto,
+    ///   * 1 locations - expeect every cursor to jump to that location.
+    #[track_caller]
+    fn check_goto_type(&self, file: &FileMetadata) {
+        assert!(
+            !file.cursors().is_empty(),
+            "File cursors shouldn't be empty for file:\n{file:#?}"
+        );
+        assert!(
+            file.locations().len() < 2,
+            "Invalid location number for file. Expect 1 or 0: \n{file:#?}"
+        );
 
-    for i in 0..=size {
-        let mut p = j.from;
-        p.character += i;
+        let url = get_url(file);
+        workspace_with_open_file(&self.workspace, file);
+        check_file(&self.workspace, file);
 
-        let r = h.goto_type_definition(&TEST_WORKSPACE, p, &TEST_URL);
+        for pos in file.cursors() {
+            let result = self
+                .handler
+                .goto_type_definition(&self.workspace, *pos, &url);
 
-        assert!(r.is_ok(), "goto definition raise no error");
-        let r = r.unwrap();
+            let Ok(result) = result else {
+                panic!(
+                    "Server error while processing goto type jump at {pos:?}:\n{file:#?}\nError: {result:#?}"
+                );
+            };
 
-        if j.type_name.is_empty() {
-            assert!(r.is_none(), "{j:?} has no type");
-            continue;
-        }
-
-        assert!(r.is_some(), "{j:?} is correct jump");
-        let r = r.unwrap();
-
-        if let GotoDefinitionResponse::Scalar(l) = r {
-            let range = l.range;
-
-            let expect = DEFINITIONS.get(j.type_name);
-
-            assert!(expect.is_some(), "definition {:?} not found", j.type_name);
-            let expect = expect.unwrap();
+            let Some(resp) = result else {
+                if file.locations().is_empty() {
+                    continue;
+                }
+                panic!(
+                    "Expected to have goto location, but got nothing after processing goto type jump at {pos:?}:\n{file:#?}"
+                );
+            };
 
             assert!(
-                range == *expect,
-                "incorrect jump:\n{j:#?}:\n  expect:\n{:#?},\n  got:\n{:#?}",
-                *expect,
-                range
+                !file.locations().is_empty(),
+                "Expected to have no jump at {pos:?}, but got {resp:#?} while processing goto type jump to file:\n{file:#?}"
             );
-        } else {
-            panic!("goto returned not scalar at jump {j:?}");
+
+            let GotoDefinitionResponse::Scalar(resp) = resp else {
+                panic!(
+                    "Expected Scalar format for response, but got other while processing goto type jump at {pos:?}:\n{file:#?}\nRespone: {resp:#?}"
+                );
+            };
+
+            assert_eq!(
+                resp.uri, url,
+                "Jump to other file, that is not expected while processing goto type jump at {pos:?}:\n{file:#?}"
+            );
+
+            let expected = file.locations().first().unwrap();
+
+            assert_eq!(
+                resp.range, *expected,
+                "Wrong jump location while processing goto type jump at {pos:?}:\n{file:#?}"
+            );
         }
+
+        workspace_with_close_file(&self.workspace, file);
     }
 }
 
 #[test]
-fn test_self_jump() {
-    DEFINITIONS.iter().for_each(|f| {
-        let jump = JumpingPoint {
-            from: f.1.start,
-            to: f.0,
-            type_name: "",
-        };
-        check_jump(&jump);
-    });
+fn goto_test_type_message() {
+    const TEXT: &str = r"
+      |message |Tar|get| {}
+      |        ^^^^^^^^^     <---
+      |
+      |message Dep (x |Tar|get|) {}
+      |
+      |message Field {
+      |  x |Tar|get|;
+      |}
+      |
+      |enum EDep (x |Tar|get|) {
+      |  * => {
+      |    Ctr0 {}
+      |  }
+      |}
+      |
+      |enum Ctr {
+      |  Ctr1 {
+      |    x |Tar|get|;
+      |  }
+      |}
+      |
+      |enum Pat (x |Tar|get|) (y Field) {
+      |  |Tar|get|{}, * => {}
+      |  *, Field{x: |Tar|get|{}} => {}
+      |  *, * => {
+      |    Ctr2 {}
+      |  }
+      |}
+      |
+      |message FieldD (f Field) {}
+      |
+      |message Constructor (d1 Dep |Tar|get|{}) (d2 FieldD Field{x: |Tar|get|{}}) {
+      |  d3 Dep |Tar|get|{};
+      |  d4 FieldD Field{x: |Tar|get|{}};
+      |}
+      |
+      |enum EConstructor (d1 Dep |Tar|get|{}) (d2 FieldD Field{x: |Tar|get|{}}) {
+      |  *, * => {
+      |    Ctr3 {
+      |      d3 Dep |Tar|get|{};
+      |      d4 FieldD Field{x: |Tar|get|{}};
+      |    }
+      |  }
+      |}
+    ";
+
+    let meta = FileConfig::default().construct(TEXT);
+    let scenario = Scenario::default();
+    scenario.check_goto(&meta);
 }
 
 #[test]
-fn test_jumps() {
-    JUMPS.iter().for_each(check_jump);
+fn goto_test_type_enum() {
+    const TEXT: &str = r"
+      |enum |Tar|get| {
+      |     ^^^^^^^^^     <---
+      |  Ctr0 {}
+      |}
+      |
+      |message Dep (x |Tar|get|) {}
+      |
+      |message Field {
+      |  x |Tar|get|;
+      |}
+      |
+      |enum EDep (x |Tar|get|) {
+      |  * => {
+      |    Ctr1 {}
+      |  }
+      |}
+      |
+      |enum Ctr {
+      |  Ctr2 {
+      |    x |Tar|get|;
+      |  }
+      |}
+    ";
+
+    let meta = FileConfig::default().construct(TEXT);
+    let scenario = Scenario::default();
+    scenario.check_goto(&meta);
 }
 
 #[test]
-fn test_type_definition_jumps() {
-    JUMPS.iter().for_each(check_type_definition_jump);
+fn goto_test_constructor() {
+    const TEXT: &str = r"
+      |enum Enum {
+      |  |Tar|get| {}
+      |  ^^^^^^^^^     <---
+      |}
+      |
+      |message Dep (x Enum) {}
+      |
+      |message Field {
+      |  x Enum;
+      |}
+      |
+      |
+      |enum Pat (x Enum) (y Field) {
+      |  |Tar|get|{}, * => {}
+      |  *, Field{x: |Tar|get|{}} => {}
+      |  *, * => {
+      |    Ctr2 {}
+      |  }
+      |}
+      |
+      |message FieldD (f Field) {}
+      |
+      |message Constructor (d1 Dep |Tar|get|{}) (d2 FieldD Field{x: |Tar|get|{}}) {
+      |  d3 Dep |Tar|get|{};
+      |  d4 FieldD Field{x: |Tar|get|{}};
+      |}
+      |
+      |enum EConstructor (d1 Dep |Tar|get|{}) (d2 FieldD Field{x: |Tar|get|{}}) {
+      |  *, * => {
+      |    Ctr3 {
+      |      d3 Dep |Tar|get|{};
+      |      d4 FieldD Field{x: |Tar|get|{}};
+      |    }
+      |  }
+      |}
+    ";
+
+    let meta = FileConfig::default().construct(TEXT);
+    let scenario = Scenario::default();
+    scenario.check_goto(&meta);
+}
+
+#[test]
+fn goto_test_dependency_message() {
+    const TEXT: &str = r"
+      |message IntD (d Int) {}
+      |
+      |message Struct {
+      |  field Int;
+      |}
+      |
+      |message StructD (d Struct) {}
+      |
+      |message Message (|tar|get| Int) {
+      |                 ^^^^^^^^^         <---
+      |  f1 IntD |tar|get|;
+      |  f2 IntD (1 + |tar|get|);
+      |  f3 StructD Struct{field: |tar|get|};
+      |}
+    ";
+
+    let meta = FileConfig::default().construct(TEXT);
+    let scenario = Scenario::default();
+    scenario.check_goto(&meta);
+}
+
+#[test]
+fn goto_test_dependency_enum() {
+    const TEXT: &str = r"
+      |message IntD (d Int) {}
+      |
+      |message Struct {
+      |  field Int;
+      |}
+      |
+      |message StructD (d Struct) {}
+      |
+      |enum Enum (|tar|get| Int) {
+      |           ^^^^^^^^^         <---
+      |  * => {
+      |    Ctr {
+      |      f1 IntD |tar|get|;
+      |      f2 IntD (1 + |tar|get|);
+      |      f3 StructD Struct{field: |tar|get|};
+      |    }
+      |  }
+      |}
+    ";
+
+    let meta = FileConfig::default().construct(TEXT);
+    let scenario = Scenario::default();
+    scenario.check_goto(&meta);
+}
+
+#[test]
+fn goto_test_field_message() {
+    const TEXT: &str = r"
+      |message IntD (d Int) {}
+      |
+      |message Struct {
+      |  field Int;
+      |}
+      |
+      |message StructD (d Struct) {}
+      |
+      |message Message {
+      |  |tar|get| Int;
+      |  ^^^^^^^^^        <---
+      |  f1 IntD |tar|get|;
+      |  f2 IntD (1 + |tar|get|);
+      |  f3 StructD Struct{field: |tar|get|};
+      |}
+      |
+      |message MDep (d Message) {}
+      |
+      |enum Pat (x Message) {
+      |  Message{|tar|get|: a, f1: b, f2: c, f3: d} => {
+      |    Ctr0 {}
+      |  }
+      |}
+      |
+      |message Constructor {
+      |  d MDep Message{|tar|get|: 0, f1: IntD{}, f2: IntD{}, f3: StructD{}};
+      |}
+      |
+      |message Access {
+      |  f1 Message;
+      |  f2 IntD f1.|tar|get|;
+      |}
+    ";
+
+    let meta = FileConfig::default().construct(TEXT);
+    let scenario = Scenario::default();
+    scenario.check_goto(&meta);
+}
+
+#[test]
+fn goto_test_field_constructor() {
+    const TEXT: &str = r"
+      |message IntD (d Int) {}
+      |
+      |message Struct {
+      |  field Int;
+      |}
+      |
+      |message StructD (d Struct) {}
+      |
+      |enum Enum {
+      |  Ctr0 {
+      |    |tar|get| Int;
+      |    ^^^^^^^^^        <---
+      |    f1 IntD |tar|get|;
+      |    f2 IntD (1 + |tar|get|);
+      |    f3 StructD Struct{field: |tar|get|};
+      |  }
+      |}
+      |
+      |message EDep (d Enum) {}
+      |
+      |enum Pat (x Enum) {
+      |  Ctr0{|tar|get|: a, f1: b, f2: c, f3: d} => {
+      |    Ctr1 {}
+      |  }
+      |}
+      |
+      |message Constructor {
+      |  d EDep Ctr0{|tar|get|: 0, f1: IntD{}, f2: IntD{}, f3: StructD{}};
+      |}
+    ";
+
+    let meta = FileConfig::default().construct(TEXT);
+    let scenario = Scenario::default();
+    scenario.check_goto(&meta);
+}
+
+#[test]
+fn goto_test_alias() {
+    const TEXT: &str = r"
+      |message IntD (d Int) {}
+      |
+      |message Struct {
+      |  field Int;
+      |}
+      |
+      |message StructD (d Struct) {}
+      |
+      |enum Enum (d Struct) {
+      |  Struct{field: |tar|get|} => {
+      |                ^^^^^^^^^        <---
+      |    Ctr {
+      |      f1 IntD |tar|get|;
+      |      f2 IntD (1 + |tar|get|);
+      |      f3 StructD Struct{field: |tar|get|};
+      |    }
+      |  }
+      |}
+    ";
+
+    let meta = FileConfig::default().construct(TEXT);
+    let scenario = Scenario::default();
+    scenario.check_goto(&meta);
+}
+
+#[test]
+fn goto_type_test_dependency_message() {
+    const TEXT: &str = r"
+      |message Target {}
+      |        ^^^^^^     <---
+      |
+      |message TDep (d Target) {}
+      |
+      |message Struct {
+      |  field Target;
+      |}
+      |
+      |message StructD (d Struct) {}
+      |
+      |message Message (|tar|get| Target) {
+      |  f1 TDep |tar|get|;
+      |  f2 StructD Struct{field: |tar|get|};
+      |}
+    ";
+
+    let meta = FileConfig::default().construct(TEXT);
+    let scenario = Scenario::default();
+    scenario.check_goto_type(&meta);
+}
+
+#[test]
+fn goto_type_test_dependency_enum() {
+    const TEXT: &str = r"
+      |message Target {}
+      |        ^^^^^^     <---
+      |
+      |message TDep (d Target) {}
+      |
+      |message Struct {
+      |  field Target;
+      |}
+      |
+      |message StructD (d Struct) {}
+      |
+      |enum Enum (|tar|get| Target) {
+      |  * => {
+      |    Ctr {
+      |      f1 TDep |tar|get|;
+      |      f2 StructD Struct{field: |tar|get|};
+      |    }
+      |  }
+      |}
+    ";
+
+    let meta = FileConfig::default().construct(TEXT);
+    let scenario = Scenario::default();
+    scenario.check_goto_type(&meta);
+}
+
+#[test]
+fn goto_type_test_field_message() {
+    const TEXT: &str = r"
+      |message Target {}
+      |        ^^^^^^     <---
+      |
+      |message TDep (d Target) {}
+      |
+      |message Struct {
+      |  field Target;
+      |}
+      |
+      |message StructD (d Struct) {}
+      |
+      |message Message {
+      |  |tar|get| Target;
+      |  f1 TDep |tar|get|;
+      |  f2 StructD Struct{field: |tar|get|};
+      |}
+      |
+      |message MDep (d Message) {}
+      |
+      |enum Pat (x Message) {
+      |  Message{|tar|get|: a, f1: b, f2: c} => {
+      |    Ctr0 {}
+      |  }
+      |}
+      |
+      |message Constructor {
+      |  d MDep Message{|tar|get|: Target{}, f1: TDep{}, f2: StructD{}};
+      |}
+      |
+      |message Access {
+      |  f1 Message;
+      |  f2 TDep f1.|tar|get|;
+      |}
+    ";
+
+    let meta = FileConfig::default().construct(TEXT);
+    let scenario = Scenario::default();
+    scenario.check_goto_type(&meta);
+}
+
+#[test]
+fn goto_type_test_field_constructor() {
+    const TEXT: &str = r"
+      |message Target {}
+      |        ^^^^^^     <---
+      |
+      |message TDep (d Target) {}
+      |
+      |message Struct {
+      |  field Target;
+      |}
+      |
+      |message StructD (d Struct) {}
+      |
+      |enum Enum {
+      |  Ctr0 {
+      |    |tar|get| Target;
+      |    f1 TDep |tar|get|;
+      |    f2 StructD Struct{field: |tar|get|};
+      |  }
+      |}
+      |
+      |message EDep (d Enum) {}
+      |
+      |enum Pat (x Enum) {
+      |  Ctr0{|tar|get|: a, f1: b, f2: c} => {
+      |    Ctr1 {}
+      |  }
+      |}
+      |
+      |message Constructor {
+      |  d EDep Ctr0{|tar|get|: Target{}, f1: TDep{}, f2: StructD{}};
+      |}
+    ";
+
+    let meta = FileConfig::default().construct(TEXT);
+    let scenario = Scenario::default();
+    scenario.check_goto_type(&meta);
+}
+
+#[test]
+fn goto_type_test_alias() {
+    const TEXT: &str = r"
+      |message Target {}
+      |        ^^^^^^     <---
+      |
+      |message TDep (d Target) {}
+      |
+      |message Struct {
+      |  field Target;
+      |}
+      |
+      |message StructD (d Struct) {}
+      |
+      |enum Enum (d Struct) {
+      |  Struct{field: |tar|get|} => {
+      |    Ctr {
+      |      f1 TDep |tar|get|;
+      |      f2 StructD Struct{field: |tar|get|};
+      |    }
+      |  }
+      |}
+    ";
+
+    let meta = FileConfig::default().construct(TEXT);
+    let scenario = Scenario::default();
+    scenario.check_goto_type(&meta);
 }

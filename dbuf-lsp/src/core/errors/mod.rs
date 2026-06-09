@@ -50,6 +50,7 @@ impl Error {
         }
     }
 
+    #[must_use]
     pub fn to_jsonrpc_error(&self) -> jsonrpc::Error {
         let code = self.get_code();
         let message = self.get_message();
