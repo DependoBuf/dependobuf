@@ -84,6 +84,8 @@ impl Scenario {
                 "Wrong jump location while processing goto jump at {pos:?}:\n{file:#?}"
             );
         }
+
+        workspace_with_close_file(&self.workspace, file);
     }
 
     /// Run test of file. Check based on number of provided locations:
@@ -147,6 +149,8 @@ impl Scenario {
                 "Wrong jump location while processing goto type jump at {pos:?}:\n{file:#?}"
             );
         }
+
+        workspace_with_close_file(&self.workspace, file);
     }
 }
 

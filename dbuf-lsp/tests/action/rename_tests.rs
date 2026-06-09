@@ -1,4 +1,4 @@
-//! Module contains all rename tests.
+//! Tests for `textDocument/prepareRename` and for `textDocument/rename`.
 use std::fmt::Write;
 
 use tower_lsp::lsp_types::*;

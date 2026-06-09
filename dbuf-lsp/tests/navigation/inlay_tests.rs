@@ -27,6 +27,9 @@ impl Default for Scenario {
 }
 
 impl Scenario {
+    /// Run tests for file. Expect every location in file to produce hint with
+    /// labels from `expected` in correct order. Runs inlay hint request
+    /// with provided range.
     #[track_caller]
     fn check_inlay_hint(&self, file: &FileMetadata, expected: &[&str], range: Range) {
         let url = get_url(file);
@@ -89,6 +92,8 @@ impl Scenario {
                 "Wrong hint label. Hint:\n{hint:#?}\nFile:\n{file:#?}"
             );
         }
+
+        workspace_with_close_file(&self.workspace, file);
     }
 }
 

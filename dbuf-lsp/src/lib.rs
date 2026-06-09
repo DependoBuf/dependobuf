@@ -5,6 +5,7 @@
 
 pub(crate) mod core;
 
+pub use core::errors::Error;
 pub use core::workspace::WorkspaceAccess;
 
 pub mod handler_box;
