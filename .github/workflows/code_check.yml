@@ -74,10 +74,10 @@ jobs:
           components: "clippy"
 
       - name: Build packages
-        run: cargo build ${{ matrix.feature-set.args }} -p dbuf
+        run: cargo build ${{ matrix.feature_set.args }} -p dbuf
 
       - name: Run clippy
-        run: cargo clippy ${{ matrix.feature-set.args }} -p dbuf
+        run: cargo clippy ${{ matrix.feature_set.args }} -p dbuf
 
       - name: Run tests
-        run: cargo test ${{ matrix.feature-set.args }} -p dbuf
+        run: cargo test ${{ matrix.feature_set.args }} -p dbuf
