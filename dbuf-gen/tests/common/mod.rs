@@ -1,3 +1,18 @@
+#![cfg_attr(
+    not(feature = "rust"),
+    allow(
+        dead_code,
+        reason = "some code using only in rust feature (FIXME: separate crates by code usage)"
+    )
+)]
+#![cfg_attr(
+    not(feature = "rust"),
+    allow(
+        unused_imports,
+        reason = "some code using only in rust feature (FIXME: separate crates by cde usage)"
+    )
+)]
+
 use dbuf_core::arena::InternedString;
 use dbuf_core::ast::elaborated as e;
 use indexmap::IndexMap;

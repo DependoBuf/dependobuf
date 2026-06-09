@@ -51,19 +51,26 @@ jobs:
       matrix:
         feature_set:
           - name: "Default features only"
-            args: ""
+            features: ""
+            packages: "-p dbuf"
           - name: "LSP feature only"
-            args: "--no-default-features --features lsp"
+            features: "--no-default-features --features lsp"
+            packages: "-p dbuf -p dbuf-lsp"
           - name: "Format feature only"
-            args: "--no-default-features --features format"
+            features: "--no-default-features --features format"
+            packages: "-p dbuf -p dbuf-format"
           - name: "Rust feature only"
-            args: "--no-default-features --features rust"
+            features: "--no-default-features --features rust"
+            packages: "-p dbuf -p dbuf-gen"
           - name: "Kotlin feature only"
-            args: "--no-default-features --features kotlin"
+            features: "--no-default-features --features kotlin"
+            packages: "-p dbuf -p dbuf-gen"
           - name: "Swift feature only"
-            args: "--no-default-features --features swift"
+            features: "--no-default-features --features swift"
+            packages: "-p dbuf -p dbuf-gen"
           - name: "All feature features"
-            args: "--all-features"
+            features: "--all-features"
+            packages: ""
 
     steps:
       - uses: actions/checkout@v6
@@ -74,10 +81,10 @@ jobs:
           components: "clippy"
 
       - name: Build packages
-        run: cargo build ${{ matrix.feature-set.args }} -p dbuf
+        run: cargo build ${{ matrix.feature_set.features }} ${{ matrix.feature_set.packages }}
 
       - name: Run clippy
-        run: cargo clippy ${{ matrix.feature-set.args }} -p dbuf
+        run: cargo clippy ${{ matrix.feature_set.features }} ${{ matrix.feature_set.packages }}
 
       - name: Run tests
-        run: cargo test ${{ matrix.feature-set.args }} -p dbuf
+        run: cargo test ${{ matrix.feature_set.features }} ${{ matrix.feature_set.packages }}
