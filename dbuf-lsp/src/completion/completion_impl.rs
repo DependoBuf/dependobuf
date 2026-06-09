@@ -4,7 +4,7 @@ use tower_lsp::lsp_types::{
     CompletionResponse, CompletionTriggerKind, Position,
 };
 use tracing::span::EnteredSpan;
-use tracing::{Level, span, trace};
+use tracing::{Level, info, span, trace};
 
 use crate::core::ast_visitor::*;
 use crate::core::workspace::{File, LocNameHelper, LocationHelper, Name, Str};
@@ -20,6 +20,10 @@ pub fn run_completion(
 
     visit_ast(ast, &mut collector_visitor);
     let data = collector_visitor.take();
+
+    let mut alias_visitor = AliasCollectorVisitor::new(data);
+    visit_ast(ast, &mut alias_visitor);
+    let data = alias_visitor.take();
 
     let activation_kind = match ctx {
         Some(x) if x.trigger_kind == CompletionTriggerKind::TRIGGER_CHARACTER => {
@@ -82,6 +86,8 @@ struct ConstructorAccessable {
     fields: Vec<Definition>,
     /// Dependencies of constructor.
     dependencies: Vec<Definition>,
+    /// Aliases for constructor (enum constructors only).
+    aliases: Vec<Definition>,
 }
 
 /// Struct contains all constructors and their fields.
@@ -107,6 +113,14 @@ impl ConstructorDefinitions {
             .unwrap_or_default()
     }
 
+    /// Return all aliases of a constructor.
+    pub fn aliases(&self, ctr: &Str) -> Vec<Definition> {
+        self.data
+            .get(ctr)
+            .map(|c| c.aliases.clone())
+            .unwrap_or_default()
+    }
+
     /// Return type of field of constructor if any.
     pub fn hop_field(&self, current_ctr: &Str, field: &Str) -> Option<Str> {
         self.data
@@ -117,7 +131,7 @@ impl ConstructorDefinitions {
             .map(|f| f.ty.clone())
     }
 
-    /// Return type of dependency of constructor
+    /// Return type of dependency of constructor if any.
     pub fn hop_dependency(&self, current_ctr: &Str, field: &Str) -> Option<Str> {
         self.data
             .get(current_ctr)?
@@ -127,10 +141,21 @@ impl ConstructorDefinitions {
             .map(|f| f.ty.clone())
     }
 
+    /// Return type of alias of constructor if any.
+    pub fn hop_alias(&self, current_ctr: &Str, field: &Str) -> Option<Str> {
+        self.data
+            .get(current_ctr)?
+            .aliases
+            .iter()
+            .find(|f| f.name == *field)
+            .map(|f| f.ty.clone())
+    }
+
     /// Return type of dependency or field of constructor
     pub fn hop(&self, current_ctr: &Str, field: &Str) -> Option<Str> {
-        self.hop_dependency(current_ctr, field)
-            .or_else(|| self.hop_field(current_ctr, field))
+        self.hop_field(current_ctr, field)
+            .or_else(|| self.hop_dependency(current_ctr, field))
+            .or_else(|| self.hop_alias(current_ctr, field))
     }
 }
 
@@ -143,6 +168,13 @@ struct DefinitionCollector {
 }
 
 impl DefinitionCollector {
+    fn new() -> DefinitionCollector {
+        DefinitionCollector {
+            field_name: None,
+            field_type: None,
+        }
+    }
+
     fn set_name(&mut self, name: Str) {
         assert!(self.field_name.is_none());
         self.field_name = name.into();
@@ -185,10 +217,7 @@ impl DataCollectorVisitor {
                 data: IndexMap::new(),
             },
             constructor_name: None,
-            collector: DefinitionCollector {
-                field_name: None,
-                field_type: None,
-            },
+            collector: DefinitionCollector::new(),
             setting_dependency: None,
             dependencies: vec![],
         }
@@ -232,6 +261,7 @@ impl DataCollectorVisitor {
             let current = ConstructorAccessable {
                 fields: vec![field],
                 dependencies: self.dependencies.clone(),
+                aliases: vec![],
             };
             let old = self
                 .data
@@ -295,6 +325,205 @@ impl<'a> Visitor<'a> for DataCollectorVisitor {
         }
 
         Continue
+    }
+}
+
+/// Visitor that collects alias information for every enum constructor.
+struct AliasCollectorVisitor {
+    /// Collected constructors with fields to deduce alias type.
+    data: ConstructorDefinitions,
+    /// Stack of constructor calls in pattern.
+    constructor_stack: Vec<Str>,
+    /// Current pattern dependency id.
+    param_id: i32,
+    /// Current field name of pattern constructor.
+    current_field: Option<Str>,
+    /// aliases of current branch.
+    aliases: Vec<Definition>,
+    /// Collector of dependencies.
+    collector: DefinitionCollector,
+    /// Dependencies of current type.
+    dependencies: Vec<Definition>,
+}
+
+impl AliasCollectorVisitor {
+    pub fn new(data: ConstructorDefinitions) -> AliasCollectorVisitor {
+        AliasCollectorVisitor {
+            data,
+            constructor_stack: vec![],
+            param_id: -1,
+            current_field: None,
+            aliases: vec![],
+            collector: DefinitionCollector::new(),
+            dependencies: vec![],
+        }
+    }
+
+    fn on_type(&mut self) {
+        self.dependencies = vec![];
+        self.param_id = -1;
+    }
+
+    fn on_branch(&mut self) {
+        self.param_id = 0;
+        self.constructor_stack = vec![];
+        self.current_field = None;
+        self.aliases = vec![];
+    }
+
+    fn on_next_pattern(&mut self) {
+        self.current_field = None;
+        if self.constructor_stack.is_empty() {
+            self.param_id += 1;
+        }
+    }
+
+    fn on_pattern_call(&mut self, ctr: &Name) {
+        self.current_field = None;
+        self.constructor_stack.push(ctr.content.clone());
+    }
+
+    fn on_pattern_call_arg(&mut self, name: &Name) {
+        self.current_field = name.content.clone().into();
+    }
+
+    fn on_pattern_call_stop(&mut self) {
+        self.constructor_stack
+            .pop()
+            .expect("Since call stop count matches call count");
+        if self.constructor_stack.is_empty() {
+            self.param_id += 1;
+        }
+    }
+
+    fn on_alias(&mut self, name: &Name) {
+        if let Some(ctr) = self.constructor_stack.last() {
+            let f_name = self
+                .current_field
+                .take()
+                .expect("Sice should be set on pattern call argument");
+            let ty = self.data.hop_field(ctr, &f_name);
+
+            let Some(ty) = ty else {
+                info!("Unknown field of constuctor {ctr}: {f_name}");
+                return;
+            };
+
+            self.aliases.push(Definition {
+                name: name.content.clone(),
+                ty,
+            });
+
+            return;
+        }
+
+        assert!(
+            self.param_id >= 0,
+            "Should be set to non negative on new branch"
+        );
+
+        #[allow(
+            clippy::cast_sign_loss,
+            reason = "checked in assert that is not negative"
+        )]
+        let i = self.param_id as usize;
+
+        if !(0..self.dependencies.len()).contains(&i) {
+            info!(
+                "Too many patterns for a type. Dependencies: {}, Current param index: {}",
+                self.dependencies.len(),
+                i
+            );
+            return;
+        }
+
+        let d = self.dependencies.get(i).expect("index in range");
+
+        self.aliases.push(Definition {
+            name: name.content.clone(),
+            ty: d.ty.clone(),
+        });
+    }
+
+    fn on_dependency_name(&mut self, name: &Name) {
+        self.collector.set_name(name.content.clone());
+    }
+
+    fn on_dependency_type(&mut self, ty: &Name) {
+        self.collector.set_type(ty.content.clone());
+        let dependency = self.collector.take();
+        self.dependencies.push(dependency);
+    }
+
+    fn on_enum_constructor(&mut self, ctr: &Name) {
+        if let Some(ctr) = self.data.data.get_mut(&ctr.content) {
+            assert!(
+                ctr.aliases.is_empty(),
+                "Aliases sets not only once per constructor"
+            );
+            ctr.aliases.clone_from(&self.aliases);
+        }
+    }
+
+    /// Return definitions with alias definitions.
+    pub fn take(self) -> ConstructorDefinitions {
+        self.data
+    }
+}
+
+impl<'a> Visitor<'a> for AliasCollectorVisitor {
+    type StopResult = ();
+
+    fn visit(&mut self, visit: Visit<'a>) -> VisitResult<Self::StopResult> {
+        match visit {
+            Visit::Type(_, _) => {
+                self.on_type();
+                Continue
+            }
+            Visit::Dependency(name, _) => {
+                self.on_dependency_name(name);
+                Continue
+            }
+            Visit::Branch => {
+                self.on_branch();
+                Continue
+            }
+            Visit::PatternAlias(name) => {
+                self.on_alias(name);
+                Continue
+            }
+            Visit::PatternCall(name, _) => {
+                self.on_pattern_call(name);
+                Continue
+            }
+            Visit::PatternCallArgument(name) => {
+                self.on_pattern_call_arg(name);
+                Continue
+            }
+            Visit::PatternCallStop => {
+                self.on_pattern_call_stop();
+                Continue
+            }
+            Visit::PatternLiteral(_, _) => {
+                self.on_next_pattern();
+                Continue
+            }
+            Visit::PatternUnderscore(_) => {
+                self.on_next_pattern();
+                Continue
+            }
+            Visit::Constructor(constructor) => {
+                if !constructor.of_message {
+                    self.on_enum_constructor(constructor.name);
+                }
+                Skip
+            }
+            Visit::TypeExpression(name, _) => {
+                self.on_dependency_type(name);
+                Skip
+            }
+            _ => Continue,
+        }
     }
 }
 
@@ -392,6 +621,7 @@ impl CompletionVisitor {
         let mut ans = self.constructor_fields.fields(ctr);
         if self.first_constructor {
             ans.extend(self.constructor_fields.dependencies(ctr));
+            ans.extend(self.constructor_fields.aliases(ctr));
         }
         ans
     }

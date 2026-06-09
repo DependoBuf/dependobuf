@@ -82,8 +82,17 @@ impl Scenario {
         }
     }
 
+    /// Check completion for file. File should contain no location, only one cursor. Also
+    /// `expect` should have definition in correct order, and `expect_ty` should have a type for
+    /// every `expect` completion.
     #[track_caller]
-    fn check_completion(&self, file: &FileMetadata, expect: &[&str], ctx: Context) {
+    fn check_completion(
+        &self,
+        file: &FileMetadata,
+        expect: &[&str],
+        expect_ty: &[&str],
+        ctx: Context,
+    ) {
         assert_eq!(file.cursors().len(), 1, "Too many cursors in file");
         assert!(file.locations().is_empty(), "Expect to have no locations");
 
@@ -113,9 +122,23 @@ impl Scenario {
         };
 
         assert_eq!(
-            resp.into_iter().map(|c| c.label).collect::<Vec<_>>(),
+            resp.iter().map(|c| &c.label).collect::<Vec<_>>(),
             expect,
-            "Wrong answer on completion request"
+            "Wrong completion label"
+        );
+
+        assert_eq!(
+            resp.iter()
+                .map(|c| c
+                    .label_details
+                    .as_ref()
+                    .unwrap()
+                    .description
+                    .as_ref()
+                    .unwrap())
+                .collect::<Vec<_>>(),
+            expect_ty,
+            "Wrong completion type"
         );
 
         workspace_with_close_file(&self.workspace, file);
@@ -135,12 +158,13 @@ fn test_regular_simple() {
     ";
 
     let expect: &[&str] = &["f1", "f2", "f3", "d1", "d2"];
+    let expect_ty: &[&str] = &["Int", "String", "IntD", "Int", "String"];
     let ctx = Context::Regular;
 
     let meta = FileConfig::default().construct(TEXT);
     let scenario = Scenario::default();
 
-    scenario.check_completion(&meta, expect, ctx);
+    scenario.check_completion(&meta, expect, expect_ty, ctx);
 }
 
 #[test]
@@ -160,22 +184,22 @@ fn test_regular_call() {
     ";
 
     let expect: &[&str] = &["f1", "f2"];
+    let expect_ty: &[&str] = &["Int", "String"];
     let ctx = Context::Regular;
 
     let meta = FileConfig::default().construct(TEXT);
     let scenario = Scenario::default();
 
-    scenario.check_completion(&meta, expect, ctx);
+    scenario.check_completion(&meta, expect, expect_ty, ctx);
 }
 
 #[test]
-#[should_panic = "Wrong answer on completion request"] // FIXME: actually not collecting alias information.
 fn test_regular_enum() {
     const TEXT: &str = r"
       |message IntD (d Int) {}
       |
       |enum Test (d1 Int) (d2 String) {
-      |  a1, * => {
+      |  *, * => {
       |    Ctr1 {
       |      f1 Int;
       |      f2 String;
@@ -189,13 +213,59 @@ fn test_regular_enum() {
       |}
     ";
 
-    let expect: &[&str] = &["f3", "f4", "f5", "d1", "d2", "a1"];
+    let expect: &[&str] = &["f3", "f4", "f5", "d1", "d2"];
+    let expect_ty: &[&str] = &["Int", "String", "IntD", "Int", "String"];
     let ctx = Context::Regular;
 
     let meta = FileConfig::default().construct(TEXT);
     let scenario = Scenario::default();
 
-    scenario.check_completion(&meta, expect, ctx);
+    scenario.check_completion(&meta, expect, expect_ty, ctx);
+}
+
+#[test]
+fn test_enum_alias() {
+    const TEXT: &str = r"
+      |message IntD (d Int) {}
+      |
+      |message Simple {
+      |  f1 String;
+      |}
+      |
+      |message Struct {
+      | f1 Int;
+      | f2 Simple;
+      | f3 Int;
+      |}
+      |
+      |enum Test (d1 Int) (d2 Struct) {
+      |  a1, a2 => {
+      |    Ctr0 {}
+      |  }
+      |  a3, Struct{f1: a4, f2: Simple{f1: a5}, f3: a6} => {
+      |    Ctr1 {
+      |      f1 Int;
+      |      f2 String;
+      |    }
+      |    Ctr2 {
+      |      f3 Int;
+      |      f4 String;
+      |      f5 IntD f|;
+      |    }
+      |  }
+      |}
+    ";
+
+    let expect: &[&str] = &["f3", "f4", "f5", "d1", "d2", "a3", "a4", "a5", "a6"];
+    let expect_ty: &[&str] = &[
+        "Int", "String", "IntD", "Int", "Struct", "Int", "Int", "String", "Int",
+    ];
+    let ctx = Context::Regular;
+
+    let meta = FileConfig::default().construct(TEXT);
+    let scenario = Scenario::default();
+
+    scenario.check_completion(&meta, expect, expect_ty, ctx);
 }
 
 #[test]
@@ -223,12 +293,13 @@ fn test_regular_enum_call() {
     ";
 
     let expect: &[&str] = &[];
+    let expect_ty: &[&str] = &[];
     let ctx = Context::Regular;
 
     let meta = FileConfig::default().construct(TEXT);
     let scenario = Scenario::default();
 
-    scenario.check_completion(&meta, expect, ctx);
+    scenario.check_completion(&meta, expect, expect_ty, ctx);
 }
 
 #[test]
@@ -248,12 +319,13 @@ fn test_dot_call() {
     ";
 
     let expect: &[&str] = &["f1", "f2"];
+    let expect_ty: &[&str] = &["Int", "String"];
     let ctx = Context::Dot;
 
     let meta = FileConfig::default().construct(TEXT);
     let scenario = Scenario::default();
 
-    scenario.check_completion(&meta, expect, ctx);
+    scenario.check_completion(&meta, expect, expect_ty, ctx);
 }
 
 #[test]
@@ -281,10 +353,11 @@ fn test_dot_enum_call() {
     ";
 
     let expect: &[&str] = &[];
+    let expect_ty: &[&str] = &[];
     let ctx = Context::Dot;
 
     let meta = FileConfig::default().construct(TEXT);
     let scenario = Scenario::default();
 
-    scenario.check_completion(&meta, expect, ctx);
+    scenario.check_completion(&meta, expect, expect_ty, ctx);
 }
