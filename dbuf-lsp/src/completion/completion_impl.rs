@@ -154,8 +154,8 @@ impl ConstructorDefinitions {
     /// Return type of dependency or field of constructor
     pub fn hop(&self, current_ctr: &Str, field: &Str) -> Option<Str> {
         self.hop_field(current_ctr, field)
-            .or_else(|| self.hop_dependency(current_ctr, field))
             .or_else(|| self.hop_alias(current_ctr, field))
+            .or_else(|| self.hop_dependency(current_ctr, field))
     }
 }
 
