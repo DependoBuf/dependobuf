@@ -480,16 +480,17 @@ fn infer<'a>(
             name,
             fields: constructor_args,
         } => infer_constructor_call(module_ctx, local_ctx, name, constructor_args),
-        p::ExpressionNode::Variable { name } => {
-            if let Some(alias) = local_ctx.get_alias(&name.content) {
-                return Ok(alias.clone());
-            }
-            let ty = lookup_var(local_ctx, name)?;
-            Ok(Value::Variable {
+        p::ExpressionNode::Variable { name } => match local_ctx.lookup(&name.content) {
+            Some(context::Lookup::Alias(alias)) => Ok(alias.clone()),
+            Some(context::Lookup::Term(ty)) => Ok(Value::Variable {
                 name: name.content.clone(),
-                ty,
-            })
-        }
+                ty: ty.clone(),
+            }),
+            None => Err(ElaboratingStage {
+                error: UnknownVariable(name.content.to_string()),
+                loc: Some(Loc::from(name)),
+            }),
+        },
         p::ExpressionNode::TypedHole => Err(ElaboratingStage {
             error: UnsupportedSyntax,
             loc: Some(expr.loc),

@@ -22,9 +22,64 @@ pub struct GeneratedModule {
     tag: u64,
 }
 
+fn is_rust_keyword(s: &str) -> bool {
+    matches!(
+        s,
+        "as" | "async"
+            | "await"
+            | "break"
+            | "const"
+            | "continue"
+            | "dyn"
+            | "else"
+            | "enum"
+            | "extern"
+            | "false"
+            | "fn"
+            | "for"
+            | "if"
+            | "impl"
+            | "in"
+            | "let"
+            | "loop"
+            | "match"
+            | "mod"
+            | "move"
+            | "mut"
+            | "pub"
+            | "ref"
+            | "return"
+            | "static"
+            | "struct"
+            | "trait"
+            | "true"
+            | "type"
+            | "union"
+            | "unsafe"
+            | "use"
+            | "where"
+            | "while"
+            | "abstract"
+            | "become"
+            | "box"
+            | "do"
+            | "final"
+            | "macro"
+            | "override"
+            | "try"
+            | "typeof"
+            | "unsized"
+            | "virtual"
+            | "yield"
+    )
+}
+
 fn format(name: String) -> String {
-    // TODO: add r# or mandatory tag if ident is keyword
-    name
+    if is_rust_keyword(&name) {
+        format!("r#{name}")
+    } else {
+        name
+    }
 }
 
 fn tag_format(name: String, tag: u64) -> String {

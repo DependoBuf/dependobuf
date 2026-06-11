@@ -170,6 +170,14 @@ fn test_message_constructor_as_dep() {
 }
 
 #[test]
+fn test_name_shadowing() {
+    insta::glob!("correct_dbufs/shadow_pattern_accessible.dbuf", test_file);
+    insta::glob!("correct_dbufs/shadow_field_over_pattern.dbuf", test_file);
+    insta::glob!("correct_dbufs/shadow_partial.dbuf", test_file);
+    insta::glob!("correct_dbufs/shadow_dep_name.dbuf", test_file);
+}
+
+#[test]
 fn test_correct_elaboration() {
     insta::glob!("correct_dbufs/*.dbuf", test_file);
 }
