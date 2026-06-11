@@ -67,4 +67,19 @@ where
     pub fn insert_alias(&mut self, name: Key, alias: Alias) {
         self.aliases.insert(name, alias);
     }
+
+    pub fn lookup(&self, name: &Key) -> Option<Lookup<&Value, &Alias>> {
+        if let Some(alias) = self.aliases.get(name) {
+            return Some(Lookup::Alias(alias));
+        }
+        if let Some(term) = self.terms.get(name) {
+            return Some(Lookup::Term(term));
+        }
+        self.parent.and_then(|p| p.lookup(name))
+    }
+}
+
+pub enum Lookup<V, A> {
+    Term(V),
+    Alias(A),
 }

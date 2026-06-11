@@ -983,7 +983,6 @@ fn rename_field_message_pattern_decl() {
 }
 
 #[test]
-#[should_panic(expected = "")] /* FIXME: actually shouldn't panic (ElaboratingStage error: Unknown field target) */
 fn rename_field_message_all() {
     const TEXT: &str = r"
       |message IntD (d Int) {}

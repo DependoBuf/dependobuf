@@ -1,0 +1,14 @@
+message Dep (n Bool) {}
+message M {
+    a Int;
+    b Bool;
+}
+enum E (m M) {
+    M{a: a, b: b} => {
+        Ctr {
+            a Bool;
+            c Dep a;
+            d Dep b;
+        }
+    }
+}

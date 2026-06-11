@@ -2647,6 +2647,7 @@ fn wrap_with_deferred_checks<'a>(
 }
 
 impl<'a> ValueExpression {
+    #[allow(clippy::too_many_lines, reason = "??? (119/100)")]
     fn generate_as_pattern(
         &self,
         (ctx, namespace): MutContext<'a, '_, '_>,
@@ -2682,30 +2683,54 @@ impl<'a> ValueExpression {
                     .get_generated::<objects::Type>(ObjectId::from_name("Body".to_owned()))
                     .expect("couldn't get generated Body type");
 
-                let (constructor_enum_branch, constructor_enum_branch_cursor) = body_type_cursor
-                    .get_generated::<objects::Type>(ObjectId(
-                        ast::NodeId::id_rc(&call),
-                        objects::Tag::String("enum_branch"),
-                    ))
-                    .expect("couldn't get constructor enum branch");
-
-                let fields = call
-                    .fields
-                    .iter()
-                    .map(|field| {
-                        constructor_enum_branch_cursor
+                let (fields, variant_doc) = match ty.kind {
+                    ast::TypeKind::Enum => {
+                        let (branch, branch_cursor) = body_type_cursor
                             .clone()
-                            .get_generated::<objects::Variable>(objects::ObjectId(
-                                ast::NodeId::id_rc(field),
-                                objects::Tag::None,
+                            .get_generated::<objects::Type>(ObjectId(
+                                ast::NodeId::id_rc(&call),
+                                objects::Tag::String("enum_branch"),
                             ))
-                            .expect("couldn't get constructor field")
-                            .0
-                            .to_doc(ctx)
-                    })
-                    .collect::<Vec<_>>();
+                            .expect("couldn't get constructor enum branch");
+                        let branch_doc = branch.to_doc(ctx);
+                        let fields = call
+                            .fields
+                            .iter()
+                            .map(|field| {
+                                branch_cursor
+                                    .clone()
+                                    .get_generated::<objects::Variable>(objects::ObjectId(
+                                        ast::NodeId::id_rc(field),
+                                        objects::Tag::None,
+                                    ))
+                                    .expect("couldn't get constructor field")
+                                    .0
+                                    .to_doc(ctx)
+                            })
+                            .collect::<Vec<_>>();
+                        (fields, Some(branch_doc))
+                    }
+                    ast::TypeKind::Message => {
+                        let fields = call
+                            .fields
+                            .iter()
+                            .map(|field| {
+                                body_type_cursor
+                                    .clone()
+                                    .get_generated::<objects::Variable>(objects::ObjectId(
+                                        ast::NodeId::id_rc(field),
+                                        objects::Tag::None,
+                                    ))
+                                    .expect("couldn't get message body field")
+                                    .0
+                                    .to_doc(ctx)
+                            })
+                            .collect::<Vec<_>>();
+                        (fields, None)
+                    }
+                };
 
-                drop(constructor_enum_branch_cursor);
+                drop(body_type_cursor);
 
                 let mut all_deferred: Vec<(objects::GeneratedVariable, ValueExpression)> = vec![];
                 let arg_patterns: Vec<BoxDoc<'a>> = arguments
@@ -2727,10 +2752,13 @@ impl<'a> ValueExpression {
                     })
                     .collect();
 
-                let pattern = type_module_prefix
-                    .append(body_type.to_doc(ctx))
-                    .append("::")
-                    .append(constructor_enum_branch.to_doc(ctx))
+                let type_path = type_module_prefix.append(body_type.to_doc(ctx));
+                let constructor_path = match variant_doc {
+                    Some(variant) => type_path.append("::").append(variant),
+                    None => type_path,
+                };
+
+                let pattern = constructor_path
                     .append(alloc.space())
                     .append("{")
                     .append(alloc.space())

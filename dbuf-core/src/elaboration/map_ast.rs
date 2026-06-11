@@ -147,3 +147,134 @@ where
         ),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ast::operators::{BinaryOp, Literal, UnaryOp};
+    use indexmap::IndexMap;
+    use std::collections::BTreeMap;
+
+    fn suf(s: String) -> String {
+        s + "_"
+    }
+
+    fn ty(name: &str) -> TypeExpression<String> {
+        TypeExpression::TypeExpression {
+            name: name.to_owned(),
+            dependencies: Rec::new([]),
+        }
+    }
+
+    fn var(name: &str) -> ValueExpression<String> {
+        ValueExpression::Variable {
+            name: name.to_owned(),
+            ty: ty("T"),
+        }
+    }
+
+    #[test]
+    fn variable_maps_name_and_type() {
+        assert_eq!(
+            map_value_expression(var("x"), &suf),
+            ValueExpression::Variable {
+                name: "x_".to_owned(),
+                ty: ty("T_")
+            },
+        );
+    }
+
+    #[test]
+    fn unary_access_maps_field_name() {
+        let expr = ValueExpression::OpCall {
+            op_call: OpCall::Unary(UnaryOp::Access("f".to_owned()), Rec::new(var("x"))),
+            result_type: ty("Int"),
+        };
+        assert_eq!(
+            map_value_expression(expr, &suf),
+            ValueExpression::OpCall {
+                op_call: OpCall::Unary(
+                    UnaryOp::Access("f_".to_owned()),
+                    Rec::new(ValueExpression::Variable {
+                        name: "x_".to_owned(),
+                        ty: ty("T_")
+                    }),
+                ),
+                result_type: ty("Int_"),
+            }
+        );
+    }
+
+    #[test]
+    fn literal_preserves_value() {
+        let expr = ValueExpression::OpCall {
+            op_call: OpCall::Literal(Literal::Int(42)),
+            result_type: ty("Int"),
+        };
+        assert_eq!(
+            map_value_expression(expr, &suf),
+            ValueExpression::OpCall {
+                op_call: OpCall::Literal(Literal::Int(42)),
+                result_type: ty("Int_"),
+            }
+        );
+    }
+
+    #[test]
+    fn binary_maps_both_operands() {
+        let expr = ValueExpression::OpCall {
+            op_call: OpCall::Binary(BinaryOp::Plus, Rec::new(var("a")), Rec::new(var("b"))),
+            result_type: ty("Int"),
+        };
+        assert_eq!(
+            map_value_expression(expr, &suf),
+            ValueExpression::OpCall {
+                op_call: OpCall::Binary(
+                    BinaryOp::Plus,
+                    Rec::new(ValueExpression::Variable {
+                        name: "a_".to_owned(),
+                        ty: ty("T_")
+                    }),
+                    Rec::new(ValueExpression::Variable {
+                        name: "b_".to_owned(),
+                        ty: ty("T_")
+                    }),
+                ),
+                result_type: ty("Int_"),
+            }
+        );
+    }
+
+    #[test]
+    fn module_maps_all_names() {
+        let module = Module {
+            types: IndexMap::from([(
+                "Foo".to_owned(),
+                Type {
+                    dependencies: vec![("n".to_owned(), ty("Nat"))],
+                    constructor_names: ConstructorNames::OfMessage("Foo".to_owned()),
+                },
+            )]),
+            constructors: BTreeMap::from([(
+                "Foo".to_owned(),
+                Constructor {
+                    implicits: vec![],
+                    fields: vec![("x".to_owned(), ty("Int"))],
+                    result_type: ty("Foo"),
+                },
+            )]),
+        };
+        let result = map_module(module, &suf);
+        assert!(result.types.contains_key("Foo_"));
+        assert_eq!(
+            result.types["Foo_"].dependencies,
+            vec![("n_".to_owned(), ty("Nat_"))]
+        );
+        assert!(result.constructors.contains_key("Foo_"));
+        assert_eq!(
+            result.constructors["Foo_"].fields,
+            vec![("x_".to_owned(), ty("Int_"))]
+        );
+        assert_eq!(result.constructors["Foo_"].result_type, ty("Foo_"));
+    }
+}
