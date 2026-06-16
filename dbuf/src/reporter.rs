@@ -248,10 +248,13 @@ impl Reportable<ParsingError> for () {
         };
 
         if !extra.expected.is_empty() {
-            let expected = extra
-                .expected
-                .iter()
-                .map(|p| format!(" {}", format!("\"{p}\"").fg(Color::BrightGreen)));
+            let expected = extra.expected.iter().map(|p| {
+                if p.is_internal() {
+                    String::new()
+                } else {
+                    format!(" {}", format!("\"{p}\"").fg(Color::BrightGreen))
+                }
+            });
             message = format!(
                 "{message} Expected one of:{}.",
                 expected.collect::<String>()

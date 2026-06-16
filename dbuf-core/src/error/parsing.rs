@@ -80,6 +80,27 @@ pub enum ExpectedPattern {
     EndOfInput,
 }
 
+impl ExpectedPattern {
+    /// Return if expected pattern is something not usefull for user.
+    #[must_use]
+    pub fn is_internal(&self) -> bool {
+        matches!(
+            &self,
+            ExpectedPattern::Token(
+                Token::LineComment(_)
+                    | Token::BlockComment(_)
+                    | Token::Err(_)
+                    | Token::NewLine
+                    | Token::Space
+            ) | ExpectedPattern::Label(
+                Label::Comment | Label::Error | Label::NewLine | Label::Space
+            ) | ExpectedPattern::Any
+                | ExpectedPattern::SomethingElse
+                | ExpectedPattern::EndOfInput
+        )
+    }
+}
+
 impl Display for ExpectedPattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

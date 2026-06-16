@@ -7,6 +7,7 @@
 //! * (✓) `textDocument/documentHighlight`
 //! * (✓) `textDocument/references`
 //! * (✓) `textDocument/codeLens`
+//! * (✓) `textDocument/diagnostic`
 //!
 //! Also it might be good idea to handle such requests:
 //! ---
@@ -15,7 +16,6 @@
 //! * `codeLens/resolve`
 //! * `textDocument/semanticTokens/full/delta`
 //! * `textDocument/semanticTokens/range`
-//! * `textDocument/diagnostic`
 //! * `workspace/diagnostic`
 //!
 //! These methods are also about diagnostic, but there no need to implement them:

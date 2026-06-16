@@ -622,7 +622,9 @@ where
     let integer = select! {
         Token::IntLiteral(x) => Token::IntLiteral(x)
     }
-    .map_token();
+    .map_token()
+    .labelled(IntLiteral);
+
     let minus_integer = minus
         .then(ws.clone())
         .then(integer)

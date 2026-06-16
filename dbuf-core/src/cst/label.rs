@@ -25,6 +25,8 @@ pub enum Label {
     VariableIdentifier,
     /// Literal
     Literal,
+    /// Integer Literal
+    IntLiteral,
     /// Typed Hole
     TypedHole,
     /// Space
