@@ -33,32 +33,56 @@ pub use lexer::Token;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TreeKind {
+    /// Contains unparsed tokens as child.
     ErrorTree,
 
+    /// Contains whole file.
     File,
 
+    /// Contains message definition.
     Message,
+    /// Contains body of message / constructor.
     Body,
+    /// Contains definion of field / dependency.
     Definition,
 
+    /// Contains message definition.
     Enum,
+    /// Contains body of enum defintion.
     EnumBody,
+    /// Contains one branch definition.
     Branch,
+    /// Contains one pattern.
     Pattern,
+    /// Contains negative integer as pattern.
+    NegativePattern,
+    /// Contains constructed pattern.
     ConstructedPattern,
+    /// Contains one field of constructed pattern.
     ConstructedPatternField,
+    /// Contains all constructor definitions for current branch.
     ConstructorEnum,
+    /// Contains one constructor definition.
     Constructor,
 
-    ConstructedValue,
-    ConstructedValueField,
+    /// Contains constructed value with dot accesses.
     ConstructedValueChain,
+    /// Contains constructed value for expressions.
+    ConstructedValue,
+    /// Contains field of constructed value.
+    ConstructedValueField,
 
+    /// Contains parened expression.
     ExprParen,
+    /// Contains literal as expression.
     ExprLiteral,
+    /// Contains indentifier as expression.
     ExprIdentifier,
+    /// Contains binary operation as expression.
     ExprBinary,
+    /// Contains unary operation as expression.
     ExprUnary,
+    /// Contains type hole as expression.
     ExprHole,
 }
 

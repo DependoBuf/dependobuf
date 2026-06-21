@@ -1,0 +1,10 @@
+message Struct {
+    f1 Int;
+}
+
+enum Enum (d1 Int) (d2 Struct) {
+    -1, * => {
+        Ctr {}
+    }
+    *, Struct {f1: -1} => {}
+}

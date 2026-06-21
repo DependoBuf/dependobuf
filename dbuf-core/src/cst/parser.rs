@@ -595,7 +595,7 @@ where
 ///
 /// Pattern is
 /// ```dbuf
-///     (* | <literal> | lcIdentifier |
+///     (* | <literal> | lcIdentifier | - /* c */ <integer_literal> |
 ///      UCIdentifier /* c */ { [/* c */ lcIdentifier /* c */ : /* c */ <pattern> /* c */, /* c */] | /* c */ } )
 /// ```
 fn pattern_parser<'src, I>() -> impl Parser<'src, I, Tree, ExtraData> + Clone
@@ -617,6 +617,19 @@ where
     let star = just(Token::Star).map_token();
     let literal = literal_parser();
     let alias = var_identifier_parser();
+
+    let minus = just(Token::Minus).map_token();
+    let integer = select! {
+        Token::IntLiteral(x) => Token::IntLiteral(x)
+    }
+    .map_token()
+    .labelled(IntLiteral);
+
+    let minus_integer = minus
+        .then(ws.clone())
+        .then(integer)
+        .map_tree(TreeKind::NegativePattern)
+        .map_child();
 
     let type_indent = type_identifier_parser();
     let lbrace = just(Token::LBrace).map_token();
@@ -660,7 +673,7 @@ where
         .map_tree(TreeKind::ConstructedPattern)
         .map_child();
 
-    choice((star, literal, alias, constructed_pattern)).map_tree(TreeKind::Pattern)
+    choice((star, literal, alias, minus_integer, constructed_pattern)).map_tree(TreeKind::Pattern)
 }
 
 /// Parses constructor enum.

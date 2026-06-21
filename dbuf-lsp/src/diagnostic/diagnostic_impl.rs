@@ -138,7 +138,10 @@ impl Buildable<ParsingError> for () {
         if !&parent.expected.is_empty() {
             expected_str += " Expected:";
             for expect in &parent.expected {
-                let _ = write!(expected_str, " '{expect}");
+                if expect.is_internal() {
+                    continue;
+                }
+                let _ = write!(expected_str, " '{expect}'");
             }
             expected_str += ".";
         }

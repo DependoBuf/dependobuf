@@ -364,7 +364,11 @@ fn convert_expression_identifier(ei: &Tree) -> Expression<LocationAST, NameAST> 
 }
 
 fn convert_literal(e: &Tree) -> Option<Literal> {
-    assert!(e.kind == TreeKind::ExprLiteral || e.kind == TreeKind::Pattern);
+    assert!(
+        e.kind == TreeKind::ExprLiteral
+            || e.kind == TreeKind::Pattern
+            || e.kind == TreeKind::NegativePattern
+    );
 
     let mut literal = None;
     for child in &e.children {
@@ -569,12 +573,28 @@ fn convert_pattern(pattern: &Tree) -> Pattern<LocationAST, NameAST> {
             continue;
         };
 
+        if t.kind == TreeKind::NegativePattern {
+            return convert_negative_pattern(t);
+        }
         if t.kind == TreeKind::ConstructedPattern {
             return convert_constructed_patter(t);
         }
     }
 
     panic!("Pattern tree with no pattern");
+}
+
+fn convert_negative_pattern(np: &Tree) -> Pattern<LocationAST, NameAST> {
+    assert!(np.kind == TreeKind::NegativePattern);
+
+    let Some(Literal::Int(x)) = convert_literal(np) else {
+        panic!("Negative pattern with no integer literal");
+    };
+
+    Pattern {
+        loc: np.into(),
+        node: PatternNode::Literal(Literal::Int(-x)),
+    }
 }
 
 fn convert_constructed_patter(cp: &Tree) -> Pattern<LocationAST, NameAST> {
