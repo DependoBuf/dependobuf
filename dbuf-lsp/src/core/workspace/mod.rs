@@ -96,7 +96,7 @@ impl WorkspaceAccess {
     ///
     /// # Panics
     ///
-    /// When can join a task from blocking task pool (never?).
+    /// When can't join a task from blocking task pool (never?).
     pub async fn open(&self, url: Url, version: i32, text: String) {
         let url_cloned = url.clone();
 
@@ -112,7 +112,7 @@ impl WorkspaceAccess {
     /// # Panics
     ///
     /// Will panic if version is not monotonic (old file version is higher than current).
-    /// Also panics if cant join a task from blocking thread pool (never?).
+    /// Also panics if can't join a task from blocking thread pool (never?).
     pub async fn change(&self, url: Url, version: i32, text: String) {
         let url_cloned = url.clone();
         let file = tokio::task::spawn_blocking(move || get_file(url, version, text))

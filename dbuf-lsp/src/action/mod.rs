@@ -121,7 +121,6 @@ impl Handler {
         let symbol = navigator.get_symbol(pos);
 
         if rename::renameable_symbol(&symbol) {
-            drop(file);
             self.rename_cache
                 .set(document.to_owned(), doc_version, pos, symbol)
                 .await;
@@ -148,23 +147,22 @@ impl Handler {
         pos: Position,
         document: &Url,
     ) -> Result<Option<WorkspaceEdit>> {
-        let file = access.read(document).clone();
+        let file = access.read(document);
 
-        let Some(elaborated) = file.get_elaborated().take().cloned() else {
+        let Some(elaborated) = file.get_elaborated().take() else {
             return Ok(None);
         };
         let Some(navigator) = Navigator::new(&file) else {
             return Ok(None);
         };
 
-        let version = file.get_version();
         let symbol = self
             .rename_cache
-            .get(document, version, pos)
+            .get(document, file.get_version(), pos)
             .await
             .unwrap_or_else(|| navigator.get_symbol(pos));
 
-        rename::renameable_to_symbol(&symbol, new_name, &elaborated)?;
+        rename::renameable_to_symbol(&symbol, new_name, elaborated)?;
 
         let ranges = navigator.find_symbols(&symbol);
 
@@ -173,7 +171,7 @@ impl Handler {
             document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
                 text_document: OptionalVersionedTextDocumentIdentifier {
                     uri: document.to_owned(),
-                    version: Some(version),
+                    version: Some(file.get_version()),
                 },
                 edits: ranges
                     .into_iter()
