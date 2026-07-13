@@ -15,8 +15,9 @@ mod parsed_ast;
 mod parsers;
 mod string;
 
+use std::sync::Arc;
+
 use dashmap::DashMap;
-use dashmap::mapref::one::Ref;
 
 use dbuf_core::arena::InternedString;
 use dbuf_core::cst;
@@ -47,13 +48,40 @@ pub use parsed_ast::ParsedAst;
 
 /// Guards multicore access to files in workspace.
 pub struct WorkspaceAccess {
-    files: DashMap<Url, File>,
+    files: DashMap<Url, Arc<File>>,
 }
 
 impl Default for WorkspaceAccess {
     fn default() -> Self {
         Self::new()
     }
+}
+
+#[allow(
+    clippy::needless_pass_by_value,
+    reason = "passing by value, so the task can be run in separate thread.
+    Another option: use &'static and unsafe magic to convert &'a str to &'static str, since compile
+    guarantees are preserved (since the string is on stack while the task is executing)"
+)]
+fn get_file(url: Url, version: i32, text: String) -> File {
+    let mut errors = vec![];
+
+    let (cst, err) = get_cst(&text);
+    errors.extend(err);
+
+    let parsed = cst.as_ref().and_then(|t| {
+        let (parsed, err) = get_parsed(t);
+        errors.extend(err);
+        parsed
+    });
+
+    let elaborated = parsed.as_ref().and_then(|t| {
+        let (elaborated, err) = get_elaborated(t);
+        errors.extend(err);
+        elaborated
+    });
+
+    File::new(url, version, cst, parsed, elaborated, errors)
 }
 
 impl WorkspaceAccess {
@@ -65,30 +93,18 @@ impl WorkspaceAccess {
     }
 
     /// Builds asts for text and setup File for it.
-    pub fn open(&self, url: Url, version: i32, text: &str) {
-        let mut errors = vec![];
+    ///
+    /// # Panics
+    ///
+    /// When can't join a task from blocking task pool (never?).
+    pub async fn open(&self, url: Url, version: i32, text: String) {
+        let url_cloned = url.clone();
 
-        let cst = {
-            let (cst, err) = get_cst(text);
-            errors.extend(err);
-            cst
-        };
+        let file = tokio::task::spawn_blocking(move || get_file(url, version, text))
+            .await
+            .unwrap();
 
-        let parsed = cst.as_ref().and_then(|t| {
-            let (parsed, err) = get_parsed(t);
-            errors.extend(err);
-            parsed
-        });
-
-        let elaborated = parsed.as_ref().and_then(|t| {
-            let (elaborated, err) = get_elaborated(t);
-            errors.extend(err);
-            elaborated
-        });
-
-        let file = File::new(url.clone(), version, cst, parsed, elaborated, errors);
-
-        self.files.insert(url, file);
+        self.files.insert(url_cloned, Arc::new(file));
     }
 
     /// Builds asts for text and change File's asts.
@@ -96,30 +112,14 @@ impl WorkspaceAccess {
     /// # Panics
     ///
     /// Will panic if version is not monotonic (old file version is higher than current).
-    pub fn change(&self, url: &Url, version: i32, text: &str) {
-        let mut errors = vec![];
+    /// Also panics if can't join a task from blocking thread pool (never?).
+    pub async fn change(&self, url: Url, version: i32, text: String) {
+        let url_cloned = url.clone();
+        let file = tokio::task::spawn_blocking(move || get_file(url, version, text))
+            .await
+            .unwrap();
 
-        let cst = {
-            let (cst, err) = get_cst(text);
-            errors.extend(err);
-            cst
-        };
-
-        let parsed = cst.as_ref().and_then(|t| {
-            let (parsed, err) = get_parsed(t);
-            errors.extend(err);
-            parsed
-        });
-
-        let elaborated = parsed.as_ref().and_then(|t| {
-            let (elaborated, err) = get_elaborated(t);
-            errors.extend(err);
-            elaborated
-        });
-
-        self.files.alter(&url.to_owned(), |_u, f| {
-            f.modify(version, cst, parsed, elaborated, errors)
-        });
+        self.files.alter(&url_cloned, |_u, f| f.modify(file).into());
     }
 
     /// Returns File by `url`.
@@ -128,8 +128,8 @@ impl WorkspaceAccess {
     ///
     /// Will panic if `open` method is not called with `url`.
     #[must_use]
-    pub fn read(&self, url: &Url) -> Ref<'_, Url, File> {
-        self.files.get(url).expect("file should be opened")
+    pub fn read(&self, url: &Url) -> Arc<File> {
+        self.files.get(url).expect("file should be opened").clone()
     }
 
     /// Removes File from opened files.

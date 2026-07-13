@@ -30,7 +30,7 @@ use dbuf_format::PrettyPrinter;
 use crate::handler_box;
 
 use crate::core::navigator::Navigator;
-use crate::core::workspace::{Saved, WorkspaceAccess};
+use crate::core::workspace::{Stored, WorkspaceAccess};
 
 pub struct Handler {
     rename_cache: RenameCache,
@@ -82,7 +82,7 @@ impl Handler {
         format::valid_options(options)?;
 
         let file = access.read(document);
-        let Saved::Current(cst) = file.get_cst() else {
+        let Stored::Current(cst) = file.get_cst() else {
             return Ok(None);
         };
 
@@ -106,7 +106,7 @@ impl Handler {
     /// # Errors
     ///
     /// Errors are never return.
-    pub fn prepare_rename(
+    pub async fn prepare_rename(
         &self,
         access: &WorkspaceAccess,
         pos: Position,
@@ -122,7 +122,8 @@ impl Handler {
 
         if rename::renameable_symbol(&symbol) {
             self.rename_cache
-                .set(document.to_owned(), doc_version, pos, symbol);
+                .set(document.to_owned(), doc_version, pos, symbol)
+                .await;
             Ok(Some(PrepareRenameResponse::DefaultBehavior {
                 default_behavior: true,
             }))
@@ -139,7 +140,7 @@ impl Handler {
     /// # Errors
     ///
     /// Errors are never return.
-    pub fn rename(
+    pub async fn rename(
         &self,
         access: &WorkspaceAccess,
         new_name: &str,
@@ -147,6 +148,7 @@ impl Handler {
         document: &Url,
     ) -> Result<Option<WorkspaceEdit>> {
         let file = access.read(document);
+
         let Some(elaborated) = file.get_elaborated().take() else {
             return Ok(None);
         };
@@ -157,7 +159,8 @@ impl Handler {
         let symbol = self
             .rename_cache
             .get(document, file.get_version(), pos)
-            .map_or_else(|| navigator.get_symbol(pos), |cached| cached);
+            .await
+            .unwrap_or_else(|| navigator.get_symbol(pos));
 
         rename::renameable_to_symbol(&symbol, new_name, elaborated)?;
 

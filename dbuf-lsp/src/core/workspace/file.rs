@@ -1,6 +1,8 @@
 //! Module exports struct `File` - representation of one file in workspace.
 //!
 
+use std::sync::Arc;
+
 use tower_lsp::lsp_types::Url;
 
 use crate::core::errors::Error;
@@ -10,6 +12,7 @@ use super::ElaboratedAst;
 use super::ParsedAst;
 
 /// Represents one file in workspace. Contains its version, and asts.
+#[derive(Debug)]
 pub struct File {
     /// File location.
     uri: Url,
@@ -26,46 +29,66 @@ pub struct File {
 }
 
 /// Structure that stores current version or
-/// last success version
-#[derive(Debug)]
-pub enum Saved<T> {
+/// last success version.
+///
+/// Type params:
+/// T - type of stored object T,
+/// U - type of stored link to File object.
+#[derive(Debug, Clone)]
+pub enum MaybeOutdated<T, U> {
     /// Correspond to last version of file
     Current(T),
     /// Correspond to one of previous versions of file
-    Outdated(T, i32),
+    ///
+    /// #0: Stored object
+    ///
+    /// #1: Correspong file version, when object was created
+    Outdated(T, U),
     /// Never constructed
     Nothing,
 }
 
+/// Storage type for file.
+type Saved<T> = MaybeOutdated<Arc<T>, Arc<File>>;
+
+/// Read access type for file.
+pub type Stored<'a, T> = MaybeOutdated<&'a T, &'a File>;
+
 impl<T> Saved<T> {
     fn new(value: Option<T>) -> Self {
-        value.map_or(Self::Nothing, Self::Current)
+        value.map(Arc::new).map_or(Self::Nothing, Self::Current)
     }
 
-    fn outdate(self, old_version: i32) -> Self {
+    fn outdate(&self, old_version: Arc<File>) -> Self {
         match self {
-            Self::Current(v) => Self::Outdated(v, old_version),
-            _ => self,
+            Self::Current(v) => Self::Outdated(v.clone(), old_version),
+            Self::Outdated(v, version) => Self::Outdated(v.clone(), version.clone()),
+            Self::Nothing => Self::Nothing,
         }
     }
 
-    fn modify(self, value: Option<T>, old_version: i32) -> Self {
-        value.map_or_else(|| self.outdate(old_version), Self::Current)
-    }
-
-    fn get(&self) -> Saved<&T> {
-        match self {
-            Saved::Current(t) => Saved::Current(t),
-            Saved::Outdated(t, i) => Saved::Outdated(t, *i),
-            Saved::Nothing => Saved::Nothing,
+    fn modify(&self, value: Saved<T>, old_version: Arc<File>) -> Self {
+        match value {
+            Self::Nothing => self.outdate(old_version),
+            _ => value,
         }
     }
 
-    pub fn take(self) -> Option<T> {
+    fn to_stored(&self) -> Stored<'_, T> {
         match self {
-            Saved::Current(t) => Some(t),
-            Saved::Outdated(t, _) => Some(t),
-            Saved::Nothing => None,
+            MaybeOutdated::Current(t) => MaybeOutdated::Current(t),
+            MaybeOutdated::Outdated(t, v) => MaybeOutdated::Outdated(t, v),
+            MaybeOutdated::Nothing => MaybeOutdated::Nothing,
+        }
+    }
+}
+
+impl<'a, T> Stored<'a, T> {
+    pub fn take(self) -> Option<&'a T> {
+        match self {
+            Stored::Current(t) => Some(t),
+            Stored::Outdated(t, _) => Some(t),
+            Stored::Nothing => None,
         }
     }
 }
@@ -89,22 +112,16 @@ impl File {
         }
     }
 
-    pub(super) fn modify(
-        self,
-        new_version: i32,
-        cst: Option<Cst>,
-        parsed: Option<ParsedAst>,
-        elaborated: Option<ElaboratedAst>,
-        errors: Vec<Error>,
-    ) -> File {
-        assert!(self.version < new_version);
+    pub(super) fn modify(self: Arc<Self>, newer: File) -> File {
+        assert!(self.version < newer.version);
+        let old = self.clone();
         File {
-            uri: self.uri,
-            version: new_version,
-            cst: self.cst.modify(cst, self.version),
-            parsed_ast: self.parsed_ast.modify(parsed, self.version),
-            elaborated_ast: self.elaborated_ast.modify(elaborated, self.version),
-            errors,
+            uri: newer.uri,
+            version: newer.version,
+            cst: self.cst.modify(newer.cst, old.clone()),
+            parsed_ast: self.parsed_ast.modify(newer.parsed_ast, old.clone()),
+            elaborated_ast: self.elaborated_ast.modify(newer.elaborated_ast, old),
+            errors: newer.errors,
         }
     }
 
@@ -112,16 +129,16 @@ impl File {
         &self.uri
     }
 
-    pub fn get_cst(&self) -> Saved<&Cst> {
-        self.cst.get()
+    pub fn get_cst(&self) -> Stored<'_, Cst> {
+        self.cst.to_stored()
     }
 
-    pub fn get_parsed(&self) -> Saved<&ParsedAst> {
-        self.parsed_ast.get()
+    pub fn get_parsed(&self) -> Stored<'_, ParsedAst> {
+        self.parsed_ast.to_stored()
     }
 
-    pub fn get_elaborated(&self) -> Saved<&ElaboratedAst> {
-        self.elaborated_ast.get()
+    pub fn get_elaborated(&self) -> Stored<'_, ElaboratedAst> {
+        self.elaborated_ast.to_stored()
     }
 
     pub fn get_version(&self) -> i32 {
