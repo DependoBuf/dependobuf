@@ -31,7 +31,7 @@ impl Scenario {
     #[track_caller]
     fn run_rename(&self, file: &FileMetadata, new_name: &str, pos: Position) -> Vec<Range> {
         let url = get_url(file);
-        let result = self.handler.rename(&self.workspace, new_name, pos, &url);
+        let result = TEST_RT.block_on(self.handler.rename(&self.workspace, new_name, pos, &url));
 
         let Ok(result) = result else {
             panic!(
@@ -78,7 +78,7 @@ impl Scenario {
     #[track_caller]
     fn run_prepare_rename(&self, file: &FileMetadata, pos: Position) -> Option<()> {
         let url = get_url(file);
-        let result = self.handler.prepare_rename(&self.workspace, pos, &url);
+        let result = TEST_RT.block_on(self.handler.prepare_rename(&self.workspace, pos, &url));
 
         let Ok(opt) = result else {
             panic!(
@@ -175,9 +175,12 @@ impl Scenario {
             "No cursors for file:\n{file:#?}"
         );
         for cursor_locaion in file.cursors() {
-            let result = self
-                .handler
-                .rename(&self.workspace, new_name, *cursor_locaion, &url);
+            let result = TEST_RT.block_on(self.handler.rename(
+                &self.workspace,
+                new_name,
+                *cursor_locaion,
+                &url,
+            ));
 
             if let Ok(result) = result {
                 panic!(

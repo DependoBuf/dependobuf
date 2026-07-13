@@ -1,6 +1,6 @@
-use std::sync::Mutex;
-
 use tower_lsp::lsp_types::{Position, Url};
+
+use tokio::sync::Mutex;
 
 use crate::core::navigator::Symbol;
 
@@ -18,26 +18,26 @@ pub struct RenameCache {
 }
 
 impl RenameCache {
-    pub fn set(&self, doc: Url, version: i32, pos: Position, symbol: Symbol) {
-        if let Ok(mut cache) = self.cache.lock() {
-            cache.document = Some(doc);
-            cache.version = version;
-            cache.pos = pos;
-            cache.symbol = Some(symbol);
-        }
+    pub async fn set(&self, doc: Url, version: i32, pos: Position, symbol: Symbol) {
+        let mut cache = self.cache.lock().await;
+        cache.document = Some(doc);
+        cache.version = version;
+        cache.pos = pos;
+        cache.symbol = Some(symbol);
     }
 
-    pub fn get(&self, doc: &Url, version: i32, pos: Position) -> Option<Symbol> {
-        if let Ok(mut cache) = self.cache.lock()
-            && let Some(url) = &cache.document
+    pub async fn get(&self, doc: &Url, version: i32, pos: Position) -> Option<Symbol> {
+        let mut cache = self.cache.lock().await;
+
+        if let Some(url) = &cache.document
             && url == doc
             && cache.version == version
             && cache.pos == pos
         {
             cache.document.take();
-            return Some(cache.symbol.take().expect("setted with document"));
+            Some(cache.symbol.take().expect("setted with document"))
+        } else {
+            None
         }
-
-        None
     }
 }

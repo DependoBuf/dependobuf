@@ -113,7 +113,7 @@ impl LanguageServer for Backend {
     #[instrument(skip_all, fields(file=params.text_document.uri.to_string()))]
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let doc = params.text_document;
-        self.workspace.open(doc.uri, doc.version, &doc.text);
+        self.workspace.open(doc.uri, doc.version, doc.text).await;
 
         info!("file opened");
     }
@@ -126,9 +126,9 @@ impl LanguageServer for Backend {
         }
 
         let doc = params.text_document;
-        let new_text = &params.content_changes[0].text;
+        let new_text = params.content_changes.into_iter().next().unwrap().text;
 
-        self.workspace.change(&doc.uri, doc.version, new_text);
+        self.workspace.change(doc.uri, doc.version, new_text).await;
 
         info!("file changed");
     }
@@ -318,6 +318,7 @@ impl LanguageServer for Backend {
 
         self.action_handler
             .prepare_rename(&self.workspace, pos, &uri)
+            .await
     }
 
     #[instrument(skip_all, fields(file, pos.line, pos.character))]
@@ -334,6 +335,7 @@ impl LanguageServer for Backend {
 
         self.action_handler
             .rename(&self.workspace, &params.new_name, pos, &uri)
+            .await
     }
 
     #[instrument(skip_all, fields(file, pos.line, pos.character), level="warn")]

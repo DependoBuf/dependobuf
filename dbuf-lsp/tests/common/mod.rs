@@ -12,6 +12,9 @@ pub use file_generator::FileMetadata;
 
 use std::sync::LazyLock;
 
+use tokio::runtime::Builder;
+use tokio::runtime::Runtime;
+
 use tower_lsp::lsp_types::Url;
 
 pub use dbuf_lsp::WorkspaceAccess;
@@ -19,9 +22,20 @@ pub use dbuf_lsp::WorkspaceAccess;
 pub static TEST_URL: LazyLock<Url> =
     LazyLock::new(|| Url::from_file_path("/testing.dbuf").unwrap());
 
+pub static TEST_RT: LazyLock<Runtime> = LazyLock::new(|| {
+    Builder::new_current_thread()
+        .build()
+        .expect("valid runtime")
+});
+
 pub static TEST_WORKSPACE: LazyLock<WorkspaceAccess> = LazyLock::new(|| {
     let ans = WorkspaceAccess::new();
-    ans.open(TEST_URL.clone(), 0, include_str!("../sample.dbuf"));
+
+    TEST_RT.block_on(ans.open(
+        TEST_URL.clone(),
+        0,
+        include_str!("../sample.dbuf").to_owned(),
+    ));
     assert!(ans.read(&TEST_URL).get_errors().is_empty());
     ans
 });
@@ -36,18 +50,18 @@ pub fn get_url(file: &FileMetadata) -> Url {
 
 pub fn workspace_with_open_file(workspace: &WorkspaceAccess, file: &FileMetadata) {
     let url = get_url(file);
-    let content = file.content();
+    let content = file.content().to_owned();
 
-    workspace.open(url, 0, content);
+    TEST_RT.block_on(workspace.open(url, 0, content));
 }
 
 pub fn workspace_with_change_file(workspace: &WorkspaceAccess, file: &FileMetadata) {
     let url = get_url(file);
-    let content = file.content();
+    let content = file.content().to_owned();
 
     let old_version = { workspace.read(&url).get_version() };
 
-    workspace.change(&url, old_version + 1, content);
+    TEST_RT.block_on(workspace.change(url, old_version + 1, content));
 }
 
 pub fn workspace_with_close_file(workspace: &WorkspaceAccess, file: &FileMetadata) {
